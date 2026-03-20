@@ -108,7 +108,7 @@ struct TranslatorContentView: View {
                 TextEditor(text: $viewModel.inputText)
                     .font(.slang(.body))
                     .foregroundStyle(.primary)
-                    .frame(minHeight: 120, maxHeight: 200)
+                    .frame(height: 80)
                     .scrollContentBackground(.hidden)
                     .focused($isInputFocused)
                     .accessibilityLabel(viewModel.direction.inputLanguageLabel)
@@ -167,7 +167,7 @@ struct TranslatorContentView: View {
             }
 
             outputContent
-                .frame(minHeight: 80, alignment: .topLeading)
+                .frame(height: 80, alignment: .topLeading)
 
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
