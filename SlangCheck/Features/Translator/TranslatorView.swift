@@ -66,6 +66,7 @@ struct TranslatorContentView: View {
                     outputPanel
                     if let result = viewModel.result, result.hasSubstitutions {
                         substitutionsSection(result.substitutions)
+                        exampleSentencesSection(result.substitutions)
                     }
                 }
                 .padding(.horizontal, SlangSpacing.md)
@@ -255,6 +256,60 @@ struct TranslatorContentView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SlangSpacing.md)
         .glassCard()
+    }
+
+    // MARK: - Example Sentences Section
+
+    @ViewBuilder
+    private func exampleSentencesSection(_ substitutions: [TranslationResult.Substitution]) -> some View {
+        VStack(alignment: .leading, spacing: SlangSpacing.md) {
+            Text(String(localized: "translator.examples.title", defaultValue: "How to use this in a sentence?"))
+                .font(.slang(.subheading))
+                .foregroundStyle(SlangColor.primary)
+
+            ForEach(substitutions) { sub in
+                VStack(alignment: .leading, spacing: SlangSpacing.xs) {
+                    // Term name badge
+                    Text(sub.term.term)
+                        .font(.slang(.label))
+                        .foregroundStyle(SlangColor.secondary)
+
+                    // Example sentence with the slang term highlighted
+                    highlightedExample(sentence: sub.term.exampleSentence, slangTerm: sub.term.term)
+                        .font(.slang(.body))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(SlangSpacing.sm)
+                .background(
+                    RoundedRectangle(cornerRadius: SlangCornerRadius.sm)
+                        .fill(SlangColor.secondary.opacity(0.08))
+                )
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(sub.term.term): \(sub.term.exampleSentence)")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(SlangSpacing.md)
+        .glassCard()
+    }
+
+    /// Renders the example sentence with the slang term bolded and tinted.
+    private func highlightedExample(sentence: String, slangTerm: String) -> Text {
+        let lower     = sentence.lowercased()
+        let termLower = slangTerm.lowercased()
+
+        guard let range = lower.range(of: termLower) else {
+            return Text(sentence).foregroundColor(.primary)
+        }
+
+        let before  = String(sentence[sentence.startIndex ..< range.lowerBound])
+        let matched = String(sentence[range.lowerBound ..< range.upperBound])
+        let after   = String(sentence[range.upperBound...])
+
+        return Text(before).foregroundColor(.primary)
+             + Text(matched).bold().foregroundColor(SlangColor.secondary)
+             + Text(after).foregroundColor(.primary)
     }
 
     private func substitutionChip(_ label: String, color: Color) -> some View {
