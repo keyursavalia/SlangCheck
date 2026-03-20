@@ -54,6 +54,9 @@ struct TranslatorContentView: View {
     /// Temporarily `true` after the user taps Copy, driving the checkmark state.
     @State private var didCopy: Bool = false
 
+    /// Tracks focus on the input TextEditor for programmatic keyboard dismissal.
+    @FocusState private var isInputFocused: Bool
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -70,8 +73,20 @@ struct TranslatorContentView: View {
                 .padding(.bottom, SlangSpacing.xl)
             }
             .background(SlangColor.background)
+            // Dismiss keyboard when tapping outside the TextEditor.
+            .onTapGesture { isInputFocused = false }
             .navigationTitle(String(localized: "tab.translator", defaultValue: "Translator"))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(String(localized: "translator.keyboard.done", defaultValue: "Done")) {
+                        isInputFocused = false
+                    }
+                    .fontWeight(.semibold)
+                    .foregroundStyle(SlangColor.primary)
+                }
+            }
         }
     }
 
@@ -95,6 +110,7 @@ struct TranslatorContentView: View {
                     .foregroundStyle(.primary)
                     .frame(minHeight: 120, maxHeight: 200)
                     .scrollContentBackground(.hidden)
+                    .focused($isInputFocused)
                     .accessibilityLabel(viewModel.direction.inputLanguageLabel)
             }
 
@@ -220,7 +236,7 @@ struct TranslatorContentView: View {
     private func substitutionsSection(_ substitutions: [TranslationResult.Substitution]) -> some View {
         VStack(alignment: .leading, spacing: SlangSpacing.sm) {
             Text(String(localized: "translator.substitutions.title", defaultValue: "Terms Translated"))
-                .font(.slang(.subheadline))
+                .font(.slang(.subheading))
                 .foregroundStyle(SlangColor.primary)
 
             ForEach(substitutions) { sub in
