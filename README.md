@@ -1,0 +1,1 @@
+# SlangCheck - learn GenZ lingo easily!
