@@ -204,10 +204,7 @@ private struct ProfileNavRow: View {
                         .padding(.horizontal, SlangSpacing.sm)
                         .padding(.vertical, 2)
                         .background(Capsule().fill(SlangColor.primary))
-                        .accessibilityLabel(
-                            String(localized: "profile.badge.count \(badge)",
-                                   defaultValue: "\(badge) items")
-                        )
+                        .accessibilityLabel("\(badge) items")
                 }
 
                 Image(systemName: isLocked ? "lock.fill" : "chevron.right")
@@ -221,11 +218,7 @@ private struct ProfileNavRow: View {
         }
         .buttonStyle(.plain)
         .disabled(isLocked)
-        .accessibilityLabel(
-            isLocked
-                ? String(localized: "profile.nav.locked \(title)", defaultValue: "\(title), locked")
-                : title
-        )
+        .accessibilityLabel(isLocked ? "\(title), locked" : title)
     }
 }
 

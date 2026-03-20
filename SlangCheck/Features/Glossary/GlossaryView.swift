@@ -182,10 +182,7 @@ private struct GlossaryContentView: View {
                 }
                 .background(SlangColor.background)
                 .id(letter)
-                .accessibilityLabel(
-                    String(localized: "glossary.section.header \(letter)",
-                           defaultValue: "Section \(letter)")
-                )
+                .accessibilityLabel("Section \(letter)")
             }
         }
     }

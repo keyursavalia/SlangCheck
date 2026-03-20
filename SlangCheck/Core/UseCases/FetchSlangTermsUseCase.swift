@@ -46,7 +46,7 @@ public struct FetchSlangTermsUseCase {
         let available = allTerms.filter { !savedIDs.contains($0.id) }
 
         // Group by frequency, shuffle within each group, then concatenate high → emerging
-        let byFrequency: [(UsageFrequency, [SlangTerm])] = [.high, .medium, .low, .emerging].compactMap { freq in
+        let byFrequency: [(UsageFrequency, [SlangTerm])] = ([.high, .medium, .low, .emerging] as [UsageFrequency]).compactMap { freq in
             let group = available.filter { $0.usageFrequency == freq }
             return group.isEmpty ? nil : (freq, group.shuffled())
         }

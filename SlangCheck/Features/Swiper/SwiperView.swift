@@ -200,8 +200,7 @@ private struct SwiperContentView: View {
         if isFlipped {
             return "\(term.term). \(term.definition)"
         } else {
-            return String(localized: "swiper.accessibility.card \(term.term)",
-                          defaultValue: "Flashcard: \(term.term). Double tap to reveal definition.")
+            return "Flashcard: \(term.term). Double tap to reveal definition."
         }
     }
 }

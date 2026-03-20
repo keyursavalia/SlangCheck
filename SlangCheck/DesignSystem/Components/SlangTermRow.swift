@@ -33,10 +33,7 @@ public struct SlangTermRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
-                    .accessibilityLabel(
-                        String(localized: "accessibility.termRow.definition \(term.definition)",
-                               defaultValue: "Definition: \(term.definition)")
-                    )
+                    .accessibilityLabel("Definition: \(term.definition)")
             }
 
             Spacer(minLength: SlangSpacing.sm)
@@ -61,10 +58,7 @@ public struct SlangTermRow: View {
         .padding(.vertical, SlangSpacing.sm)
         .contentShape(Rectangle()) // Ensures full-row tap target (FR-G-009: 44pt min).
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            String(localized: "accessibility.termRow.combined \(term.term) \(term.definition)",
-                   defaultValue: "\(term.term). \(term.definition)")
-        )
+        .accessibilityLabel("\(term.term). \(term.definition)")
     }
 
     // MARK: - Highlighted Term Text

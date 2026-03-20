@@ -58,8 +58,7 @@ struct LexiconView: View {
             }
         } message: {
             if let term = termToDelete {
-                Text(String(localized: "lexicon.delete.message \(term.term)",
-                            defaultValue: "Remove \"\(term.term)\" from your Lexicon?"))
+                Text("Remove \"\(term.term)\" from your Lexicon?")
             }
         }
     }

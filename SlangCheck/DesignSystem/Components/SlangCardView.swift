@@ -171,10 +171,7 @@ public struct SlangCardView: View {
             .font(.system(size: 11, weight: .semibold, design: .rounded))
             .foregroundStyle(SlangColor.primary)
             .tracking(1.2)
-            .accessibilityLabel(
-                String(localized: "swiper.card.category \(term.category.displayName)",
-                       defaultValue: "Category: \(term.category.displayName)")
-            )
+            .accessibilityLabel("Category: \(term.category.displayName)")
     }
 
     private var tapHint: some View {
