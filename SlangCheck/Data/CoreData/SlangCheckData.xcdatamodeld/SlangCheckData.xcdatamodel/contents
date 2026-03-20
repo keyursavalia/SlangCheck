@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22758" systemVersion="23A344" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="CDSlangTerm" representedClassName="CDSlangTerm" syncable="YES" codeGenerationType="none">
+        <attribute name="id" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="term" optional="NO" attributeType="String"/>
+        <attribute name="definition" optional="NO" attributeType="String"/>
+        <attribute name="standardEnglish" optional="YES" attributeType="String"/>
+        <attribute name="exampleSentence" optional="YES" attributeType="String"/>
+        <attribute name="category" optional="NO" attributeType="String"/>
+        <attribute name="origin" optional="YES" attributeType="String"/>
+        <attribute name="usageFrequency" optional="NO" attributeType="String"/>
+        <attribute name="generationTagsData" optional="YES" attributeType="Binary"/>
+        <attribute name="addedDate" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="isBrainrot" optional="NO" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isEmojiTerm" optional="NO" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="CDLexiconEntry" representedClassName="CDLexiconEntry" syncable="YES" codeGenerationType="none">
+        <attribute name="termID" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="savedDate" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <elements>
+        <element name="CDSlangTerm" positionX="0" positionY="0" width="128" height="209"/>
+        <element name="CDLexiconEntry" positionX="200" positionY="0" width="128" height="75"/>
+    </elements>
+</model>
