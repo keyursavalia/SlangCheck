@@ -42,4 +42,7 @@ extension Logger {
 
     /// Logs onboarding events.
     static let onboarding = Logger(subsystem: subsystem, category: "Onboarding")
+
+    /// Logs Translator feature events (translation calls, substitution counts).
+    static let translator = Logger(subsystem: subsystem, category: "Translator")
 }
