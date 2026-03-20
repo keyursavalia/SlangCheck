@@ -111,8 +111,18 @@ final class TranslateTextUseCaseTests: XCTestCase {
 
     // MARK: - Standard → GenZ
 
+    func testStandardToGenZMatchesSlashSeparatedMeaning() async throws {
+        // Salty → standardEnglish: "Bitter / Upset" — "Bitter" is slash-separated, not comma.
+        // Previously this would fail because only comma splitting was applied.
+        let result = try await useCase.translate(text: "She seemed really bitter about losing.", direction: .standardToGenZ)
+        XCTAssertTrue(
+            result.translatedText.localizedCaseInsensitiveContains("Salty"),
+            "Expected 'Salty' from 'bitter' (slash-delimited meaning). Got: \(result.translatedText)"
+        )
+    }
+
     func testStandardToGenZReplacesSingleKnownMeaning() async throws {
-        // "Charisma" → "Rizz"
+        // "Charisma" → "Rizz" (Natural charm is a comma-split token)
         let result = try await useCase.translate(text: "He has a lot of Charisma.", direction: .standardToGenZ)
         XCTAssertTrue(
             result.translatedText.localizedCaseInsensitiveContains("Rizz"),
@@ -126,6 +136,25 @@ final class TranslateTextUseCaseTests: XCTestCase {
         XCTAssertTrue(
             result.translatedText.localizedCaseInsensitiveContains("Mid"),
             "Expected 'Mid' from 'average'. Output: \(result.translatedText)"
+        )
+    }
+
+    func testStandardToGenZVerbInflectionPresentParticiple() async throws {
+        // "lying" is the -ing form of "lie"; Cap's standardEnglish is "Lie / Falsehood".
+        // Expected: "lying" → "capping"
+        let result = try await useCase.translate(text: "you are lying", direction: .standardToGenZ)
+        XCTAssertTrue(
+            result.translatedText.localizedCaseInsensitiveContains("capping"),
+            "Expected 'capping' from 'lying'. Got: \(result.translatedText)"
+        )
+    }
+
+    func testStandardToGenZVerbInflectionThirdPerson() async throws {
+        // "lies" is the third-person singular of "lie" → "caps"
+        let result = try await useCase.translate(text: "she always lies", direction: .standardToGenZ)
+        XCTAssertTrue(
+            result.translatedText.localizedCaseInsensitiveContains("caps"),
+            "Expected 'caps' from 'lies'. Got: \(result.translatedText)"
         )
     }
 
