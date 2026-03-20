@@ -282,7 +282,7 @@ struct TranslatorContentView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(SlangSpacing.sm)
                 .background(
-                    RoundedRectangle(cornerRadius: SlangCornerRadius.sm)
+                    RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
                         .fill(SlangColor.secondary.opacity(0.08))
                 )
                 .accessibilityElement(children: .combine)
