@@ -1,0 +1,45 @@
+# Xcode build artifacts
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods (not used, but just in case)
+Pods/
+Podfile.lock
+
+# Secrets — never commit API keys (NF-S-006)
+Secrets.xcconfig
+*.xcconfig.local
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# User-specific Xcode settings
+*.xccheckout
+*.moved-aside
+xcuserdata/
+
+# Fastlane (if added later)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+
+# TestFlight / App Store
+*.ipa
+*.mobileprovision
+
+# Instruments
+*.trace

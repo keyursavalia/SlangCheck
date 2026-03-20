@@ -1,0 +1,135 @@
+/* Localizable.strings — SlangCheck (English)
+   All user-facing strings. NEVER hardcode strings in SwiftUI views.
+   Format: "key" = "value"; */
+
+// MARK: - Tab Bar
+"tab.swiper" = "Swiper";
+"tab.glossary" = "Glossary";
+"tab.translator" = "Translator";
+"tab.quizzes" = "Quizzes";
+"tab.profile" = "Profile";
+
+// MARK: - Glossary
+"glossary.title" = "Glossary";
+"glossary.search.placeholder" = "Search slang...";
+"glossary.search.clear" = "Clear search";
+"glossary.search.accessibilityLabel" = "Search slang terms";
+"glossary.empty.title" = "No Terms Found";
+"glossary.empty.message" = "Try selecting a different category.";
+"glossary.empty.action" = "Show All";
+"glossary.search.empty.title" = "No slang found";
+"glossary.search.empty.message" = "No slang found. Maybe it's too niche \U0001F440";
+"glossary.search.empty.action" = "Browse by category";
+"glossary.section.header %@" = "Section %@";
+
+// MARK: - Term Detail
+"termDetail.definition" = "Definition";
+"termDetail.example" = "Example";
+"termDetail.origin" = "Origin";
+"termDetail.frequency" = "Frequency";
+"termDetail.brainrot" = "Type";
+"termDetail.brainrotValue" = "Brainrot";
+"termDetail.saveToLexicon" = "Save to Lexicon";
+"termDetail.removeFromLexicon" = "Remove from Lexicon";
+
+// MARK: - Swiper
+"swiper.title" = "Swiper";
+"swiper.action.save" = "SAVE";
+"swiper.action.skip" = "SKIP";
+"swiper.card.tapToFlip" = "Tap to reveal definition";
+"swiper.card.category %@" = "Category: %@";
+"swiper.button.save" = "Save to Lexicon";
+"swiper.button.skip" = "Skip";
+"swiper.undo" = "Undo";
+"swiper.empty.title" = "You've seen them all!";
+"swiper.empty.message" = "Your slang knowledge is growing. What's next?";
+"swiper.empty.reshuffle" = "Reshuffle All Terms";
+"swiper.accessibility.save" = "Save term";
+"swiper.accessibility.skip" = "Skip term";
+"swiper.accessibility.flip" = "Flip card";
+"swiper.accessibility.card %@" = "Flashcard: %@. Double tap to reveal definition.";
+
+// MARK: - Lexicon
+"lexicon.title" = "My Lexicon";
+"lexicon.empty.title" = "Your Lexicon is Empty";
+"lexicon.empty.message" = "Swipe right on a card or tap 'Save to Lexicon' on any term to build your collection.";
+"lexicon.sort.recent" = "Most Recent";
+"lexicon.sort.alpha" = "A\U2013Z";
+"lexicon.sort.accessibilityLabel" = "Sort options";
+"lexicon.delete.title" = "Remove from Lexicon?";
+"lexicon.delete.confirm" = "Remove";
+"lexicon.delete.cancel" = "Cancel";
+"lexicon.delete.message %@" = "Remove \u201C%@\u201D from your Lexicon?";
+
+// MARK: - Profile
+"profile.title" = "Profile";
+"profile.guest" = "Guest User";
+"profile.auraComingSoon" = "Aura System \u2014 Coming in the Quizzes Update";
+"profile.stat.lexicon" = "Words Saved";
+"profile.stat.streak" = "Day Streak";
+"profile.stat.aura" = "Aura Points";
+"profile.stat.streakPlaceholder" = "--";
+"profile.stat.auraPlaceholder" = "--";
+"profile.nav.lexicon" = "My Lexicon";
+"profile.nav.quizHistory" = "Quiz History";
+"profile.nav.settings" = "Settings";
+"profile.badge.count %@" = "%@ items";
+"profile.nav.locked %@" = "%@, locked";
+
+// MARK: - Onboarding
+"onboarding.welcome.title" = "Welcome to SlangCheck";
+"onboarding.welcome.message" = "The GenZ Rosetta Stone. Learn, translate, and master the ever-evolving modern lexicon.";
+"onboarding.segment.title" = "Who are you?";
+"onboarding.segment.message" = "Tell us a bit about yourself so we can personalize your experience.";
+"onboarding.swiper.title" = "How the Swiper Works";
+"onboarding.swiper.message" = "Swipe right to save a term. Swipe left to skip. Tap to flip the card and see the definition.";
+"onboarding.ready.title" = "You're Ready!";
+"onboarding.ready.message" = "Dive into the Swiper or search the Glossary. Your slang journey starts now.";
+"onboarding.skip" = "Skip";
+"onboarding.skip.accessibility" = "Skip onboarding and go to the app";
+"onboarding.button.next" = "Continue";
+"onboarding.button.start" = "Let's Go";
+
+// MARK: - User Segments
+"segment.unc.name" = "The Unc";
+"segment.unc.description" = "Trying to understand what the younger generation is saying";
+"segment.trendSeeker.name" = "Trend-Seeker";
+"segment.trendSeeker.description" = "Staying relevant with internet culture";
+"segment.languageEnthusiast.name" = "Language Enthusiast";
+"segment.languageEnthusiast.description" = "Fascinated by the evolution of language";
+
+// MARK: - Categories
+"category.foundationalDescriptor" = "Descriptors";
+"category.brainrot" = "Brainrot";
+"category.socialArchetype" = "Archetypes";
+"category.relationship" = "Relationships";
+"category.gamingInternet" = "Gaming";
+"category.emojiSlang" = "Emoji";
+"category.aesthetic" = "Aesthetics";
+"category.emerging2026" = "Emerging";
+
+// MARK: - Filter Bar
+"filter.all" = "All";
+
+// MARK: - Translator Placeholder
+"translator.title" = "Translator";
+"translator.comingSoon.title" = "Translator Coming Soon";
+"translator.comingSoon.message" = "The bi-directional GenZ \u2194 Standard English translator arrives in the next update.";
+
+// MARK: - Quizzes Placeholder
+"quizzes.title" = "Quizzes";
+"quizzes.comingSoon.title" = "Quizzes & Aura System Coming Soon";
+"quizzes.comingSoon.message" = "Earn Aura Points, climb the leaderboard, and prove your slang mastery. Coming in the Quizzes update.";
+
+// MARK: - Errors
+"error.repository.seedNotFound" = "The slang dictionary seed file could not be found.";
+"error.repository.seedCorrupted" = "The slang dictionary data is corrupted.";
+"error.repository.fetchFailed" = "Could not load slang terms.";
+"error.repository.saveFailed" = "Could not save.";
+"error.repository.deleteFailed" = "Could not delete.";
+"error.repository.termNotFound" = "Term not found.";
+
+// MARK: - Accessibility
+"accessibility.termRow.definition %@" = "Definition: %@";
+"accessibility.termRow.saved" = "Saved to lexicon";
+"accessibility.termRow.combined %@ %@" = "%@. %@";
