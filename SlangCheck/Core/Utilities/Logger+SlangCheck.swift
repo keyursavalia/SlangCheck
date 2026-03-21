@@ -45,4 +45,6 @@ extension Logger {
 
     /// Logs Translator feature events (translation calls, substitution counts).
     static let translator = Logger(subsystem: subsystem, category: "Translator")
-}
+
+    /// Logs Quiz feature events (session generation, scoring, Aura sync).
+    static let quizzes = Logger(subsystem: subsystem, category: "Quizzes")

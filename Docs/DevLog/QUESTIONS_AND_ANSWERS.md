@@ -25,6 +25,43 @@ Decision recorded. Auth is deferred to Iteration 3 (Aura sync). When auth work b
 
 ---
 
+## Q-003 — Offline Aura Points Sync Conflict Resolution
+
+**Asked:** 2026-03-21
+**Answered:** 2026-03-21
+**Step:** Step 3.3 — Persistence & Sync
+**Status:** ✅ Answered
+
+**Question:**
+When a user earns Aura Points offline and those points are later synced to Firebase, what is the conflict resolution strategy?
+Options: (A) last-write-wins, (B) server-authoritative, (C) client delta accumulation.
+
+**Developer Answer:**
+Server-authoritative. Firebase is always the source of truth. The client writes its local state to Firestore and must accept the server's value on any conflict.
+
+**Action Taken:**
+`AuraSyncService` will write the local `AuraProfile` snapshot to Firestore and merge the server value back on any conflict. The `AuraProfile` CoreData entity will cache the last-confirmed-server value so reads never stall. No optimistic counters will be kept client-side beyond the cache.
+
+---
+
+## Q-004 — Aura Card User Identifier
+
+**Asked:** 2026-03-21
+**Answered:** 2026-03-21
+**Step:** Step 3.5 — Aura Cards (Social Sharing)
+**Status:** ✅ Answered
+
+**Question:**
+Should the shareable Aura Card image contain any unique user identifier (username, display name, user ID), or only rank/tier visuals?
+
+**Developer Answer:**
+Yes — include the user's display name or username on the card.
+
+**Action Taken:**
+`AuraCardView` will render the user's display name prominently alongside the tier badge and point total. No internal user ID or email will appear on the card. The display name is sourced from the authenticated user profile (Sign in with Apple display name or a user-set username stored in Firestore).
+
+---
+
 ## Q-002 — Translation Engine: Local vs. Remote API
 
 **Asked:** 2026-03-20

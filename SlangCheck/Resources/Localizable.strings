@@ -129,6 +129,16 @@
 "error.repository.deleteFailed" = "Could not delete.";
 "error.repository.termNotFound" = "Term not found.";
 
+// MARK: - Aura Tiers
+"aura.tier.unc" = "Unc";
+"aura.tier.lurk" = "Lurk";
+"aura.tier.auraFarmer" = "Aura Farmer";
+"aura.tier.rizzler" = "Rizzler";
+"aura.tier.unc.subtitle" = "Just getting started";
+"aura.tier.lurk.subtitle" = "Learning the lingo";
+"aura.tier.auraFarmer.subtitle" = "Grinding every day";
+"aura.tier.rizzler.subtitle" = "Unmatched rizz";
+
 // MARK: - Accessibility
 "accessibility.termRow.definition %@" = "Definition: %@";
 "accessibility.termRow.saved" = "Saved to lexicon";
