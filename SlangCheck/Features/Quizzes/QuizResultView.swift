@@ -18,6 +18,7 @@ struct QuizResultView: View {
     let onDone: () -> Void
 
     @State private var displayedPoints: Int = 0
+    @State private var auraCardImage: AuraCardImage? = nil
 
     var body: some View {
         ScrollView {
@@ -28,13 +29,19 @@ struct QuizResultView: View {
                 if let profile = auraProfile {
                     tierSection(profile: profile)
                 }
+                if let cardImage = auraCardImage {
+                    shareButton(cardImage: cardImage)
+                }
                 actionButtons
             }
             .padding(SlangSpacing.md)
             .padding(.top, SlangSpacing.xl)
         }
         .background(SlangColor.background.ignoresSafeArea())
-        .onAppear { animatePointsCount() }
+        .onAppear {
+            animatePointsCount()
+            renderAuraCard()
+        }
     }
 
     // MARK: - Header
@@ -168,6 +175,29 @@ struct QuizResultView: View {
         .glassCard()
     }
 
+    // MARK: - Share
+
+    private func shareButton(cardImage: AuraCardImage) -> some View {
+        ShareLink(
+            item: cardImage,
+            preview: SharePreview(
+                "My Aura Card",
+                image: Image(uiImage: cardImage.uiImage)
+            )
+        ) {
+            Label("Share Aura Card", systemImage: "square.and.arrow.up")
+                .font(.slang(.label))
+                .foregroundStyle(SlangColor.primary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, SlangSpacing.md)
+                .background(
+                    RoundedRectangle(cornerRadius: SlangCornerRadius.button)
+                        .strokeBorder(SlangColor.primary, lineWidth: 1)
+                )
+        }
+        .accessibilityLabel("Share your Aura Card")
+    }
+
     // MARK: - Actions
 
     private var actionButtons: some View {
@@ -208,6 +238,15 @@ struct QuizResultView: View {
             let delay = interval * Double(i)
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 displayedPoints = (target * i) / steps
+            }
+        }
+    }
+
+    private func renderAuraCard() {
+        guard let profile = auraProfile else { return }
+        Task { @MainActor in
+            if let image = AuraCardView.render(for: profile) {
+                auraCardImage = AuraCardImage(uiImage: image)
             }
         }
     }

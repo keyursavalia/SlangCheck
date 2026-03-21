@@ -148,6 +148,11 @@
 "quizResult.playAgain" = "Play Again";
 "quizResult.done" = "Done";
 
+// MARK: - Aura Card
+"auraCard.share" = "Share Aura Card";
+"auraCard.share.preview" = "My Aura Card";
+"auraCard.share.accessibility" = "Share your Aura Card";
+
 // MARK: - Aura Profile (Quizzes tab)
 "aura.profile.points %d" = "%d pts";
 "aura.profile.streak %d" = "%d day streak";

@@ -52,7 +52,10 @@ public struct AppEnvironment {
     public static func production() -> AppEnvironment {
         let persistence  = PersistenceController()
         let slangRepo    = CoreDataSlangTermRepository(persistence: persistence)
-        let auraRepo     = CoreDataAuraRepository(persistence: persistence)
+        // UserDefaultsAuraRepository is used until CDAuraProfile / CDQuizResult
+        // entities are added to SlangCheckData.xcdatamodeld (A-006). Swap back to
+        // CoreDataAuraRepository(persistence: persistence) after that migration.
+        let auraRepo     = UserDefaultsAuraRepository()
         let haptics      = HapticService()
 
         // Use FirebaseAuraSyncService when the Firebase SDK is present (added via SPM).
@@ -81,11 +84,13 @@ public struct AppEnvironment {
 
     /// Builds an in-memory environment suitable for SwiftUI Previews and unit tests.
     public static func preview() -> AppEnvironment {
-        let persistence = PersistenceController(inMemory: true)
-        let slangRepo   = CoreDataSlangTermRepository(persistence: persistence)
-        let auraRepo    = CoreDataAuraRepository(persistence: persistence)
-        let haptics     = HapticService()
-        let syncUseCase = SyncAuraProfileUseCase(
+        // Fresh UserDefaults suite per preview so runs don't share persisted state.
+        let previewDefaults = UserDefaults(suiteName: "preview-\(UUID().uuidString)")!
+        let persistence     = PersistenceController(inMemory: true)
+        let slangRepo       = CoreDataSlangTermRepository(persistence: persistence)
+        let auraRepo        = UserDefaultsAuraRepository(defaults: previewDefaults)
+        let haptics         = HapticService()
+        let syncUseCase     = SyncAuraProfileUseCase(
             auraRepository: auraRepo,
             syncService:    NoOpAuraSyncService()
         )

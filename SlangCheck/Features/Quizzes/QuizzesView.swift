@@ -14,6 +14,7 @@ struct QuizzesView: View {
     @Environment(\.appEnvironment) private var env
     @State private var viewModel: QuizViewModel? = nil
     @State private var showingQuiz = false
+    @State private var auraCardImage: AuraCardImage? = nil
 
     var body: some View {
         NavigationStack {
@@ -35,6 +36,7 @@ struct QuizzesView: View {
             guard viewModel == nil else { return }
             viewModel = makeViewModel()
             await viewModel?.loadProfile()
+            renderAuraCard()
         }
         .fullScreenCover(isPresented: $showingQuiz, onDismiss: handleQuizDismiss) {
             if let vm = viewModel {
@@ -48,7 +50,25 @@ struct QuizzesView: View {
     @ViewBuilder
     private var profileCard: some View {
         if let profile = viewModel?.auraProfile {
-            AuraProfileView(profile: profile)
+            VStack(spacing: SlangSpacing.sm) {
+                AuraProfileView(profile: profile)
+                if let cardImage = auraCardImage {
+                    ShareLink(
+                        item: cardImage,
+                        preview: SharePreview(
+                            "My Aura Card",
+                            image: Image(uiImage: cardImage.uiImage)
+                        )
+                    ) {
+                        Label("Share Aura Card", systemImage: "square.and.arrow.up")
+                            .font(.slang(.caption))
+                            .foregroundStyle(SlangColor.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, SlangSpacing.sm)
+                    }
+                    .accessibilityLabel("Share your Aura Card")
+                }
+            }
         } else {
             auraPlaceholderCard
         }
@@ -137,7 +157,19 @@ struct QuizzesView: View {
     // MARK: - Helpers
 
     private func handleQuizDismiss() {
-        Task { await viewModel?.loadProfile() }
+        Task {
+            await viewModel?.loadProfile()
+            renderAuraCard()
+        }
+    }
+
+    private func renderAuraCard() {
+        guard let profile = viewModel?.auraProfile else { return }
+        Task { @MainActor in
+            if let image = AuraCardView.render(for: profile) {
+                auraCardImage = AuraCardImage(uiImage: image)
+            }
+        }
     }
 
     private func makeViewModel() -> QuizViewModel {
