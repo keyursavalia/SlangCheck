@@ -1,8 +1,8 @@
 # SlangCheck — Development Log Index
 
-**Last updated:** 2026-03-21, Iteration 3 Step 3.1 complete
+**Last updated:** 2026-03-21, Iteration 3 Step 3.2 complete
 **Current iteration:** Iteration 3 — The Quizzes Phase
-**Current step:** Step 3.2 — Scoring Formula
+**Current step:** Step 3.3 — Persistence & Sync
 **Overall status:** Iteration 3 In Progress
 
 ---
@@ -13,7 +13,7 @@
 |---|---|---|---|---|
 | 1 | The Learn Phase | ✅ Complete | 9/9 | 9 |
 | 2 | The Translator Phase | ✅ Complete | 4/4 | 4 |
-| 3 | The Quizzes Phase | 🔄 In Progress | 1/6 | 6 |
+| 3 | The Quizzes Phase | 🔄 In Progress | 2/6 | 6 |
 | 4 | The Daily Crossword Phase | ⏳ Not Started | 0/7 | 7 |
 
 ---
@@ -50,7 +50,7 @@
 | Step | Name | Status |
 |---|---|---|
 | 3.1 | Aura System Models | ✅ Complete |
-| 3.2 | Scoring Formula | ⏳ Not Started |
+| 3.2 | Scoring Formula | ✅ Complete |
 | 3.3 | Persistence & Sync | ⏳ Not Started |
 | 3.4 | Quiz Flow UI | ⏳ Not Started |
 | 3.5 | Aura Cards (Social Sharing) | ⏳ Not Started |
@@ -62,6 +62,7 @@
 
 | Date | Step | Summary |
 |---|---|---|
+| 2026-03-21 | Step 3.2 | Scoring Formula. AuraScoringEngine (S = C×100/(1+H) - T×2, integer arithmetic, clamped to 0), ScoringInput, ScoringBreakdown, QuizResult model. AuraScoringEngineTests: 35 cases covering zero hints, max hints, zero time, large time, clamping, combined penalties, breakdown, and factory. |
 | 2026-03-21 | Step 3.1 | Aura System Models. AuraTier (4 tiers, point ranges, progress, factory), AuraProfile (immutable snapshot, mutation helpers, promotion detection), QuizQuestion + QuizSession (3 question types, allChoices, correctAnswer, sentenceWithBlank). 3 model files + 3 test files. |
 | 2026-03-20 | Steps 2.1–2.3 | Iteration 2 complete. TranslationService protocol, TranslateTextUseCase (greedy regex), LocalTranslationService, TranslatorViewModel (400ms debounce), TranslatorView (split-screen + swap + substitutions). 7 new files. |
 | 2026-03-20 | Build fixes | Resolved all Xcode build errors from initial compilation (StaticString, withAnimation scope, UsageFrequency context). |
@@ -78,7 +79,7 @@
 | A-002 | **Build and run in Xcode** to verify CoreData model loads (SlangCheckData.xcdatamodeld). | High | Step 1.3 |
 | A-003 | **Verify app on device/simulator** in both Light and Dark mode. | High | Step 1.9 |
 | A-004 | **Add TranslatorViewModelTests + TranslateTextUseCaseTests** to XCTest target in Xcode. | Medium | Step 2.4 |
-| A-005 | **Add AuraTierTests, AuraProfileTests, QuizQuestionTests** to XCTest target in Xcode. | Medium | Step 3.1 |
+| A-005 | **Add AuraTierTests, AuraProfileTests, QuizQuestionTests, AuraScoringEngineTests** to XCTest target in Xcode. | Medium | Step 3.1–3.2 |
 
 ---
 
