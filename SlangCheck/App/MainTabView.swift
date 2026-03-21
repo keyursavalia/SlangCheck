@@ -2,7 +2,7 @@
 // SlangCheck
 //
 // The root tab bar container. Hosts 5 tabs per FR-G-001:
-//   0 — Swiper, 1 — Glossary, 2 — Translator (placeholder), 3 — Quizzes (placeholder), 4 — Profile
+//   0 — Swiper, 1 — Glossary, 2 — Translator, 3 — Quizzes (placeholder), 4 — Profile
 // Tab state is preserved across tab switches (FR-G-004).
 
 import SwiftUI
@@ -45,8 +45,8 @@ struct MainTabView: View {
                 }
                 .tag(AppConstants.TabIndex.glossary)
 
-            // MARK: Translator (Coming Soon)
-            TranslatorPlaceholderView()
+            // MARK: Translator
+            TranslatorView()
                 .tabItem {
                     Label(
                         String(localized: "tab.translator", defaultValue: "Translator"),
