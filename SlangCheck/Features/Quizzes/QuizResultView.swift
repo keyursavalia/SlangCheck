@@ -50,14 +50,9 @@ struct QuizResultView: View {
                 .font(.slang(.title))
                 .foregroundStyle(.primary)
 
-            Text(
-                String(
-                    localized: "quizResult.correct \(result.correctCount) \(result.totalCount)",
-                    defaultValue: "\(result.correctCount)/\(result.totalCount) Correct"
-                )
-            )
-            .font(.slang(.subheading))
-            .foregroundStyle(.secondary)
+            Text("\(result.correctCount)/\(result.totalCount) Correct")
+                .font(.slang(.subheading))
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -65,24 +60,14 @@ struct QuizResultView: View {
 
     private var auraSection: some View {
         VStack(spacing: SlangSpacing.xs) {
-            Text(
-                String(
-                    localized: "quizResult.auraEarned \(displayedPoints)",
-                    defaultValue: "+\(displayedPoints) Aura"
-                )
-            )
+            Text("+\(displayedPoints) Aura")
             .font(.slang(.display))
             .foregroundStyle(SlangColor.primary)
             .contentTransition(.numericText(countsDown: false))
             .animation(.spring(response: 0.5, dampingFraction: 0.7), value: displayedPoints)
 
-            Text(
-                String(
-                    localized: "quizResult.accuracy \(Int(result.accuracy * 100))%",
-                    defaultValue: "\(Int(result.accuracy * 100))% Accuracy"
-                )
-            )
-            .font(.slang(.caption))
+            Text("\(Int(result.accuracy * 100))% Accuracy")
+                .font(.slang(.caption))
             .foregroundStyle(.secondary)
         }
         .padding(SlangSpacing.xl)
@@ -173,14 +158,9 @@ struct QuizResultView: View {
             .frame(height: 8)
 
             if let pts = profile.pointsToNextTier {
-                Text(
-                    String(
-                        localized: "aura.profile.nextTier \(pts)",
-                        defaultValue: "\(pts) pts to next tier"
-                    )
-                )
-                .font(.slang(.caption))
-                .foregroundStyle(.secondary)
+                Text("\(pts) pts to next tier")
+                    .font(.slang(.caption))
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(SlangSpacing.md)

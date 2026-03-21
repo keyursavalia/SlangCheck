@@ -55,12 +55,7 @@ struct AuraProfileView: View {
     // MARK: - Points
 
     private var pointsRow: some View {
-        Text(
-            String(
-                localized: "aura.profile.points \(profile.totalPoints)",
-                defaultValue: "\(profile.totalPoints) pts"
-            )
-        )
+        Text("\(profile.totalPoints) pts")
         .font(.slang(.title))
         .foregroundStyle(tierColor(profile.currentTier))
         .contentTransition(.numericText())
@@ -90,14 +85,9 @@ struct AuraProfileView: View {
             .frame(height: 8)
 
             if let pointsLeft = profile.pointsToNextTier {
-                Text(
-                    String(
-                        localized: "aura.profile.nextTier \(pointsLeft)",
-                        defaultValue: "\(pointsLeft) pts to next tier"
-                    )
-                )
-                .font(.slang(.caption))
-                .foregroundStyle(.secondary)
+                Text("\(pointsLeft) pts to next tier")
+                    .font(.slang(.caption))
+                    .foregroundStyle(.secondary)
             } else {
                 Text(
                     String(localized: "aura.profile.topTier",
@@ -116,12 +106,7 @@ struct AuraProfileView: View {
             Image(systemName: "flame.fill")
                 .foregroundStyle(profile.streak > 0 ? SlangColor.accent : Color.secondary)
                 .accessibilityHidden(true)
-            Text(
-                String(
-                    localized: "aura.profile.streak \(profile.streak)",
-                    defaultValue: "\(profile.streak) day streak"
-                )
-            )
+            Text("\(profile.streak) day streak")
             .font(.slang(.label))
             .foregroundStyle(profile.streak > 0 ? SlangColor.accent : Color.secondary)
         }

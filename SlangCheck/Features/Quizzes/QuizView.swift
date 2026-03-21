@@ -75,12 +75,7 @@ struct QuizView: View {
     private var quizHeader: some View {
         VStack(spacing: SlangSpacing.sm) {
             HStack {
-                Text(
-                    String(
-                        localized: "quiz.questionOf \(viewModel.questionNumber) \(viewModel.totalQuestions)",
-                        defaultValue: "Question \(viewModel.questionNumber) of \(viewModel.totalQuestions)"
-                    )
-                )
+                Text("Question \(viewModel.questionNumber) of \(viewModel.totalQuestions)")
                 .font(.slang(.caption))
                 .foregroundStyle(.secondary)
 
@@ -212,15 +207,9 @@ private struct QuizQuestionCard: View {
     private var questionStem: String {
         switch question.type {
         case .definitionPick:
-            return String(
-                localized: "quiz.definitionPick.stem \(question.term)",
-                defaultValue: "What does \"\(question.term)\" mean?"
-            )
+            return "What does \"\(question.term)\" mean?"
         case .termPick:
-            return String(
-                localized: "quiz.termPick.stem \(question.correctDefinition)",
-                defaultValue: "Which term means: \"\(question.correctDefinition)\"?"
-            )
+            return "Which term means: \"\(question.correctDefinition)\"?"
         case .fillInBlank:
             return question.sentenceWithBlank
         }

@@ -117,23 +117,13 @@ struct QuizzesView: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: SlangSpacing.xs) {
-                Text(
-                    String(
-                        localized: "quizResult.correct \(result.correctCount) \(result.totalCount)",
-                        defaultValue: "\(result.correctCount)/\(result.totalCount) Correct"
-                    )
-                )
-                .font(.slang(.label))
-                .foregroundStyle(.primary)
+                Text("\(result.correctCount)/\(result.totalCount) Correct")
+                    .font(.slang(.label))
+                    .foregroundStyle(.primary)
 
-                Text(
-                    String(
-                        localized: "quizResult.auraEarned \(result.auraPointsEarned)",
-                        defaultValue: "+\(result.auraPointsEarned) Aura"
-                    )
-                )
-                .font(.slang(.caption))
-                .foregroundStyle(SlangColor.primary)
+                Text("+\(result.auraPointsEarned) Aura")
+                    .font(.slang(.caption))
+                    .foregroundStyle(SlangColor.primary)
             }
             Spacer()
         }
