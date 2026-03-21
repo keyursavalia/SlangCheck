@@ -1,9 +1,9 @@
 # SlangCheck — Development Log Index
 
-**Last updated:** 2026-03-20, Iteration 2 complete
-**Current iteration:** Iteration 3 — The Quizzes Phase
-**Current step:** Step 3.1 — Aura System Models (not started)
-**Overall status:** Iteration 2 Complete — Iteration 3 Awaiting Developer Input
+**Last updated:** 2026-03-21, Iteration 3 complete
+**Current iteration:** Iteration 4 — The Daily Crossword Phase
+**Current step:** Awaiting developer answers to Q-005, Q-006 (see Open Questions)
+**Overall status:** Iteration 3 Complete, Iteration 4 Not Started
 
 ---
 
@@ -13,7 +13,7 @@
 |---|---|---|---|---|
 | 1 | The Learn Phase | ✅ Complete | 9/9 | 9 |
 | 2 | The Translator Phase | ✅ Complete | 4/4 | 4 |
-| 3 | The Quizzes Phase | ⏳ Not Started | 0/6 | 6 |
+| 3 | The Quizzes Phase | ✅ Complete | 6/6 | 6 |
 | 4 | The Daily Crossword Phase | ⏳ Not Started | 0/7 | 7 |
 
 ---
@@ -45,10 +45,29 @@
 
 ---
 
+## Iteration 3 Step Checklist
+
+| Step | Name | Status |
+|---|---|---|
+| 3.1 | Aura System Models | ✅ Complete |
+| 3.2 | Scoring Formula | ✅ Complete |
+| 3.3 | Persistence & Sync | ✅ Complete |
+| 3.4 | Quiz Flow UI | ✅ Complete |
+| 3.5 | Aura Cards (Social Sharing) | ✅ Complete |
+| 3.6 | Testing & Verification | ✅ Complete |
+
+---
+
 ## Recent Entries
 
 | Date | Step | Summary |
 |---|---|---|
+| 2026-03-21 | Step 3.6 | Testing & Verification. GenerateQuizUseCaseTests (14 cases: notEnoughTerms, min term count, question count clamping, distractor uniqueness, correct answer in choices, session structure, all 3 question type correctness). QuizViewModelTests (33 cases: initial state, startQuiz transitions, submitAnswer correct/wrong/idempotent, hint mechanic canUseHint/eliminate/noOp, advance resets state, sessionProgress math, questionNumber, finish-to-result phase, result correctCount + hintsUsed + isPerfect, dismissResult clears all state). Both test files include correct mock implementations of SlangTermRepository + AuraRepository + AuraSyncService + HapticServiceProtocol. |
+| 2026-03-21 | Step 3.5 | Aura Cards (Social Sharing). AuraCardView (360×480pt, always dark palette, LinearGradient bg + RadialGradient tier glow + dot-grid Canvas, brand header, tier badge, divider, display name + pts, streak footer), AuraCardImage: Transferable (DataRepresentation PNG export), ShareLink button wired into QuizResultView (between tier section and actions) and QuizzesView (below AuraProfileView). Rendered via ImageRenderer @3x on MainActor. 3 localization keys added. |
+| 2026-03-21 | Step 3.4 | Quiz Flow UI. GenerateQuizUseCase (random sampling + distractor generation for all 3 question types), QuizViewModel (@Observable @MainActor, idle→loading→active→result state machine, hint/eliminate mechanic, applyResult syncs profile), QuizView (ShakeEffect wrong, green pulse correct, hint button, progress bar, slide-in question transition), QuizQuestionCard (glassmorphic, 3 question stems), QuizChoiceButton (5 states), QuizResultView (count-up animation, breakdown panel, tier progress bar), AuraProfileView (tier badge + progress), QuizzesView (root tab, fullScreenCover flow). ProfileView updated with live Aura data. MainTabView wired. ShakeEffect added to Effects.swift. |
+| 2026-03-21 | Step 3.3 | Persistence & Sync. AuraRepository protocol + AuraRepositoryError, AuraSyncService protocol + AuraSyncError (server-authoritative Q-003), CoreDataAuraRepository actor (upsert profile, append-only quiz results), CDAuraProfile + CDQuizResult managed objects, FirebaseAuraSyncService (behind #if canImport guard), NoOpAuraSyncService fallback, SyncAuraProfileUseCase (local-first + detached background sync), AppEnvironment wired with auraRepository + syncAuraProfileUseCase. SyncAuraProfileUseCaseTests: 11 cases. |
+| 2026-03-21 | Step 3.2 | Scoring Formula. AuraScoringEngine (S = C×100/(1+H) - T×2, integer arithmetic, clamped to 0), ScoringInput, ScoringBreakdown, QuizResult model. AuraScoringEngineTests: 35 cases covering zero hints, max hints, zero time, large time, clamping, combined penalties, breakdown, and factory. |
+| 2026-03-21 | Step 3.1 | Aura System Models. AuraTier (4 tiers, point ranges, progress, factory), AuraProfile (immutable snapshot, mutation helpers, promotion detection), QuizQuestion + QuizSession (3 question types, allChoices, correctAnswer, sentenceWithBlank). 3 model files + 3 test files. |
 | 2026-03-20 | Steps 2.1–2.3 | Iteration 2 complete. TranslationService protocol, TranslateTextUseCase (greedy regex), LocalTranslationService, TranslatorViewModel (400ms debounce), TranslatorView (split-screen + swap + substitutions). 7 new files. |
 | 2026-03-20 | Build fixes | Resolved all Xcode build errors from initial compilation (StaticString, withAnimation scope, UsageFrequency context). |
 | 2026-03-19 | Steps 1.1–1.8 | Complete Iteration 1 implementation. 43 Swift source files, 1 CoreData model, seed JSON (62 terms), Localizable.strings, full unit test suite. |
@@ -64,6 +83,9 @@
 | A-002 | **Build and run in Xcode** to verify CoreData model loads (SlangCheckData.xcdatamodeld). | High | Step 1.3 |
 | A-003 | **Verify app on device/simulator** in both Light and Dark mode. | High | Step 1.9 |
 | A-004 | **Add TranslatorViewModelTests + TranslateTextUseCaseTests** to XCTest target in Xcode. | Medium | Step 2.4 |
+| A-005 | **Add AuraTierTests, AuraProfileTests, QuizQuestionTests, AuraScoringEngineTests, SyncAuraProfileUseCaseTests, GenerateQuizUseCaseTests, QuizViewModelTests** to XCTest target in Xcode. | Medium | Step 3.1–3.6 |
+| A-006 | **Add CDAuraProfile and CDQuizResult entities** to SlangCheckData.xcdatamodeld in Xcode (see entity specs in CoreDataClass headers). | High | Step 3.3 |
+| A-007 | **Add Firebase iOS SDK via SPM** (FirebaseFirestore + FirebaseAuth), add GoogleService-Info.plist, call FirebaseApp.configure() in SlangCheckApp.init(). | High | Step 3.3 |
 
 ---
 
@@ -73,6 +95,10 @@
 |---|---|---|---|
 | Q-001 | Additional OAuth providers beyond Sign in with Apple? | ✅ Answered — Apple only | Pre-Iteration 2 |
 | Q-002 | Translation engine: local vs. remote API? | ✅ Answered — local only | Step 2.1 |
+| Q-003 | Offline Aura Points sync conflict resolution? | ✅ Answered — server-authoritative | Step 3.3 |
+| Q-004 | Aura Card: include user identifier? | ✅ Answered — include display name | Step 3.5 |
+| Q-005 | Daily Crossword answer key delivery: (a) hashed revealed by server, or (b) encrypted payload unlocked by server key at 12:00 AM? | ⏳ Awaiting answer | Step 4.1 |
+| Q-006 | Push notifications: APNs + Firebase Cloud Messaging, or APNs direct? | ⏳ Awaiting answer | Step 4.6 |
 
 ---
 

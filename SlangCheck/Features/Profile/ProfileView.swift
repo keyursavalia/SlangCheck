@@ -1,8 +1,7 @@
 // Features/Profile/ProfileView.swift
 // SlangCheck
 //
-// Profile tab: displays lexicon count badge, and links to the Personal Lexicon.
-// Iteration 1 scope: lexicon access + basic user info. Aura/tier display is Iteration 3.
+// Profile tab: user info, Aura Economy standing, lexicon count, and nav links.
 
 import SwiftUI
 
@@ -13,6 +12,7 @@ struct ProfileView: View {
     @Environment(\.appEnvironment) private var env
     @AppStorage(AppConstants.userSegmentKey) private var userSegmentRaw = UserSegment.languageEnthusiast.rawValue
     @State private var lexiconCount: Int = 0
+    @State private var auraProfile: AuraProfile? = nil
     @State private var showingLexicon = false
 
     private var userSegment: UserSegment {
@@ -35,6 +35,7 @@ struct ProfileView: View {
         }
         .task {
             await refreshLexiconCount()
+            auraProfile = try? await env.auraRepository.fetchProfile()
         }
         .sheet(isPresented: $showingLexicon, onDismiss: {
             Task { await refreshLexiconCount() }
@@ -67,14 +68,22 @@ struct ProfileView: View {
                     .foregroundStyle(.secondary)
             }
 
-            // Iteration 3: Aura tier badge will appear here.
-            Text(String(localized: "profile.auraComingSoon",
-                        defaultValue: "Aura System — Coming in the Quizzes Update"))
-                .font(.slang(.caption))
-                .foregroundStyle(SlangColor.primary.opacity(0.7))
-                .padding(.horizontal, SlangSpacing.md)
-                .padding(.vertical, SlangSpacing.xs)
-                .background(Capsule().fill(SlangColor.primary.opacity(0.10)))
+            if let profile = auraProfile {
+                Text(profile.currentTier.displayName)
+                    .font(.slang(.caption))
+                    .foregroundStyle(SlangColor.primary)
+                    .padding(.horizontal, SlangSpacing.md)
+                    .padding(.vertical, SlangSpacing.xs)
+                    .background(Capsule().fill(SlangColor.primary.opacity(0.12)))
+            } else {
+                Text(String(localized: "profile.auraComingSoon",
+                            defaultValue: "Aura System — Coming in the Quizzes Update"))
+                    .font(.slang(.caption))
+                    .foregroundStyle(SlangColor.primary.opacity(0.7))
+                    .padding(.horizontal, SlangSpacing.md)
+                    .padding(.vertical, SlangSpacing.xs)
+                    .background(Capsule().fill(SlangColor.primary.opacity(0.10)))
+            }
         }
         .padding(SlangSpacing.md)
         .frame(maxWidth: .infinity)
@@ -92,13 +101,15 @@ struct ProfileView: View {
                 color: SlangColor.primary
             )
             StatTile(
-                value: String(localized: "profile.stat.streakPlaceholder", defaultValue: "--"),
+                value: auraProfile.map { "\($0.streak)" }
+                    ?? String(localized: "profile.stat.streakPlaceholder", defaultValue: "--"),
                 label: String(localized: "profile.stat.streak", defaultValue: "Day Streak"),
                 symbolName: "flame.fill",
                 color: SlangColor.accent
             )
             StatTile(
-                value: String(localized: "profile.stat.auraPlaceholder", defaultValue: "--"),
+                value: auraProfile.map { "\($0.totalPoints)" }
+                    ?? String(localized: "profile.stat.auraPlaceholder", defaultValue: "--"),
                 label: String(localized: "profile.stat.aura", defaultValue: "Aura Points"),
                 symbolName: "sparkles",
                 color: SlangColor.secondary
