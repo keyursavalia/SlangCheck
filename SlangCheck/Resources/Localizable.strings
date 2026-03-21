@@ -129,6 +129,13 @@
 "error.repository.deleteFailed" = "Could not delete.";
 "error.repository.termNotFound" = "Term not found.";
 
+// MARK: - Aura Errors
+"error.aura.fetchFailed" = "Could not load Aura data.";
+"error.aura.saveFailed" = "Could not save Aura data.";
+"error.aura.deleteFailed" = "Could not delete Aura data.";
+"error.sync.unauthenticated" = "Sign in to sync your Aura Points.";
+"error.sync.failed" = "Sync failed. Your progress is saved locally.";
+
 // MARK: - Aura Tiers
 "aura.tier.unc" = "Unc";
 "aura.tier.lurk" = "Lurk";

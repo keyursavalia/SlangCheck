@@ -18,6 +18,12 @@ public struct AppEnvironment {
     /// The data access layer for slang terms and the user's lexicon.
     public let slangTermRepository: any SlangTermRepository
 
+    /// The data access layer for the Aura Economy (local cache).
+    public let auraRepository: any AuraRepository
+
+    /// The use case that saves an `AuraProfile` locally and syncs it to Firestore.
+    public let syncAuraProfileUseCase: SyncAuraProfileUseCase
+
     /// The CoreData persistence stack. Needed by ViewModels that spawn their own FRC.
     public let persistence: PersistenceController
 
@@ -28,25 +34,46 @@ public struct AppEnvironment {
 
     public init(
         slangTermRepository: any SlangTermRepository,
+        auraRepository: any AuraRepository,
+        syncAuraProfileUseCase: SyncAuraProfileUseCase,
         persistence: PersistenceController,
         hapticService: any HapticServiceProtocol
     ) {
-        self.slangTermRepository = slangTermRepository
-        self.persistence         = persistence
-        self.hapticService       = hapticService
+        self.slangTermRepository    = slangTermRepository
+        self.auraRepository         = auraRepository
+        self.syncAuraProfileUseCase = syncAuraProfileUseCase
+        self.persistence            = persistence
+        self.hapticService          = hapticService
     }
 
     // MARK: Factory — Production
 
     /// Builds the production dependency graph.
     public static func production() -> AppEnvironment {
-        let persistence = PersistenceController()
-        let repository  = CoreDataSlangTermRepository(persistence: persistence)
-        let haptics     = HapticService()
+        let persistence  = PersistenceController()
+        let slangRepo    = CoreDataSlangTermRepository(persistence: persistence)
+        let auraRepo     = CoreDataAuraRepository(persistence: persistence)
+        let haptics      = HapticService()
+
+        // Use FirebaseAuraSyncService when the Firebase SDK is present (added via SPM).
+        // Falls back to NoOpAuraSyncService until Firebase is configured.
+        #if canImport(FirebaseFirestore) && canImport(FirebaseAuth)
+        let syncService: any AuraSyncService = FirebaseAuraSyncService()
+        #else
+        let syncService: any AuraSyncService = NoOpAuraSyncService()
+        #endif
+
+        let syncUseCase = SyncAuraProfileUseCase(
+            auraRepository: auraRepo,
+            syncService:    syncService
+        )
+
         return AppEnvironment(
-            slangTermRepository: repository,
-            persistence:         persistence,
-            hapticService:       haptics
+            slangTermRepository:    slangRepo,
+            auraRepository:         auraRepo,
+            syncAuraProfileUseCase: syncUseCase,
+            persistence:            persistence,
+            hapticService:          haptics
         )
     }
 
@@ -55,12 +82,19 @@ public struct AppEnvironment {
     /// Builds an in-memory environment suitable for SwiftUI Previews and unit tests.
     public static func preview() -> AppEnvironment {
         let persistence = PersistenceController(inMemory: true)
-        let repository  = CoreDataSlangTermRepository(persistence: persistence)
+        let slangRepo   = CoreDataSlangTermRepository(persistence: persistence)
+        let auraRepo    = CoreDataAuraRepository(persistence: persistence)
         let haptics     = HapticService()
+        let syncUseCase = SyncAuraProfileUseCase(
+            auraRepository: auraRepo,
+            syncService:    NoOpAuraSyncService()
+        )
         return AppEnvironment(
-            slangTermRepository: repository,
-            persistence:         persistence,
-            hapticService:       haptics
+            slangTermRepository:    slangRepo,
+            auraRepository:         auraRepo,
+            syncAuraProfileUseCase: syncUseCase,
+            persistence:            persistence,
+            hapticService:          haptics
         )
     }
 }
