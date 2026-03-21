@@ -116,10 +116,45 @@
 "translator.comingSoon.title" = "Translator Coming Soon";
 "translator.comingSoon.message" = "The bi-directional GenZ \u2194 Standard English translator arrives in the next update.";
 
-// MARK: - Quizzes Placeholder
+// MARK: - Quizzes
 "quizzes.title" = "Quizzes";
 "quizzes.comingSoon.title" = "Quizzes & Aura System Coming Soon";
 "quizzes.comingSoon.message" = "Earn Aura Points, climb the leaderboard, and prove your slang mastery. Coming in the Quizzes update.";
+
+// MARK: - Quiz Active
+"quiz.questionOf %d %d" = "Question %d of %d";
+"quiz.hint" = "Hint";
+"quiz.hint.used" = "Hint Used";
+"quiz.hint.accessibility" = "Use hint to eliminate one wrong answer";
+"quiz.hint.used.accessibility" = "Hint already used for this question";
+"quiz.next" = "Next";
+"quiz.finish" = "See Results";
+"quiz.badge.definitionPick" = "Definition";
+"quiz.badge.termPick" = "Term";
+"quiz.badge.fillInBlank" = "Fill in the Blank";
+"quiz.definitionPick.stem %@" = "What does \u201C%@\u201D mean?";
+"quiz.termPick.stem %@" = "Which term means: \u201C%@\u201D?";
+"quiz.error.notEnoughTerms" = "Not enough terms to generate a quiz. Try again later.";
+
+// MARK: - Quiz Result
+"quizResult.title" = "Session Complete";
+"quizResult.auraEarned %d" = "+%d Aura";
+"quizResult.accuracy %d%%" = "%d%% Accuracy";
+"quizResult.correct %d %d" = "%d/%d Correct";
+"quizResult.breakdown.base" = "Base Score";
+"quizResult.breakdown.hints" = "Hint Penalty";
+"quizResult.breakdown.time" = "Time Penalty";
+"quizResult.breakdown.total" = "Total Earned";
+"quizResult.playAgain" = "Play Again";
+"quizResult.done" = "Done";
+
+// MARK: - Aura Profile (Quizzes tab)
+"aura.profile.points %d" = "%d pts";
+"aura.profile.streak %d" = "%d day streak";
+"aura.profile.nextTier %d" = "%d pts to next tier";
+"aura.profile.topTier" = "You\u2019ve reached the top!";
+"aura.profile.startQuiz" = "Start Quiz";
+"aura.profile.noHistory" = "Complete a quiz to earn Aura Points!";
 
 // MARK: - Errors
 "error.repository.seedNotFound" = "The slang dictionary seed file could not be found.";

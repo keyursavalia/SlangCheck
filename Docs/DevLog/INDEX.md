@@ -1,8 +1,8 @@
 # SlangCheck — Development Log Index
 
-**Last updated:** 2026-03-21, Iteration 3 Step 3.3 complete
+**Last updated:** 2026-03-21, Iteration 3 Step 3.4 complete
 **Current iteration:** Iteration 3 — The Quizzes Phase
-**Current step:** Step 3.4 — Quiz Flow UI
+**Current step:** Step 3.5 — Aura Cards (Social Sharing)
 **Overall status:** Iteration 3 In Progress
 
 ---
@@ -13,7 +13,7 @@
 |---|---|---|---|---|
 | 1 | The Learn Phase | ✅ Complete | 9/9 | 9 |
 | 2 | The Translator Phase | ✅ Complete | 4/4 | 4 |
-| 3 | The Quizzes Phase | 🔄 In Progress | 3/6 | 6 |
+| 3 | The Quizzes Phase | 🔄 In Progress | 4/6 | 6 |
 | 4 | The Daily Crossword Phase | ⏳ Not Started | 0/7 | 7 |
 
 ---
@@ -52,7 +52,7 @@
 | 3.1 | Aura System Models | ✅ Complete |
 | 3.2 | Scoring Formula | ✅ Complete |
 | 3.3 | Persistence & Sync | ✅ Complete |
-| 3.4 | Quiz Flow UI | ⏳ Not Started |
+| 3.4 | Quiz Flow UI | ✅ Complete |
 | 3.5 | Aura Cards (Social Sharing) | ⏳ Not Started |
 | 3.6 | Testing & Verification | ⏳ Not Started |
 
@@ -62,6 +62,7 @@
 
 | Date | Step | Summary |
 |---|---|---|
+| 2026-03-21 | Step 3.4 | Quiz Flow UI. GenerateQuizUseCase (random sampling + distractor generation for all 3 question types), QuizViewModel (@Observable @MainActor, idle→loading→active→result state machine, hint/eliminate mechanic, applyResult syncs profile), QuizView (ShakeEffect wrong, green pulse correct, hint button, progress bar, slide-in question transition), QuizQuestionCard (glassmorphic, 3 question stems), QuizChoiceButton (5 states), QuizResultView (count-up animation, breakdown panel, tier progress bar), AuraProfileView (tier badge + progress), QuizzesView (root tab, fullScreenCover flow). ProfileView updated with live Aura data. MainTabView wired. ShakeEffect added to Effects.swift. |
 | 2026-03-21 | Step 3.3 | Persistence & Sync. AuraRepository protocol + AuraRepositoryError, AuraSyncService protocol + AuraSyncError (server-authoritative Q-003), CoreDataAuraRepository actor (upsert profile, append-only quiz results), CDAuraProfile + CDQuizResult managed objects, FirebaseAuraSyncService (behind #if canImport guard), NoOpAuraSyncService fallback, SyncAuraProfileUseCase (local-first + detached background sync), AppEnvironment wired with auraRepository + syncAuraProfileUseCase. SyncAuraProfileUseCaseTests: 11 cases. |
 | 2026-03-21 | Step 3.2 | Scoring Formula. AuraScoringEngine (S = C×100/(1+H) - T×2, integer arithmetic, clamped to 0), ScoringInput, ScoringBreakdown, QuizResult model. AuraScoringEngineTests: 35 cases covering zero hints, max hints, zero time, large time, clamping, combined penalties, breakdown, and factory. |
 | 2026-03-21 | Step 3.1 | Aura System Models. AuraTier (4 tiers, point ranges, progress, factory), AuraProfile (immutable snapshot, mutation helpers, promotion detection), QuizQuestion + QuizSession (3 question types, allChoices, correctAnswer, sentenceWithBlank). 3 model files + 3 test files. |

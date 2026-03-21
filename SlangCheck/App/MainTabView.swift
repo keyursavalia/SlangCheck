@@ -57,8 +57,8 @@ struct MainTabView: View {
                 }
                 .tag(AppConstants.TabIndex.translator)
 
-            // MARK: Quizzes (Coming Soon)
-            QuizzesPlaceholderView()
+            // MARK: Quizzes
+            QuizzesView()
                 .tabItem {
                     Label(
                         String(localized: "tab.quizzes", defaultValue: "Quizzes"),
