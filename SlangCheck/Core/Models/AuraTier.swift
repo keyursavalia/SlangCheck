@@ -79,16 +79,16 @@ public enum AuraTier: String, Codable, CaseIterable, Identifiable, Sendable, Com
     ///
     /// Always returns `1.0` for the top tier (`rizzler`).
     public func progress(for totalPoints: Int) -> Double {
-        guard let max = maximumPoints else { return 1.0 }
-        let span     = Double(max - minimumPoints)
+        guard let upperBound = maximumPoints else { return 1.0 }
+        let span     = Double(upperBound - minimumPoints)
         let position = Double(totalPoints - minimumPoints)
-        return min(max(position / span, 0.0), 1.0)
+        return Swift.min(Swift.max(position / span, 0.0), 1.0)
     }
 
     /// Points remaining until the next tier, or `nil` if already at the top.
     public func pointsToNextTier(from totalPoints: Int) -> Int? {
-        guard let max = maximumPoints else { return nil }
-        return max(max - totalPoints, 0)
+        guard let upperBound = maximumPoints else { return nil }
+        return Swift.max(upperBound - totalPoints, 0)
     }
 
     // MARK: Factory
