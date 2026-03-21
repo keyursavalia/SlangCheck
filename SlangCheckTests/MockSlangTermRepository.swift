@@ -155,6 +155,34 @@ final class MockSlangTermRepository: SlangTermRepository, @unchecked Sendable {
                 addedDate: Date(),
                 isBrainrot: false,
                 isEmojiTerm: false
+            ),
+            SlangTerm(
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000006")!,
+                term: "Salty",
+                definition: "Being bitter, upset, or resentful over something minor.",
+                standardEnglish: "Bitter / Upset",
+                exampleSentence: "Why are you so salty about losing one game?",
+                category: .foundationalDescriptor,
+                origin: "Internet slang",
+                usageFrequency: .high,
+                generationTags: [.genZ],
+                addedDate: Date(),
+                isBrainrot: false,
+                isEmojiTerm: false
+            ),
+            SlangTerm(
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000007")!,
+                term: "Cap",
+                definition: "A lie or exaggeration.",
+                standardEnglish: "Lie / Falsehood",
+                exampleSentence: "That's cap — there's no way that happened.",
+                category: .foundationalDescriptor,
+                origin: "AAVE",
+                usageFrequency: .high,
+                generationTags: [.genZ],
+                addedDate: Date(),
+                isBrainrot: false,
+                isEmojiTerm: false
             )
         ]
     }

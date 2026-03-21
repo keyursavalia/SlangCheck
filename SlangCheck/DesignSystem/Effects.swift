@@ -113,6 +113,31 @@ struct ReduceMotionAware<T: Equatable>: ViewModifier {
     }
 }
 
+// MARK: - Shake Effect (GeometryEffect)
+
+/// Applies a horizontal shake animation. Drive with a Bool state value:
+/// set to `true`, wait for the animation to play, then reset to `false`.
+///
+/// Usage:
+/// ```swift
+/// someView.modifier(ShakeEffect(trigger: $shakeTrigger))
+/// ```
+struct ShakeEffect: GeometryEffect {
+    /// The amount to animate. Animate from 0 → 1 to produce the shake.
+    var amount: CGFloat = 10
+    var shakesPerUnit: CGFloat = 3
+    var animatableData: CGFloat
+
+    init(trigger: CGFloat) {
+        self.animatableData = trigger
+    }
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        let translation = amount * sin(animatableData * .pi * shakesPerUnit)
+        return ProjectionTransform(CGAffineTransform(translationX: translation, y: 0))
+    }
+}
+
 // MARK: - View Extension Convenience API
 
 public extension View {
