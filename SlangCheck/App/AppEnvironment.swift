@@ -24,6 +24,12 @@ public struct AppEnvironment {
     /// The use case that saves an `AuraProfile` locally and syncs it to Firestore.
     public let syncAuraProfileUseCase: SyncAuraProfileUseCase
 
+        /// Authentication service (Firebase Auth in production, NoOp in previews/tests).
+    public let authService: any AuthenticationService
+
+    /// Firestore-backed user profile repository (Firebase in production, NoOp in previews/tests).
+    public let userProfileRepository: any UserProfileRepository
+
     /// Daily crossword puzzle repository. Uses AI generation when available; falls back
     /// to `SampleCrosswordRepository` automatically (see `AIGeneratedCrosswordRepository`).
     public let crosswordRepository: any CrosswordRepository
@@ -46,20 +52,24 @@ public struct AppEnvironment {
         slangTermRepository:    any SlangTermRepository,
         auraRepository:         any AuraRepository,
         syncAuraProfileUseCase: SyncAuraProfileUseCase,
+        authService:            any AuthenticationService,
+        userProfileRepository:  any UserProfileRepository,
         crosswordRepository:    any CrosswordRepository,
         persistence:            PersistenceController,
         hapticService:          any HapticServiceProtocol,
         aiTranslationService:   any AITranslationService,
         aiQuizService:          (any AIQuizGenerationService)?
     ) {
-        self.slangTermRepository    = slangTermRepository
-        self.auraRepository         = auraRepository
+        self.slangTermRepository   = slangTermRepository
+        self.auraRepository        = auraRepository
         self.syncAuraProfileUseCase = syncAuraProfileUseCase
-        self.crosswordRepository    = crosswordRepository
-        self.persistence            = persistence
-        self.hapticService          = hapticService
-        self.aiTranslationService   = aiTranslationService
-        self.aiQuizService          = aiQuizService
+        self.authService           = authService
+        self.userProfileRepository = userProfileRepository
+        self.crosswordRepository   = crosswordRepository
+        self.persistence           = persistence
+        self.hapticService         = hapticService
+        self.aiTranslationService  = aiTranslationService
+        self.aiQuizService         = aiQuizService
     }
 
     // MARK: Factory — Production
@@ -74,12 +84,15 @@ public struct AppEnvironment {
         let auraRepo     = UserDefaultsAuraRepository()
         let haptics      = HapticService()
 
-        // Use FirebaseAuraSyncService when the Firebase SDK is present (added via SPM).
-        // Falls back to NoOpAuraSyncService until Firebase is configured.
-        #if canImport(FirebaseFirestore) && canImport(FirebaseAuth)
-        let syncService: any AuraSyncService = FirebaseAuraSyncService()
+        // Select Firebase-backed or no-op services depending on whether the SDK is linked.
+        #if canImport(FirebaseFirestore) && canImport(FirebaseAuth) && canImport(FirebaseStorage)
+        let syncService:    any AuraSyncService         = FirebaseAuraSyncService()
+        let authSvc:        any AuthenticationService   = FirebaseAuthenticationService()
+        let profileRepo:    any UserProfileRepository   = FirebaseUserProfileRepository()
         #else
-        let syncService: any AuraSyncService = NoOpAuraSyncService()
+        let syncService:    any AuraSyncService         = NoOpAuraSyncService()
+        let authSvc:        any AuthenticationService   = NoOpAuthenticationService()
+        let profileRepo:    any UserProfileRepository   = NoOpUserProfileRepository()
         #endif
 
         let syncUseCase = SyncAuraProfileUseCase(
@@ -101,6 +114,8 @@ public struct AppEnvironment {
             slangTermRepository:    slangRepo,
             auraRepository:         auraRepo,
             syncAuraProfileUseCase: syncUseCase,
+            authService:            authSvc,
+            userProfileRepository:  profileRepo,
             crosswordRepository:    crosswordRepo,
             persistence:            persistence,
             hapticService:          haptics,
@@ -128,6 +143,8 @@ public struct AppEnvironment {
             slangTermRepository:    slangRepo,
             auraRepository:         auraRepo,
             syncAuraProfileUseCase: syncUseCase,
+            authService:            NoOpAuthenticationService(),
+            userProfileRepository:  NoOpUserProfileRepository(),
             crosswordRepository:    crosswordRepo,
             persistence:            persistence,
             hapticService:          haptics,

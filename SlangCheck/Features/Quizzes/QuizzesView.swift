@@ -13,10 +13,16 @@ import SwiftUI
 struct QuizzesView: View {
 
     @Environment(\.appEnvironment) private var env
+    @Environment(AuthState.self) private var authState
     @State private var viewModel: QuizViewModel? = nil
-    @State private var showingQuiz = false
-    @State private var showingCrossword = false
+    @State private var showingQuiz       = false
+    @State private var showingCrossword  = false
+    @State private var showingAuthGate   = false
+    @State private var pendingGame: PendingGame? = nil
     @State private var auraCardImage: AuraCardImage? = nil
+
+    /// Which game the user tried to launch before auth was required.
+    private enum PendingGame { case quiz, crossword }
 
     var body: some View {
         NavigationStack {
@@ -46,6 +52,12 @@ struct QuizzesView: View {
         }
         .fullScreenCover(isPresented: $showingCrossword) {
             CrosswordView()
+        }
+        .sheet(isPresented: $showingAuthGate) {
+            AuthGateView {
+                // Auth succeeded — now launch whatever game was requested.
+                launchPendingGame()
+            }
         }
     }
 
@@ -112,12 +124,7 @@ struct QuizzesView: View {
                                  defaultValue: "Test your slang knowledge"),
                 isLoading: viewModel?.phase == .loading
             ) {
-                Task {
-                    await viewModel?.startQuiz()
-                    if viewModel?.phase == .active {
-                        showingQuiz = true
-                    }
-                }
+                requireAuth(for: .quiz)
             }
 
             GameModeCard(
@@ -128,8 +135,41 @@ struct QuizzesView: View {
                                  defaultValue: "A new puzzle every morning at 7 AM"),
                 isLoading: false
             ) {
-                showingCrossword = true
+                requireAuth(for: .crossword)
             }
+        }
+    }
+
+    // MARK: - Auth-Gated Launch
+
+    /// If the user is authenticated, launch the game immediately.
+    /// Otherwise, store the intent and present the auth gate sheet.
+    private func requireAuth(for game: PendingGame) {
+        if authState.isAuthenticated {
+            launch(game)
+        } else {
+            pendingGame = game
+            showingAuthGate = true
+        }
+    }
+
+    private func launchPendingGame() {
+        guard let game = pendingGame else { return }
+        pendingGame = nil
+        launch(game)
+    }
+
+    private func launch(_ game: PendingGame) {
+        switch game {
+        case .quiz:
+            Task {
+                await viewModel?.startQuiz()
+                if viewModel?.phase == .active {
+                    showingQuiz = true
+                }
+            }
+        case .crossword:
+            showingCrossword = true
         }
     }
 
@@ -325,4 +365,8 @@ private struct GameModeCard: View {
 #Preview("QuizzesView") {
     QuizzesView()
         .environment(\.appEnvironment, .preview())
+        .environment(AuthState(
+            authService:       NoOpAuthenticationService(),
+            profileRepository: NoOpUserProfileRepository()
+        ))
 }

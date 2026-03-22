@@ -162,11 +162,8 @@ private struct MoreMenuView: View {
 #Preview("MainTabView") {
     MainTabView()
         .environment(\.appEnvironment, .preview())
-}
-
-// MARK: - Preview
-
-#Preview("MainTabView") {
-    MainTabView()
-        .environment(\.appEnvironment, .preview())
+        .environment(AuthState(
+            authService:       NoOpAuthenticationService(),
+            profileRepository: NoOpUserProfileRepository()
+        ))
 }

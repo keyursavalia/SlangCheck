@@ -10,10 +10,12 @@ import SwiftUI
 struct ProfileView: View {
 
     @Environment(\.appEnvironment) private var env
+    @Environment(AuthState.self) private var authState
     @AppStorage(AppConstants.userSegmentKey) private var userSegmentRaw = UserSegment.languageEnthusiast.rawValue
     @State private var lexiconCount: Int = 0
     @State private var auraProfile: AuraProfile? = nil
-    @State private var showingLexicon = false
+    @State private var showingLexicon  = false
+    @State private var showingSettings = false
 
     private var userSegment: UserSegment {
         UserSegment(rawValue: userSegmentRaw) ?? .languageEnthusiast
@@ -42,30 +44,50 @@ struct ProfileView: View {
         }) {
             LexiconView()
         }
+        .sheet(isPresented: $showingSettings) {
+            ProfileSettingsView()
+        }
     }
 
     // MARK: - Profile Header
 
     private var profileHeader: some View {
         VStack(spacing: SlangSpacing.md) {
-            Circle()
-                .fill(SlangColor.primary.opacity(0.15))
-                .frame(width: 80, height: 80)
-                .overlay(
-                    Image(systemName: userSegment.symbolName)
-                        .font(.system(size: 36, weight: .light))
-                        .foregroundStyle(SlangColor.primary)
-                        .accessibilityHidden(true)
-                )
+            // Avatar
+            ZStack {
+                Circle()
+                    .fill(SlangColor.primary.opacity(0.12))
+                    .frame(width: 88, height: 88)
+
+                if let url = authState.currentProfile?.photoURL {
+                    AsyncImage(url: url) { phase in
+                        if case .success(let image) = phase {
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 88, height: 88)
+                                .clipShape(Circle())
+                        } else {
+                            avatarFallback
+                        }
+                    }
+                } else {
+                    avatarFallback
+                }
+            }
+            .overlay(Circle().strokeBorder(SlangColor.primary.opacity(0.2), lineWidth: 2))
 
             VStack(spacing: SlangSpacing.xs) {
-                Text(userSegment.displayName)
+                Text(authState.currentProfile?.displayName
+                     ?? String(localized: "profile.guest", defaultValue: "Guest User"))
                     .font(.slang(.heading))
                     .foregroundStyle(.primary)
 
-                Text(String(localized: "profile.guest", defaultValue: "Guest User"))
-                    .font(.slang(.caption))
-                    .foregroundStyle(.secondary)
+                if let username = authState.currentProfile?.username {
+                    Text("@\(username)")
+                        .font(.slang(.caption))
+                        .foregroundStyle(.secondary)
+                }
             }
 
             if let profile = auraProfile {
@@ -75,19 +97,17 @@ struct ProfileView: View {
                     .padding(.horizontal, SlangSpacing.md)
                     .padding(.vertical, SlangSpacing.xs)
                     .background(Capsule().fill(SlangColor.primary.opacity(0.12)))
-            } else {
-                Text(String(localized: "profile.auraComingSoon",
-                            defaultValue: "Aura System — Coming in the Quizzes Update"))
-                    .font(.slang(.caption))
-                    .foregroundStyle(SlangColor.primary.opacity(0.7))
-                    .padding(.horizontal, SlangSpacing.md)
-                    .padding(.vertical, SlangSpacing.xs)
-                    .background(Capsule().fill(SlangColor.primary.opacity(0.10)))
             }
         }
         .padding(SlangSpacing.md)
         .frame(maxWidth: .infinity)
         .glassCard()
+    }
+
+    private var avatarFallback: some View {
+        Image(systemName: "person.fill")
+            .font(.system(size: 36, weight: .light))
+            .foregroundStyle(SlangColor.primary.opacity(0.6))
     }
 
     // MARK: - Stats Section
@@ -139,7 +159,7 @@ struct ProfileView: View {
                 symbolName: "gearshape.fill",
                 title: String(localized: "profile.nav.settings", defaultValue: "Settings"),
                 badge: nil,
-                action: {}
+                action: { showingSettings = true }
             )
         }
         .background(SlangColor.surface)
@@ -238,4 +258,8 @@ private struct ProfileNavRow: View {
 #Preview("ProfileView") {
     ProfileView()
         .environment(\.appEnvironment, .preview())
+        .environment(AuthState(
+            authService:       NoOpAuthenticationService(),
+            profileRepository: NoOpUserProfileRepository()
+        ))
 }

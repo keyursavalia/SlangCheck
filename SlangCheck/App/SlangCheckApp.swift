@@ -17,10 +17,20 @@ struct SlangCheckApp: App {
     /// The root dependency container, built once at launch.
     private let environment: AppEnvironment
 
+    /// Global authentication state. Restored from the persisted Firebase session on launch.
+    @State private var authState: AuthState
+
     // MARK: - Initialization
 
     init() {
-        environment = AppEnvironment.production()
+        let env = AppEnvironment.production()
+        environment = env
+        // AuthState is created here so it exists before the first view body evaluation.
+        // `reload()` is called in the root `.task` to restore any persisted session.
+        _authState = State(initialValue: AuthState(
+            authService:       env.authService,
+            profileRepository: env.userProfileRepository
+        ))
         Logger.app.info("SlangCheckApp initialized. Environment: production.")
     }
 
@@ -30,8 +40,11 @@ struct SlangCheckApp: App {
         WindowGroup {
             AppRootView()
                 .environment(\.appEnvironment, environment)
+                .environment(authState)
                 .task {
                     await seedDatabaseIfNeeded()
+                    // Restore persisted Firebase session (if any) before the first render.
+                    await authState.reload()
                 }
         }
     }

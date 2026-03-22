@@ -172,6 +172,63 @@
 "aura.profile.startQuiz" = "Start Quiz";
 "aura.profile.noHistory" = "Complete a quiz to earn Aura Points!";
 
+// MARK: - Authentication
+"auth.signIn.title" = "Welcome Back";
+"auth.signUp.title" = "Create Account";
+"auth.gate.tagline" = "Create a free account to play Quiz & Daily Crossword";
+"auth.cancel" = "Cancel";
+"auth.or" = "or";
+"auth.toggle.signIn" = "Sign In";
+"auth.toggle.signUp" = "Sign Up";
+"auth.apple.signIn" = "Sign in with Apple";
+"auth.apple.signUp" = "Sign up with Apple";
+"auth.email.placeholder" = "Email";
+"auth.password.placeholder" = "Password";
+"auth.confirmPassword.placeholder" = "Confirm Password";
+"auth.displayName.placeholder" = "Display Name";
+"auth.submit.signIn" = "Sign In";
+"auth.submit.signUp" = "Create Account";
+"auth.switchToSignUp" = "Don\u2019t have an account? Sign Up";
+"auth.switchToSignIn" = "Already have an account? Sign In";
+
+/* Auth Errors */
+"auth.error.invalidEmail" = "Please enter a valid email address.";
+"auth.error.weakPassword" = "Password must be at least 6 characters.";
+"auth.error.emailInUse" = "An account with this email already exists.";
+"auth.error.wrongPassword" = "Incorrect password. Please try again.";
+"auth.error.userNotFound" = "No account found with this email.";
+"auth.error.unauthenticated" = "Please sign in to continue.";
+"auth.error.network" = "Network error. Check your connection.";
+"auth.error.appleGeneric" = "Apple sign-in failed. Please try again.";
+"auth.error.emptyFields" = "Please enter your email and password.";
+"auth.error.emptyEmail" = "Please enter your email.";
+"auth.error.passwordMismatch" = "Passwords do not match.";
+
+// MARK: - Profile Settings
+"settings.title" = "Settings";
+"settings.done" = "Done";
+"settings.section.account" = "Account";
+"settings.section.profile" = "Profile";
+"settings.section.danger" = "Danger Zone";
+"settings.username" = "Username";
+"settings.email" = "Email";
+"settings.displayName" = "Display Name";
+"settings.changePhoto" = "Change Photo";
+"settings.save" = "Save";
+"settings.signOut" = "Sign Out";
+"settings.signOut.title" = "Sign Out?";
+"settings.signOut.message" = "You\u2019ll need to sign back in to play Quiz & Daily Crossword.";
+"settings.signOut.confirm" = "Sign Out";
+"settings.signOut.cancel" = "Cancel";
+"settings.deleteAccount" = "Delete Account";
+"settings.deleteAccount.title" = "Delete Account?";
+"settings.deleteAccount.message" = "This permanently deletes your account and all data. This cannot be undone.";
+"settings.deleteAccount.confirm" = "Delete";
+"settings.deleteAccount.cancel" = "Cancel";
+"settings.error.title" = "Something went wrong";
+"settings.error.emptyName" = "Display name cannot be empty.";
+"settings.error.photoCompress" = "Could not process the selected photo.";
+
 // MARK: - Errors
 "error.repository.seedNotFound" = "The slang dictionary seed file could not be found.";
 "error.repository.seedCorrupted" = "The slang dictionary data is corrupted.";
