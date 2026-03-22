@@ -48,4 +48,7 @@ extension Logger {
     
     /// Logs Quiz feature events (session generation, scoring, Aura sync).
     static let quizzes = Logger(subsystem: subsystem, category: "Quizzes")
+
+    /// Logs Crossword feature events (puzzle load, letter entry, submission, scoring).
+    static let crossword = Logger(subsystem: subsystem, category: "Crossword")
 }

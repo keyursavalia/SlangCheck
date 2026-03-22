@@ -31,7 +31,10 @@ struct TranslatorView: View {
         }
         .task {
             guard viewModel == nil else { return }
-            let service = LocalTranslationService(repository: env.slangTermRepository)
+            let service = LocalTranslationService(
+                repository: env.slangTermRepository,
+                aiService:  env.aiTranslationService
+            )
             viewModel = TranslatorViewModel(
                 translationService: service,
                 hapticService: env.hapticService
@@ -74,20 +77,13 @@ struct TranslatorContentView: View {
                 .padding(.bottom, SlangSpacing.xl)
             }
             .background(SlangColor.background)
-            // Dismiss keyboard when tapping outside the TextEditor.
+            // Dismiss keyboard by tapping outside the TextEditor or by swiping the
+            // scroll view down. The explicit "Done" toolbar button has been removed
+            // — interactive dismiss is more natural and less cluttered.
+            .scrollDismissesKeyboard(.interactively)
             .onTapGesture { isInputFocused = false }
             .navigationTitle(String(localized: "tab.translator", defaultValue: "Translator"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button(String(localized: "translator.keyboard.done", defaultValue: "Done")) {
-                        isInputFocused = false
-                    }
-                    .fontWeight(.semibold)
-                    .foregroundStyle(SlangColor.primary)
-                }
-            }
         }
     }
 

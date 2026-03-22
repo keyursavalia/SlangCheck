@@ -30,9 +30,14 @@ public enum GenerateQuizError: LocalizedError, Sendable {
 /// - `.termPick`       — given the definition, choose the correct term.
 /// - `.fillInBlank`    — complete the example sentence with the correct term.
 ///
-/// Distractors are sampled from other terms in the dictionary and are unique
-/// per question. Choices inside each `QuizQuestion` are in deterministic order
-/// (`allChoices`); the ViewModel shuffles them before display.
+/// When an ``AIQuizGenerationService`` is provided, each question is enhanced
+/// with a freshly generated example sentence and AI-authored definition distractors
+/// (for `.definitionPick` only). Term-pool distractors remain glossary-sourced for
+/// `.termPick` and `.fillInBlank` — real slang exposure is more pedagogically useful
+/// than AI-invented fake term names.
+///
+/// Choices inside each `QuizQuestion` are in deterministic order (`allChoices`);
+/// the ViewModel shuffles them before display.
 public struct GenerateQuizUseCase: Sendable {
 
     // MARK: - Configuration
@@ -47,15 +52,24 @@ public struct GenerateQuizUseCase: Sendable {
 
     private let repository: any SlangTermRepository
 
+    /// Optional Apple Intelligence service. `nil` on iOS < 26 or when AI is disabled.
+    private let aiService: (any AIQuizGenerationService)?
+
     // MARK: - Initialization
 
-    public init(repository: any SlangTermRepository) {
+    /// - Parameters:
+    ///   - repository: Slang term data source.
+    ///   - aiService:  Apple Intelligence quiz enhancer. Pass `nil` for static-only generation.
+    public init(repository: any SlangTermRepository, aiService: (any AIQuizGenerationService)? = nil) {
         self.repository = repository
+        self.aiService  = aiService
     }
 
     // MARK: - Execute
 
     /// Generates and returns a `QuizSession` containing `questionCount` questions.
+    ///
+    /// When `aiService` is set, questions are built in parallel using `withTaskGroup`.
     ///
     /// - Parameter questionCount: Number of questions to generate. Clamped to the
     ///   dictionary size when the dictionary is smaller than the requested count.
@@ -73,8 +87,15 @@ public struct GenerateQuizUseCase: Sendable {
 
         let count    = Swift.min(questionCount, allTerms.count)
         let selected = Array(allTerms.shuffled().prefix(count))
-        let questions = selected.map { term in
-            makeQuestion(for: term, pool: allTerms)
+
+        // Build questions in parallel so AI calls don't run serially.
+        let questions = await withTaskGroup(of: QuizQuestion.self, returning: [QuizQuestion].self) { group in
+            for term in selected {
+                group.addTask { await makeQuestion(for: term, pool: allTerms) }
+            }
+            var results: [QuizQuestion] = []
+            for await q in group { results.append(q) }
+            return results
         }
 
         Logger.quizzes.debug("GenerateQuizUseCase: generated \(questions.count) questions.")
@@ -83,20 +104,27 @@ public struct GenerateQuizUseCase: Sendable {
 
     // MARK: - Private
 
-    private func makeQuestion(for term: SlangTerm, pool: [SlangTerm]) -> QuizQuestion {
+    private func makeQuestion(for term: SlangTerm, pool: [SlangTerm]) async -> QuizQuestion {
         let type = QuestionType.allCases.randomElement() ?? .definitionPick
 
-        // Pick 3 unique distractor terms that are not the current term.
+        // Pick 3 unique distractor terms that are not the current term (static pool).
         let distractorTerms = pool
             .filter { $0.id != term.id }
             .shuffled()
             .prefix(3)
 
+        // Attempt AI enhancement (fresh sentence + AI distractors for definitionPick).
+        let enhancement = await aiService?.enhance(term: term, allTerms: pool, questionType: type)
+
+        let exampleSentence = enhancement?.exampleSentence ?? term.exampleSentence
+
         let distractors: [String]
         switch type {
         case .definitionPick:
-            distractors = distractorTerms.map(\.definition)
+            // Prefer AI-generated wrong definitions; fall back to pool definitions.
+            distractors = enhancement?.definitionDistractors ?? distractorTerms.map(\.definition)
         case .termPick, .fillInBlank:
+            // Always use real glossary term names — AI-invented fake terms are less useful.
             distractors = distractorTerms.map(\.term)
         }
 
@@ -104,7 +132,7 @@ public struct GenerateQuizUseCase: Sendable {
             termID:            term.id,
             term:              term.term,
             correctDefinition: term.definition,
-            exampleSentence:   term.exampleSentence,
+            exampleSentence:   exampleSentence,
             distractors:       Array(distractors),
             type:              type
         )
