@@ -73,7 +73,7 @@ private struct SwiperContentView: View {
                 }
             }
             .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.showUndoButton)
-            .navigationTitle(String(localized: "swiper.title", defaultValue: "Swiper"))
+            .navigationTitle(String(localized: "swiper.title", defaultValue: "Learn"))
             .navigationBarTitleDisplayMode(.inline)
         }
         .onDisappear { viewModel.onDisappear() }

@@ -48,12 +48,18 @@ public enum AppConstants {
     // MARK: Tab Indices
 
     /// Stable numeric indices for tabs, used by deep-link and tab-state logic.
+    ///
+    /// Tab bar (4 slots): Learn → Translator → Quizzes → More.
+    /// Glossary and Profile are accessed via the More tab; Crossword is removed.
     public enum TabIndex {
         public static let swiper:     Int = 0
-        public static let glossary:   Int = 1
-        public static let translator: Int = 2
-        public static let quizzes:    Int = 3
-        public static let profile:    Int = 4
+        public static let translator: Int = 1
+        public static let quizzes:    Int = 2
+        public static let more:       Int = 3
+        // Legacy constants — features still exist but are not direct tabs.
+        public static let glossary:   Int = -1
+        public static let crossword:  Int = -2
+        public static let profile:    Int = -3
     }
 
     // MARK: UserDefaults Keys

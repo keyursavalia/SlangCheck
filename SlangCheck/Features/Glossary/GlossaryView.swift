@@ -48,13 +48,27 @@ private struct GlossaryContentView: View {
             ZStack(alignment: .trailing) {
                 ScrollViewReader { proxy in
                     ScrollView {
+                        // pinnedViews: .sectionHeaders keeps the alphabetical letter
+                        // headers (A, B, C…) stuck to the top as the user scrolls.
+                        // The search + category bar is placed via .safeAreaInset below
+                        // so it lives OUTSIDE the vertical ScrollView — this eliminates
+                        // the horizontal-vs-vertical gesture conflict that prevented
+                        // the CategoryFilterBar from scrolling.
                         LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
-                            headerSection
                             contentSection
                         }
                     }
                     .scrollDismissesKeyboard(.interactively)
                     .onAppear { scrollProxy = proxy }
+                    // Place search + category header outside the ScrollView's scroll area
+                    // so its own horizontal ScrollView receives gestures without conflict.
+                    .safeAreaInset(edge: .top, spacing: 0) {
+                        VStack(spacing: 0) {
+                            searchBar
+                            CategoryFilterBar(selectedCategory: $viewModel.selectedCategory)
+                        }
+                        .background(SlangColor.background)
+                    }
                 }
                 .padding(.trailing, 28)
 
@@ -67,30 +81,22 @@ private struct GlossaryContentView: View {
                         }
                     }
                     .padding(.trailing, SlangSpacing.xs)
+                    // Fill the ZStack height so GeometryReader spans the full screen —
+                    // letters are then distributed top-to-bottom (like iOS Contacts).
+                    .frame(maxHeight: .infinity)
                 }
             }
             .navigationTitle(String(localized: "glossary.title", defaultValue: "Glossary"))
-            .navigationBarTitleDisplayMode(.large)
+            // .inline keeps the title in the navigation bar at all times.
+            // .large would render the title as scroll content, causing it to scroll
+            // behind the fixed .safeAreaInset search+category header.
+            .navigationBarTitleDisplayMode(.inline)
             .background(SlangColor.background.ignoresSafeArea())
             .navigationDestination(for: SlangTerm.self) { term in
                 SlangTermDetailView(term: term, viewModel: viewModel)
             }
         }
         .onDisappear { viewModel.onDisappear() }
-    }
-
-    // MARK: - Header Section (pinned)
-
-    private var headerSection: some View {
-        Section {
-            EmptyView()
-        } header: {
-            VStack(spacing: 0) {
-                searchBar
-                CategoryFilterBar(selectedCategory: $viewModel.selectedCategory)
-            }
-            .background(SlangColor.background)
-        }
     }
 
     // MARK: - Search Bar
