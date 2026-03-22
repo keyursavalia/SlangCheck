@@ -13,6 +13,7 @@ import SwiftUI
 struct QuizView: View {
 
     @Bindable var viewModel: QuizViewModel
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Group {
@@ -24,10 +25,16 @@ struct QuizView: View {
                     result: result,
                     auraProfile: viewModel.auraProfile,
                     onPlayAgain: { await viewModel.restartQuiz() },
-                    onDone:      { viewModel.dismissResult() }
+                    onDone: {
+                        // Reset state then close the fullScreenCover.
+                        // Calling only dismissResult() leaves the cover open
+                        // showing the default-case spinner.
+                        viewModel.dismissResult()
+                        dismiss()
+                    }
                 )
             default:
-                // Loading or idle — covered by QuizzesView, should not appear here.
+                // Loading / idle — should not appear during an active quiz session.
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(SlangColor.background.ignoresSafeArea())

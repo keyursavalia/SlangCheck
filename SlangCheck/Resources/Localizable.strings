@@ -3,11 +3,18 @@
    Format: "key" = "value"; */
 
 // MARK: - Tab Bar
-"tab.swiper" = "Swiper";
+"tab.swiper" = "Learn";
 "tab.glossary" = "Glossary";
 "tab.translator" = "Translator";
-"tab.quizzes" = "Quizzes";
+"tab.quizzes" = "Games";
+"tab.crossword" = "Crossword";
 "tab.profile" = "Profile";
+"tab.more" = "More";
+
+/* More menu subtitles */
+"more.glossary.subtitle" = "Browse all Gen Z slang";
+"more.profile.subtitle" = "Your Aura rank & saved terms";
+"more.profile.savedCount" = "terms saved";
 
 // MARK: - Glossary
 "glossary.title" = "Glossary";
@@ -33,7 +40,7 @@
 "termDetail.removeFromLexicon" = "Remove from Lexicon";
 
 // MARK: - Swiper
-"swiper.title" = "Swiper";
+"swiper.title" = "Learn";
 "swiper.action.save" = "SAVE";
 "swiper.action.skip" = "SKIP";
 "swiper.card.tapToFlip" = "Tap to reveal definition";
@@ -116,10 +123,14 @@
 "translator.comingSoon.title" = "Translator Coming Soon";
 "translator.comingSoon.message" = "The bi-directional GenZ \u2194 Standard English translator arrives in the next update.";
 
-// MARK: - Quizzes
-"quizzes.title" = "Quizzes";
+// MARK: - Quizzes / Games
+"quizzes.title" = "Games";
 "quizzes.comingSoon.title" = "Quizzes & Aura System Coming Soon";
 "quizzes.comingSoon.message" = "Earn Aura Points, climb the leaderboard, and prove your slang mastery. Coming in the Quizzes update.";
+"games.quiz.title" = "Quiz";
+"games.quiz.subtitle" = "Test your slang knowledge";
+"games.crossword.title" = "Daily Crossword";
+"games.crossword.subtitle" = "A new puzzle every morning at 7 AM";
 
 // MARK: - Quiz Active
 "quiz.questionOf %d %d" = "Question %d of %d";
@@ -185,6 +196,57 @@
 "aura.tier.lurk.subtitle" = "Learning the lingo";
 "aura.tier.auraFarmer.subtitle" = "Grinding every day";
 "aura.tier.rizzler.subtitle" = "Unmatched rizz";
+
+// MARK: - Crossword
+"crossword.title" = "Daily Crossword";
+"crossword.loading" = "Loading today\u2019s puzzle\u2026";
+"crossword.retry" = "Try Again";
+"crossword.tapCell" = "Tap a cell to see its clue";
+"crossword.across" = "Across";
+"crossword.down" = "Down";
+"crossword.clueBar.hint" = "Tap to browse all clues";
+"crossword.reveal" = "Reveal";
+"crossword.reveal.accessibility" = "Reveal correct letter for selected cell";
+"crossword.submit" = "Submit";
+"crossword.submit.accessibility" = "Submit your answers";
+"crossword.key.delete" = "Delete letter";
+"crossword.key.reveal" = "Reveal";
+"crossword.key.reveal.accessibility" = "Reveal the correct letter for the selected cell";
+
+// MARK: - Crossword Result
+"crossword.result.title" = "Puzzle Complete";
+"crossword.result.perfectTitle" = "Perfect Solve!";
+"crossword.result.accuracy" = "Accuracy";
+"crossword.result.correct" = "Correct";
+"crossword.result.reveals" = "Reveals";
+"crossword.result.aura" = "Aura";
+"crossword.result.perfectBonus" = "Perfect Solve Bonus: 1.5\u00D7 multiplier applied";
+"crossword.result.totalAura" = "total Aura";
+
+/* Countdown to next puzzle */
+"crossword.countdown.title" = "Next Puzzle";
+"crossword.countdown.subtitle" = "New puzzle drops at 7:00 AM";
+"crossword.countdown.hrs" = "HRS";
+"crossword.countdown.min" = "MIN";
+"crossword.countdown.sec" = "SEC";
+
+"crossword.shareCard" = "Share My Result";
+"crossword.shareCard.preview" = "My Daily Crossword";
+"crossword.shareCard.accessibility" = "Share your crossword completion card";
+
+// MARK: - Crossword Errors
+"error.crossword.puzzleNotFound" = "Today\u2019s crossword is not available yet.";
+"error.crossword.fetchFailed" = "Could not load the crossword.";
+"error.crossword.saveFailed" = "Could not save your progress.";
+"error.crossword.keyUnavailable" = "Answers are not available yet. Check back after the reveal time.";
+"error.crossword.keyFetchFailed" = "Could not retrieve the answer key.";
+"error.answerKey.invalidData" = "The answer key data is malformed.";
+"error.answerKey.decryptionFailed" = "Could not decrypt the answer key.";
+"error.answerKey.decodingFailed" = "Could not read the answer key.";
+
+// MARK: - Notification
+"notification.crossword.title" = "Daily Crossword is Live!";
+"notification.crossword.body" = "Don\u2019t lose your Aura Farmer status! The daily crossword is ready.";
 
 // MARK: - Accessibility
 "accessibility.termRow.definition %@" = "Definition: %@";

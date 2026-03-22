@@ -29,7 +29,7 @@ final class TranslatorViewModelTests: XCTestCase {
     override func setUp() {
         super.setUp()
         repository = MockSlangTermRepository()
-        let service = LocalTranslationService(repository: repository)
+        let service = LocalTranslationService(repository: repository, aiService: NoOpAITranslationService())
         viewModel   = TranslatorViewModel(translationService: service, hapticService: MockHapticService())
     }
 
