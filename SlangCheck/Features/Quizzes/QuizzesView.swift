@@ -38,6 +38,11 @@ struct QuizzesView: View {
             .background(SlangColor.background.ignoresSafeArea())
             .navigationTitle(String(localized: "quizzes.title", defaultValue: "Games"))
             .navigationBarTitleDisplayMode(.large)
+            // Push CrosswordView onto this stack so the swipe-back gesture works.
+            // CrosswordView does NOT own its own NavigationStack.
+            .navigationDestination(isPresented: $showingCrossword) {
+                CrosswordView()
+            }
         }
         .task {
             guard viewModel == nil else { return }
@@ -49,9 +54,6 @@ struct QuizzesView: View {
             if let vm = viewModel {
                 QuizView(viewModel: vm)
             }
-        }
-        .fullScreenCover(isPresented: $showingCrossword) {
-            CrosswordView()
         }
         .sheet(isPresented: $showingAuthGate) {
             AuthGateView {
@@ -207,21 +209,35 @@ struct QuizzesView: View {
 // MARK: - CompactAuraBannerView
 
 /// A compact horizontal Aura summary shown at the top of the Games tab.
+/// Shows the user's profile photo (if available) in the leading circle; falls back to the tier icon.
 private struct CompactAuraBannerView: View {
 
     let profile: AuraProfile
+    @Environment(AuthState.self) private var authState
 
     var body: some View {
         HStack(spacing: SlangSpacing.md) {
-            // Tier badge circle
+            // Avatar / tier badge circle
             ZStack {
                 Circle()
                     .fill(tierColor.opacity(0.15))
                     .frame(width: 48, height: 48)
-                Image(systemName: tierSymbol)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(tierColor)
-                    .accessibilityHidden(true)
+
+                if let url = authState.currentProfile?.photoURL {
+                    AsyncImage(url: url) { phase in
+                        if case .success(let image) = phase {
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 48, height: 48)
+                                .clipShape(Circle())
+                        } else {
+                            tierIconView
+                        }
+                    }
+                } else {
+                    tierIconView
+                }
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -275,6 +291,13 @@ private struct CompactAuraBannerView: View {
         case .auraFarmer: return "flame.fill"
         case .rizzler:    return "crown.fill"
         }
+    }
+
+    private var tierIconView: some View {
+        Image(systemName: tierSymbol)
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundStyle(tierColor)
+            .accessibilityHidden(true)
     }
 }
 

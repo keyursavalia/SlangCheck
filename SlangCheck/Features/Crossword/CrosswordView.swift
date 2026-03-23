@@ -27,27 +27,28 @@ struct CrosswordView: View {
     // MARK: - Body
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if let vm = viewModel {
-                    switch vm.phase {
-                    case .loading, .submitting:
-                        loadingView
-                    case .error(let msg):
-                        errorView(msg)
-                    case .active:
-                        puzzleActiveView(vm: vm)
-                    case .completed(let result):
-                        CrosswordCompletionView(result: result, viewModel: vm)
-                    }
-                } else {
+        // No NavigationStack here — CrosswordView is pushed inside QuizzesView's
+        // NavigationStack via .navigationDestination(isPresented:). A nested stack
+        // would prevent the swipe-back gesture and produce a double navigation bar.
+        Group {
+            if let vm = viewModel {
+                switch vm.phase {
+                case .loading, .submitting:
                     loadingView
+                case .error(let msg):
+                    errorView(msg)
+                case .active:
+                    puzzleActiveView(vm: vm)
+                case .completed(let result):
+                    CrosswordCompletionView(result: result, viewModel: vm)
                 }
+            } else {
+                loadingView
             }
-            .navigationTitle(String(localized: "crossword.title", defaultValue: "Daily Crossword"))
-            .navigationBarTitleDisplayMode(.inline)
-            .background(SlangColor.background.ignoresSafeArea())
         }
+        .navigationTitle(String(localized: "crossword.title", defaultValue: "Daily Crossword"))
+        .navigationBarTitleDisplayMode(.inline)
+        .background(SlangColor.background.ignoresSafeArea())
         .task {
             let vm = makeViewModel()
             viewModel = vm
@@ -80,7 +81,15 @@ struct CrosswordView: View {
                 .padding(.vertical, SlangSpacing.md)
                 // Bottom padding so content isn't hidden under keyboard
                 .padding(.bottom, 320)
+                // Tapping empty/blocked space outside the grid dismisses the keyboard.
+                // Child views (grid cells, buttons) handle their own taps with higher priority.
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    vm.deselectCell()
+                }
             }
+            // Swipe-down on the scroll view dismisses the keyboard interactively.
+            .scrollDismissesKeyboard(.interactively)
 
             // Hidden TextField that drives the system keyboard.
             // Focused whenever a cell is selected.
@@ -139,26 +148,23 @@ struct CrosswordView: View {
 
     private func actionRow(vm: CrosswordViewModel) -> some View {
         HStack(spacing: SlangSpacing.md) {
-            // Reveal cell button — shows remaining credits; disabled when exhausted.
+            // Reveal cell button — remaining credits shown in the keyboard toolbar.
             Button {
                 vm.revealCurrentCell()
             } label: {
-                VStack(spacing: 2) {
-                    Label(String(localized: "crossword.reveal", defaultValue: "Reveal"),
-                          systemImage: "eye")
-                        .font(.slang(.label))
-                    revealCreditsIndicator(remaining: vm.revealCreditsRemaining)
-                }
-                .foregroundStyle(vm.canReveal ? SlangColor.accent : SlangColor.labelSecondary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, SlangSpacing.sm)
-                .background(
-                    RoundedRectangle(cornerRadius: SlangCornerRadius.button)
-                        .strokeBorder(
-                            vm.canReveal ? SlangColor.accent : SlangColor.separator,
-                            lineWidth: 1
-                        )
-                )
+                Label(String(localized: "crossword.reveal", defaultValue: "Reveal"),
+                      systemImage: "eye")
+                    .font(.slang(.label))
+                    .foregroundStyle(vm.canReveal ? SlangColor.accent : SlangColor.labelSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, SlangSpacing.md)
+                    .background(
+                        RoundedRectangle(cornerRadius: SlangCornerRadius.button)
+                            .strokeBorder(
+                                vm.canReveal ? SlangColor.accent : SlangColor.separator,
+                                lineWidth: 1
+                            )
+                    )
             }
             .disabled(!vm.canReveal)
             .accessibilityLabel(
@@ -259,6 +265,8 @@ struct CrosswordView: View {
 // MARK: - Preview
 
 #Preview("CrosswordView") {
-    CrosswordView()
-        .environment(\.appEnvironment, .preview())
+    NavigationStack {
+        CrosswordView()
+    }
+    .environment(\.appEnvironment, .preview())
 }

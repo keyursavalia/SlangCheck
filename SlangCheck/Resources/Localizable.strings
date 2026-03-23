@@ -41,6 +41,8 @@
 
 // MARK: - Swiper
 "swiper.title" = "Learn";
+"swiper.title.full" = "Learn GenZ Lingo";
+"swiper.dailyStack" = "DAILY STACK";
 "swiper.action.save" = "SAVE";
 "swiper.action.skip" = "SKIP";
 "swiper.card.tapToFlip" = "Tap to reveal definition";
@@ -55,6 +57,7 @@
 "swiper.accessibility.skip" = "Skip term";
 "swiper.accessibility.flip" = "Flip card";
 "swiper.accessibility.card %@" = "Flashcard: %@. Double tap to reveal definition.";
+"swiper.hint.swipe" = "swipe to skip or save";
 
 // MARK: - Lexicon
 "lexicon.title" = "My Lexicon";
@@ -111,9 +114,15 @@
 "category.socialArchetype" = "Archetypes";
 "category.relationship" = "Relationships";
 "category.gamingInternet" = "Gaming";
-"category.emojiSlang" = "Emoji";
+"category.reaction" = "Reactions";
 "category.aesthetic" = "Aesthetics";
 "category.emerging2026" = "Emerging";
+"category.emojiDescriptor" = "Emoji";
+"category.emojiReaction" = "Emoji Reactions";
+"category.emojiTone" = "Emoji Tone";
+"category.regionalNorCal" = "NorCal";
+"category.regionalSoCal" = "SoCal";
+"category.techSiliconValley" = "Tech / SV";
 
 // MARK: - Filter Bar
 "filter.all" = "All";
@@ -153,8 +162,10 @@
 "quizResult.accuracy %d%%" = "%d%% Accuracy";
 "quizResult.correct %d %d" = "%d/%d Correct";
 "quizResult.breakdown.base" = "Base Score";
+"quizResult.breakdown.categoryBonus" = "Category Bonus";
 "quizResult.breakdown.hints" = "Hint Penalty";
-"quizResult.breakdown.time" = "Time Penalty";
+"quizResult.breakdown.wrong" = "Wrong Answers";
+"quizResult.breakdown.unanswered" = "Unanswered";
 "quizResult.breakdown.total" = "Total Earned";
 "quizResult.playAgain" = "Play Again";
 "quizResult.done" = "Done";

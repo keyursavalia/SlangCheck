@@ -41,6 +41,10 @@ final class SwiperViewModel {
     /// A user-facing error message, or nil.
     private(set) var errorMessage: String? = nil
 
+    /// Total number of terms in the session queue (set once on first load, resets on reshuffle).
+    /// Used by `SwiperContentView` to display the "seen / total" progress counter.
+    private(set) var totalTermCount: Int = 0
+
     // MARK: - Private
 
     private let fetchTermsUseCase: FetchSlangTermsUseCase
@@ -87,6 +91,7 @@ final class SwiperViewModel {
             let currentLexicon = try await repository.fetchLexicon()
             lexicon = currentLexicon
             cardQueue = try await fetchTermsUseCase.fetchSwiperQueue(lexicon: currentLexicon)
+            totalTermCount = cardQueue.count
             isQueueEmpty = cardQueue.isEmpty
         } catch {
             Logger.swiper.error("Failed to load swiper queue: \(error.localizedDescription)")
