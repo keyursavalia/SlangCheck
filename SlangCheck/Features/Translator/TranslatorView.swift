@@ -1,19 +1,15 @@
 // Features/Translator/TranslatorView.swift
 // SlangCheck
 //
-// Split-screen Translator UI (Iteration 2, Step 2.3).
-// Top panel: text input with language label.
-// Middle: direction swap button with .rotation3DEffect animation.
-// Bottom: translated output with copy-to-clipboard button.
-// Below output: substitutions breakdown (visible when terms were matched).
+// Neon Tokyo-themed split-screen translator.
+// Panels use the same dark card aesthetic as SlangCardView.
+// Title style matches the SwiperView principal toolbar item.
 
 import SwiftUI
 
 // MARK: - TranslatorView
 
 /// Entry point for the Translator tab.
-/// Defers ViewModel creation until the SwiftUI environment is available,
-/// matching the lazy-init pattern used in GlossaryView.
 struct TranslatorView: View {
 
     @Environment(\.appEnvironment) private var env
@@ -60,10 +56,19 @@ struct TranslatorContentView: View {
     /// Tracks focus on the input TextEditor for programmatic keyboard dismissal.
     @FocusState private var isInputFocused: Bool
 
+    /// The dark card background — always dark regardless of system theme.
+    private var cardBackground: Color {
+        Color(UIColor { tc in
+            tc.userInterfaceStyle == .dark
+                ? UIColor(hex: "0D0D1A")
+                : UIColor(hex: "141033")
+        })
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: SlangSpacing.md) {
+                VStack(spacing: SlangSpacing.lg) {
                     inputPanel
                     swapButtonRow
                     outputPanel
@@ -73,17 +78,29 @@ struct TranslatorContentView: View {
                     }
                 }
                 .padding(.horizontal, SlangSpacing.md)
-                .padding(.top, SlangSpacing.sm)
+                .padding(.top, SlangSpacing.md)
                 .padding(.bottom, SlangSpacing.xl)
             }
             .background(SlangColor.background)
-            // Dismiss keyboard by tapping outside the TextEditor or by swiping the
-            // scroll view down. The explicit "Done" toolbar button has been removed
-            // — interactive dismiss is more natural and less cluttered.
             .scrollDismissesKeyboard(.interactively)
             .onTapGesture { isInputFocused = false }
-            .navigationTitle(String(localized: "tab.translator", defaultValue: "Translator"))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "waveform")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundStyle(SlangColor.secondary)
+                        Text(String(localized: "translator.title.full", defaultValue: "Translate GenZ Lingo").uppercased())
+                            .font(.system(size: 12, weight: .black, design: .monospaced))
+                            .tracking(2.5)
+                            .foregroundStyle(.primary)
+                        Image(systemName: "waveform")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundStyle(SlangColor.secondary)
+                    }
+                }
+            }
         }
     }
 
@@ -91,42 +108,45 @@ struct TranslatorContentView: View {
 
     private var inputPanel: some View {
         VStack(alignment: .leading, spacing: SlangSpacing.sm) {
-            languageLabel(viewModel.direction.inputLanguageLabel, icon: "pencil")
+            languageLabel(viewModel.direction.inputLanguageLabel, icon: "pencil.line")
 
             ZStack(alignment: .topLeading) {
                 if viewModel.inputText.isEmpty {
                     Text(viewModel.direction.inputPlaceholder)
-                        .font(.slang(.body))
-                        .foregroundStyle(Color(.placeholderText))
+                        .font(.system(size: 16))
+                        .foregroundStyle(.white.opacity(0.30))
                         .padding(.horizontal, 4)
                         .padding(.vertical, 9)
                         .allowsHitTesting(false)
                 }
                 TextEditor(text: $viewModel.inputText)
-                    .font(.slang(.body))
-                    .foregroundStyle(.primary)
-                    .frame(height: 80)
+                    .font(.system(size: 16))
+                    .foregroundStyle(.white)
+                    .frame(minHeight: 90)
                     .scrollContentBackground(.hidden)
                     .focused($isInputFocused)
                     .accessibilityLabel(viewModel.direction.inputLanguageLabel)
             }
 
-            HStack {
-                Spacer()
-                if !viewModel.inputText.isEmpty {
+            if !viewModel.inputText.isEmpty {
+                HStack {
+                    Spacer()
                     Button(String(localized: "translator.clear", defaultValue: "Clear")) {
                         viewModel.clear()
                     }
-                    .font(.slang(.caption))
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(
-                        String(localized: "translator.clear.accessibility", defaultValue: "Clear input text")
-                    )
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(SlangColor.accent.opacity(0.8))
                 }
             }
         }
         .padding(SlangSpacing.md)
-        .glassCard()
+        .background(RoundedRectangle(cornerRadius: SlangCornerRadius.card).fill(cardBackground))
+        .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.card))
+        .overlay(
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                .strokeBorder(SlangColor.secondary.opacity(0.35), lineWidth: 1.5)
+        )
+        .shadow(color: SlangColor.secondary.opacity(0.12), radius: 12, x: 0, y: 0)
     }
 
     // MARK: - Swap Button
@@ -138,12 +158,18 @@ struct TranslatorContentView: View {
                 swapRotation += 180
                 viewModel.swapDirection()
             } label: {
-                Image(systemName: "arrow.up.arrow.down.circle.fill")
-                    .font(.system(size: 38, weight: .regular))
-                    .foregroundStyle(SlangColor.primary)
-                    .rotation3DEffect(.degrees(swapRotation), axis: (x: 0, y: 1, z: 0))
-                    .animation(.spring(response: 0.4, dampingFraction: 0.65), value: swapRotation)
+                ZStack {
+                    Circle()
+                        .fill(SlangColor.secondary.opacity(0.12))
+                        .frame(width: 48, height: 48)
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(SlangColor.secondary)
+                        .rotation3DEffect(.degrees(swapRotation), axis: (x: 0, y: 1, z: 0))
+                        .animation(.spring(response: 0.4, dampingFraction: 0.65), value: swapRotation)
+                }
             }
+            .shadow(color: SlangColor.secondary.opacity(0.35), radius: 10, x: 0, y: 0)
             .accessibilityLabel(
                 String(localized: "translator.swap.accessibility", defaultValue: "Swap translation direction")
             )
@@ -164,7 +190,7 @@ struct TranslatorContentView: View {
             }
 
             outputContent
-                .frame(height: 80, alignment: .topLeading)
+                .frame(minHeight: 90, alignment: .topLeading)
 
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
@@ -173,29 +199,40 @@ struct TranslatorContentView: View {
             }
         }
         .padding(SlangSpacing.md)
-        .glassCard()
+        .background(RoundedRectangle(cornerRadius: SlangCornerRadius.card).fill(cardBackground))
+        .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.card))
+        .overlay(
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                .strokeBorder(
+                    viewModel.result != nil ? SlangColor.secondary.opacity(0.55) : SlangColor.secondary.opacity(0.20),
+                    lineWidth: 1.5
+                )
+        )
+        .shadow(
+            color: SlangColor.secondary.opacity(viewModel.result != nil ? 0.30 : 0.08),
+            radius: 16, x: 0, y: 0
+        )
     }
 
     @ViewBuilder
     private var outputContent: some View {
         if viewModel.isTranslating {
             HStack(spacing: SlangSpacing.sm) {
-                ProgressView()
-                    .tint(SlangColor.primary)
+                ProgressView().tint(SlangColor.secondary)
                 Text(String(localized: "translator.translating", defaultValue: "Translating…"))
-                    .font(.slang(.caption))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 14, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.50))
             }
         } else if let result = viewModel.result {
             Text(result.translatedText)
-                .font(.slang(.body))
-                .foregroundStyle(.primary)
+                .font(.system(size: 16))
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .textSelection(.enabled)
         } else {
             Text(String(localized: "translator.output.placeholder", defaultValue: "Translation will appear here…"))
-                .font(.slang(.body))
-                .foregroundStyle(Color(.placeholderText))
+                .font(.system(size: 16))
+                .foregroundStyle(.white.opacity(0.25))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -212,15 +249,21 @@ struct TranslatorContentView: View {
                 didCopy = false
             }
         } label: {
-            Label(
-                didCopy
-                    ? String(localized: "translator.copied", defaultValue: "Copied!")
-                    : String(localized: "translator.copy", defaultValue: "Copy"),
-                systemImage: didCopy ? "checkmark" : "doc.on.doc"
+            HStack(spacing: 4) {
+                Image(systemName: didCopy ? "checkmark" : "doc.on.doc")
+                    .font(.system(size: 11, weight: .semibold))
+                    .contentTransition(.symbolEffect(.replace))
+                Text(didCopy
+                     ? String(localized: "translator.copied", defaultValue: "Copied!")
+                     : String(localized: "translator.copy", defaultValue: "Copy"))
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+            }
+            .foregroundStyle(SlangColor.secondary)
+            .padding(.horizontal, SlangSpacing.sm)
+            .padding(.vertical, 4)
+            .background(
+                Capsule().fill(SlangColor.secondary.opacity(0.12))
             )
-            .font(.slang(.caption))
-            .foregroundStyle(SlangColor.primary)
-            .contentTransition(.symbolEffect(.replace))
         }
         .accessibilityLabel(
             String(localized: "translator.copy.accessibility", defaultValue: "Copy translation to clipboard")
@@ -232,16 +275,17 @@ struct TranslatorContentView: View {
     @ViewBuilder
     private func substitutionsSection(_ substitutions: [TranslationResult.Substitution]) -> some View {
         VStack(alignment: .leading, spacing: SlangSpacing.sm) {
-            Text(String(localized: "translator.substitutions.title", defaultValue: "Terms Translated"))
-                .font(.slang(.subheading))
-                .foregroundStyle(SlangColor.primary)
+            sectionHeader(
+                String(localized: "translator.substitutions.title", defaultValue: "Terms Translated"),
+                icon: "arrow.left.arrow.right"
+            )
 
             ForEach(substitutions) { sub in
                 HStack(spacing: SlangSpacing.sm) {
-                    substitutionChip(sub.originalToken, color: SlangColor.primary)
+                    substitutionChip(sub.originalToken, color: SlangColor.accent)
                     Image(systemName: "arrow.right")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.white.opacity(0.35))
                     substitutionChip(sub.translatedToken, color: SlangColor.secondary)
                     Spacer()
                 }
@@ -251,7 +295,12 @@ struct TranslatorContentView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SlangSpacing.md)
-        .glassCard()
+        .background(RoundedRectangle(cornerRadius: SlangCornerRadius.card).fill(cardBackground))
+        .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.card))
+        .overlay(
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                .strokeBorder(SlangColor.accent.opacity(0.30), lineWidth: 1.5)
+        )
     }
 
     // MARK: - Example Sentences Section
@@ -259,27 +308,32 @@ struct TranslatorContentView: View {
     @ViewBuilder
     private func exampleSentencesSection(_ substitutions: [TranslationResult.Substitution]) -> some View {
         VStack(alignment: .leading, spacing: SlangSpacing.md) {
-            Text(String(localized: "translator.examples.title", defaultValue: "How to use this in a sentence?"))
-                .font(.slang(.subheading))
-                .foregroundStyle(SlangColor.primary)
+            sectionHeader(
+                String(localized: "translator.examples.title", defaultValue: "How to use this in a sentence?"),
+                icon: "text.quote"
+            )
 
             ForEach(substitutions) { sub in
                 VStack(alignment: .leading, spacing: SlangSpacing.xs) {
-                    // Term name badge
                     Text(sub.term.term)
-                        .font(.slang(.label))
-                        .foregroundStyle(SlangColor.secondary)
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(SlangColor.accent)
+                        .padding(.horizontal, SlangSpacing.sm)
+                        .padding(.vertical, SlangSpacing.xs)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
+                                .strokeBorder(SlangColor.accent.opacity(0.55), lineWidth: 1)
+                        )
 
-                    // Example sentence with the slang term highlighted
                     highlightedExample(sentence: sub.term.exampleSentence, slangTerm: sub.term.term)
-                        .font(.slang(.body))
+                        .font(.system(size: 15))
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(SlangSpacing.sm)
                 .background(
                     RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
-                        .fill(SlangColor.secondary.opacity(0.08))
+                        .fill(SlangColor.secondary.opacity(0.06))
                 )
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("\(sub.term.term): \(sub.term.exampleSentence)")
@@ -287,7 +341,12 @@ struct TranslatorContentView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(SlangSpacing.md)
-        .glassCard()
+        .background(RoundedRectangle(cornerRadius: SlangCornerRadius.card).fill(cardBackground))
+        .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.card))
+        .overlay(
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                .strokeBorder(SlangColor.secondary.opacity(0.25), lineWidth: 1.5)
+        )
     }
 
     /// Renders the example sentence with the slang term bolded and tinted.
@@ -296,33 +355,56 @@ struct TranslatorContentView: View {
         let termLower = slangTerm.lowercased()
 
         guard let range = lower.range(of: termLower) else {
-            return Text(sentence).foregroundColor(.primary)
+            return Text(sentence).foregroundColor(.white.opacity(0.80))
         }
 
         let before  = String(sentence[sentence.startIndex ..< range.lowerBound])
         let matched = String(sentence[range.lowerBound ..< range.upperBound])
         let after   = String(sentence[range.upperBound...])
 
-        return Text(before).foregroundColor(.primary)
+        return Text(before).foregroundColor(.white.opacity(0.80))
              + Text(matched).bold().foregroundColor(SlangColor.secondary)
-             + Text(after).foregroundColor(.primary)
-    }
-
-    private func substitutionChip(_ label: String, color: Color) -> some View {
-        Text(label)
-            .font(.slang(.caption))
-            .foregroundStyle(color)
-            .padding(.horizontal, SlangSpacing.sm)
-            .padding(.vertical, SlangSpacing.xs)
-            .background(Capsule().fill(color.opacity(0.15)))
+             + Text(after).foregroundColor(.white.opacity(0.80))
     }
 
     // MARK: - Helpers
 
+    private func sectionHeader(_ title: String, icon: String) -> some View {
+        HStack(spacing: SlangSpacing.xs) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(SlangColor.secondary)
+                .accessibilityHidden(true)
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                .tracking(1.5)
+                .foregroundStyle(.white.opacity(0.50))
+        }
+    }
+
     private func languageLabel(_ text: String, icon: String) -> some View {
-        Label(text, systemImage: icon)
-            .font(.slang(.caption))
-            .foregroundStyle(SlangColor.primary)
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(SlangColor.secondary)
+                .accessibilityHidden(true)
+            Text(text.uppercased())
+                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                .tracking(1.5)
+                .foregroundStyle(.white.opacity(0.55))
+        }
+    }
+
+    private func substitutionChip(_ label: String, color: Color) -> some View {
+        Text(label)
+            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+            .foregroundStyle(color)
+            .padding(.horizontal, SlangSpacing.sm)
+            .padding(.vertical, SlangSpacing.xs)
+            .background(
+                RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
+                    .fill(color.opacity(0.12))
+            )
     }
 }
 

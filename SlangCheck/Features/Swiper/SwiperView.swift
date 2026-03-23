@@ -29,10 +29,18 @@ struct SwiperView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text(String(localized: "swiper.title.full", defaultValue: "Learn GenZ Lingo"))
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .tracking(2.5)
-                        .foregroundStyle(.primary)
+                    HStack(spacing: 6) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundStyle(SlangColor.accent)
+                        Text(String(localized: "swiper.title.full", defaultValue: "Learn GenZ Lingo").uppercased())
+                            .font(.system(size: 12, weight: .black, design: .monospaced))
+                            .tracking(2.5)
+                            .foregroundStyle(.primary)
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundStyle(SlangColor.accent)
+                    }
                 }
             }
         }

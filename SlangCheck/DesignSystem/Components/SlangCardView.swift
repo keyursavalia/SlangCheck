@@ -171,27 +171,26 @@ public struct SlangCardView: View {
 
             // Neon separator line below term
             Rectangle()
-                .fill(SlangColor.secondary.opacity(0.55))
+                .fill(SlangColor.accent.opacity(0.55))
                 .frame(height: 1)
 
-            // Definition — full text, no truncation
+            // Definition — full text, larger for readability
             Text(term.definition)
-                .font(.slang(.body))
-                .foregroundStyle(.white.opacity(0.88))
-                .slangBodySpacing()
+                .font(.system(size: 17, weight: .regular))
+                .foregroundStyle(.white.opacity(0.92))
                 .fixedSize(horizontal: false, vertical: true)
 
-            // Example — blockquote: green left bar as background so it never grows taller than the text
+            // Example — blockquote with amber left bar and amber tinted text
             if !term.exampleSentence.isEmpty {
                 Text("\u{201C}\(term.exampleSentence)\u{201D}")
-                    .font(.slang(.caption))
-                    .foregroundStyle(SlangColor.secondary.opacity(0.75))
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundStyle(SlangColor.accent.opacity(0.85))
                     .italic()
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, SlangSpacing.sm + 4)
                     .background(
                         Rectangle()
-                            .fill(SlangColor.secondary)
+                            .fill(SlangColor.accent)
                             .frame(width: 2)
                             .cornerRadius(1),
                         alignment: .leading
@@ -204,13 +203,13 @@ public struct SlangCardView: View {
             if !term.origin.isEmpty {
                 HStack(alignment: .top, spacing: SlangSpacing.xs) {
                     Image(systemName: "clock")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.white.opacity(0.35))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.40))
                         .padding(.top, 1)
                         .accessibilityHidden(true)
                     Text(term.origin)
-                        .font(.system(size: 11, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.40))
+                        .font(.system(size: 13, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.45))
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(2)
                 }
@@ -286,12 +285,12 @@ public struct SlangCardView: View {
         Text(term.category.displayName.uppercased())
             .font(.system(size: 10, weight: .semibold, design: .monospaced))
             .tracking(1.5)
-            .foregroundStyle(SlangColor.secondary)
+            .foregroundStyle(SlangColor.accent)
             .padding(.horizontal, SlangSpacing.sm)
             .padding(.vertical, SlangSpacing.xs)
             .overlay(
                 RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
-                    .strokeBorder(SlangColor.secondary.opacity(0.65), lineWidth: 1)
+                    .strokeBorder(SlangColor.accent.opacity(0.65), lineWidth: 1)
             )
             .accessibilityLabel("Category: \(term.category.displayName)")
     }
@@ -316,12 +315,12 @@ public struct SlangCardView: View {
             ForEach(tagLabels, id: \.self) { tag in
                 Text(tag)
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(SlangColor.secondary)
+                    .foregroundStyle(SlangColor.accent)
                     .padding(.horizontal, SlangSpacing.sm)
                     .padding(.vertical, SlangSpacing.xs)
                     .overlay(
                         RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
-                            .strokeBorder(SlangColor.secondary.opacity(0.60), lineWidth: 1)
+                            .strokeBorder(SlangColor.accent.opacity(0.60), lineWidth: 1)
                     )
             }
         }

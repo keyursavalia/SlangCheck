@@ -73,7 +73,7 @@ struct MainTabView: View {
                 }
                 .tag(AppConstants.TabIndex.more)
         }
-        .tint(SlangColor.primary)
+        .tint(SlangColor.secondary)
     }
 }
 
