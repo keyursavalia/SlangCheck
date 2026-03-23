@@ -20,8 +20,8 @@ final class SwiperViewModel {
     /// The current card stack. Index 0 is the top card.
     private(set) var cardQueue: [SlangTerm] = []
 
-    /// Whether the current top card is showing its definition (flipped state).
-    var isCardFlipped = false
+    // isCardFlipped and flipCard() commented out — full-screen layout shows all content directly.
+    // var isCardFlipped = false
 
     /// True when the queue is exhausted.
     private(set) var isQueueEmpty = false
@@ -97,7 +97,6 @@ final class SwiperViewModel {
         guard !cardQueue.isEmpty else { return }
         hapticService.swipeCompleted()
         cardQueue.removeFirst()
-        isCardFlipped = false
         isQueueEmpty = cardQueue.isEmpty
     }
 
@@ -116,12 +115,8 @@ final class SwiperViewModel {
         }
     }
 
-    /// Flips the current card to show/hide the definition.
-    func flipCard() {
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-            isCardFlipped.toggle()
-        }
-    }
+    // flipCard() commented out — full-screen layout shows all content directly.
+    // func flipCard() { withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) { isCardFlipped.toggle() } }
 
     /// Reshuffles all terms back into the queue.
     func reshuffleAll() {

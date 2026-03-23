@@ -225,8 +225,6 @@ private struct SegmentCard: View {
 // MARK: - SwiperDemoPage (FR-O-003)
 
 private struct SwiperDemoPage: View {
-    @State private var demoOffset: CGSize = .zero
-    @State private var isDemoFlipped = false
 
     private let demoTerm = SlangTerm(
         id: UUID(),
@@ -260,27 +258,51 @@ private struct SwiperDemoPage: View {
             }
             .padding(.horizontal, SlangSpacing.lg)
 
-            // Interactive demo card
-            SlangCardView(
-                term: demoTerm,
-                isFlipped: isDemoFlipped,
-                dragOffset: demoOffset,
-                isTopCard: true
-            )
-            .frame(width: UIScreen.main.bounds.width - 80, height: 340)
-            .onTapGesture {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                    isDemoFlipped.toggle()
+            // Demo — mirrors the full-screen layout used in the Swiper tab
+            VStack(spacing: 0) {
+                Text(demoTerm.term)
+                    .font(.slangTerm(size: 44))
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.center)
+
+                Text(demoTerm.category.displayName.uppercased())
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .tracking(1.2)
+                    .foregroundStyle(SlangColor.accent)
+                    .padding(.horizontal, SlangSpacing.sm)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(SlangColor.accent.opacity(0.14)))
+                    .padding(.top, SlangSpacing.xs)
+
+                Spacer().frame(height: 20)
+
+                Text(demoTerm.definition)
+                    .font(.slangDefinition(size: 16))
+                    .foregroundStyle(.primary.opacity(0.75))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, SlangSpacing.lg)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer().frame(height: SlangSpacing.xl)
+
+                HStack(spacing: SlangSpacing.xs) {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 10, weight: .medium))
+                        .accessibilityHidden(true)
+                    Text(String(localized: "swiper.hint.swipe", defaultValue: "swipe up for next"))
+                        .font(.system(size: 11, design: .monospaced))
                 }
+                .foregroundStyle(Color(.tertiaryLabel))
             }
-            .gesture(
-                DragGesture()
-                    .onChanged { value in demoOffset = value.translation }
-                    .onEnded { _ in
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            demoOffset = .zero
-                        }
-                    }
+            .padding(SlangSpacing.lg)
+            .frame(width: UIScreen.main.bounds.width - 64)
+            .background(
+                RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                    .fill(SlangColor.cardSurface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                    .strokeBorder(SlangColor.primary.opacity(0.15), lineWidth: 1)
             )
 
             Spacer()

@@ -1,9 +1,9 @@
 // Features/Swiper/SwiperView.swift
 // SlangCheck
 //
-// Chill & Cozy swiper. NavigationStack with "Learn" title.
-// Single gesture: swipe up to advance. Tap to flip. Save button below card.
-// Per FR-S-001 through FR-S-009. Pure SwiftUI gesture implementation.
+// Full-screen term layout — term + definition always visible, no tap-to-flip.
+// Swipe up to advance to the next term. Save button at bottom.
+// The 3D flip card design is preserved (commented out) in SlangCardView.swift.
 
 import SwiftUI
 
@@ -54,7 +54,13 @@ struct SwiperView: View {
 private struct SwiperContentView: View {
 
     @Bindable var viewModel: SwiperViewModel
-    @GestureState private var dragOffset: CGSize = .zero
+    /// Live vertical drag offset from the gesture — resets on release.
+    @GestureState private var dragY: CGFloat = 0
+
+    /// 0→1 as the user drags 160pt upward; drives next-term preview opacity/position.
+    private var swipeProgress: Double {
+        min(1.0, max(0, -dragY / 160))
+    }
 
     var body: some View {
         ZStack {
@@ -65,95 +71,129 @@ private struct SwiperContentView: View {
             } else if viewModel.isQueueEmpty {
                 emptyQueueState
             } else {
-                VStack(spacing: 0) {
-                    Spacer(minLength: SlangSpacing.md)
-
-                    cardStack
-                        .padding(.horizontal, SlangSpacing.xl)
-
-                    Spacer(minLength: SlangSpacing.md)
-
-                    saveButton
-                        .padding(.bottom, SlangSpacing.sm)
-
-                    swipeHint
-                        .padding(.bottom, SlangSpacing.lg)
-                }
+                termStack
             }
         }
         .onDisappear { viewModel.onDisappear() }
     }
 
-    // MARK: - Card Stack
+    // MARK: - Term Stack
 
-    private var cardStack: some View {
-        let cardHeight = min(520, UIScreen.main.bounds.height * 0.58)
-
-        return ZStack {
-            ForEach(
-                Array(viewModel.cardQueue.prefix(2).enumerated().reversed()),
-                id: \.element.id
-            ) { index, term in
-                let isTop = index == 0
-                SlangCardView(
-                    term: term,
-                    isFlipped: isTop ? viewModel.isCardFlipped : false,
-                    dragOffset: isTop ? dragOffset : .zero,
-                    isTopCard: isTop
-                )
-                .frame(maxWidth: .infinity)
-                .frame(height: cardHeight)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    if isTop { viewModel.flipCard() }
-                }
-                .gesture(isTop ? swipeGesture : nil)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(accessibilityLabel(for: term, isFlipped: isTop && viewModel.isCardFlipped))
-                .accessibilityAction(
-                    named: String(localized: "swiper.accessibility.next", defaultValue: "Next card")
-                ) { viewModel.swipeUp() }
-                .accessibilityAction(
-                    named: String(localized: "swiper.accessibility.save", defaultValue: "Save term")
-                ) { viewModel.saveCurrentCard() }
-                .accessibilityAction(
-                    named: String(localized: "swiper.accessibility.flip", defaultValue: "Flip card")
-                ) { viewModel.flipCard() }
+    /// Two layers: current term (draggable) + next term fading up from behind.
+    private var termStack: some View {
+        ZStack {
+            // Next term — fades and rises into view as swipe progresses
+            if viewModel.cardQueue.count > 1 {
+                termView(viewModel.cardQueue[1])
+                    .opacity(swipeProgress * 0.95)
+                    .offset(y: 48 * (1.0 - swipeProgress))
+                    .allowsHitTesting(false)
             }
+
+            // Current term — follows the drag upward
+            termView(viewModel.cardQueue[0])
+                .offset(y: dragY < 0 ? dragY : dragY * 0.12)
+                .opacity(1.0 - swipeProgress * 0.70)
         }
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 20)
+                .updating($dragY) { value, state, _ in
+                    state = value.translation.height
+                }
+                .onEnded { value in
+                    if value.translation.height < -AppConstants.swiperSwipeThreshold {
+                        withAnimation(.spring(response: 0.38, dampingFraction: 0.88)) {
+                            viewModel.swipeUp()
+                        }
+                    }
+                }
+        )
     }
 
-    // MARK: - Swipe Gesture (upward only)
+    // MARK: - Term View
 
-    private var swipeGesture: some Gesture {
-        DragGesture()
-            .updating($dragOffset) { value, state, _ in
-                state = value.translation
+    private func termView(_ term: SlangTerm) -> some View {
+        VStack(spacing: 0) {
+
+            Spacer()
+
+            // ── Term ──────────────────────────────────────
+            Text(term.term)
+                .font(.slangTerm(size: 52))
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, SlangSpacing.xl)
+
+            // Category pill — sits just below the term like a subtle label
+            Text(term.category.displayName.uppercased())
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .tracking(1.2)
+                .foregroundStyle(SlangColor.accent)
+                .padding(.horizontal, SlangSpacing.sm)
+                .padding(.vertical, 5)
+                .background(Capsule().fill(SlangColor.accent.opacity(0.14)))
+                .padding(.top, SlangSpacing.sm)
+
+            Spacer().frame(height: 32)
+
+            // ── Definition ────────────────────────────────
+            Text(term.definition)
+                .font(.slangDefinition(size: 18))
+                .foregroundStyle(.primary.opacity(0.78))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, SlangSpacing.xl + SlangSpacing.sm)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // ── Example sentence (muted, italic) ──────────
+            if !term.exampleSentence.isEmpty {
+                Text("\u{201C}\(term.exampleSentence)\u{201D}")
+                    .font(.slangDefinition(size: 14))
+                    .foregroundStyle(.primary.opacity(0.38))
+                    .multilineTextAlignment(.center)
+                    .italic()
+                    .padding(.horizontal, SlangSpacing.xl + SlangSpacing.md)
+                    .padding(.top, SlangSpacing.sm)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .onEnded { value in
-                if value.translation.height < -AppConstants.swiperSwipeThreshold {
-                    viewModel.swipeUp()
-                }
-                // Under threshold or downward drag → card snaps back via GestureState reset
-            }
+
+            Spacer()
+
+            // ── Bottom action row ─────────────────────────
+            saveButton(term: term)
+                .padding(.bottom, SlangSpacing.sm)
+
+            // ── Swipe hint ────────────────────────────────
+            swipeHint
+                .padding(.bottom, SlangSpacing.lg)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(term.term). \(term.definition)")
+        .accessibilityAction(named: String(localized: "swiper.accessibility.next", defaultValue: "Next card")) {
+            viewModel.swipeUp()
+        }
+        .accessibilityAction(named: String(localized: "swiper.accessibility.save", defaultValue: "Save term")) {
+            viewModel.saveCurrentCard()
+        }
     }
 
     // MARK: - Save Button
 
-    private var saveButton: some View {
+    private func saveButton(term: SlangTerm) -> some View {
         Button {
             viewModel.saveCurrentCard()
         } label: {
             HStack(spacing: SlangSpacing.sm) {
                 Image(systemName: viewModel.isTopCardSaved ? "bookmark.fill" : "bookmark")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 18, weight: .light))
                 Text(viewModel.isTopCardSaved
                      ? String(localized: "swiper.save.saved", defaultValue: "Saved")
                      : String(localized: "swiper.save.button", defaultValue: "Save"))
-                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
             }
             .foregroundStyle(
-                viewModel.isTopCardSaved ? SlangColor.primary : SlangColor.secondary
+                viewModel.isTopCardSaved ? SlangColor.primary : Color(.label).opacity(0.45)
             )
             .padding(.horizontal, SlangSpacing.lg)
             .padding(.vertical, SlangSpacing.sm)
@@ -161,7 +201,7 @@ private struct SwiperContentView: View {
                 Capsule().fill(
                     viewModel.isTopCardSaved
                         ? SlangColor.primary.opacity(0.12)
-                        : SlangColor.secondary.opacity(0.12)
+                        : Color(.label).opacity(0.06)
                 )
             )
         }
@@ -177,17 +217,12 @@ private struct SwiperContentView: View {
     // MARK: - Swipe Hint
 
     private var swipeHint: some View {
-        HStack(spacing: SlangSpacing.xs) {
-            Image(systemName: "arrow.up")
-                .font(.system(size: 11, weight: .medium))
-                .accessibilityHidden(true)
-            Text(String(localized: "swiper.hint.swipe", defaultValue: "swipe up for next"))
-                .font(.system(size: 12, design: .monospaced))
-        }
-        .foregroundStyle(Color(.tertiaryLabel))
+        Text(String(localized: "swiper.hint.swipe", defaultValue: "swipe up for next"))
+            .font(.system(size: 12, design: .monospaced))
+            .foregroundStyle(Color(.tertiaryLabel))
     }
 
-    // MARK: - Empty Queue State (FR-S-008)
+    // MARK: - Empty Queue State
 
     private var emptyQueueState: some View {
         EmptyStateView(
@@ -199,22 +234,6 @@ private struct SwiperContentView: View {
                                 defaultValue: "Reshuffle All Terms"),
             action: { viewModel.reshuffleAll() }
         )
-    }
-
-    // MARK: - Accessibility
-
-    private func accessibilityLabel(for term: SlangTerm, isFlipped: Bool) -> String {
-        if isFlipped {
-            return "\(term.term). \(term.definition)"
-        } else {
-            return String(
-                format: String(
-                    localized: "swiper.accessibility.card %@",
-                    defaultValue: "Flashcard: %@. Double tap to reveal definition."
-                ),
-                term.term
-            )
-        }
     }
 }
 

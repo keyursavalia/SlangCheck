@@ -1,52 +1,42 @@
 // DesignSystem/Components/SlangCardView.swift
 // SlangCheck
 //
-// Chill & Cozy flashcard. Warm parchment in light mode, warm near-black in dark.
-// Swipe-up to advance; tap to flip. Soft periwinkle glow on back face and during upward drag.
-// True 3D flip via rotation3DEffect (FR-S-004). No third-party libraries.
+// SlangCardView (flip-card design) is commented out.
+// The Swiper tab now uses a full-screen term layout — see SwiperView.swift.
 
 import SwiftUI
 
-// MARK: - SlangCardView
+/*
+// MARK: - SlangCardView [COMMENTED OUT — replaced by full-screen term layout]
+//
+// The 3D flip card (front face / back face / rotation3DEffect) has been
+// superseded by a full-screen single-face layout in SwiperContentView.
+// Preserved here for reference. Do not delete until the new design is stable.
 
-/// A single flashcard for the Swiper tab. Tap to flip (3D rotation). Drag up to advance.
-///
-/// **Front face** — giant term + subtle "tap to reveal" hint.
-/// **Back face**  — full definition, example (blockquote), origin + soft glow border.
 public struct SlangCardView: View {
-
-    // MARK: Properties
 
     let term: SlangTerm
     let isFlipped: Bool
-    /// Vertical drag offset from the parent gesture. Only the Y component is used.
     let dragOffset: CGSize
     let isTopCard: Bool
 
-    // MARK: - Computed Visual Properties
-
-    /// 0→1 as the card is dragged upward by 120 pt.
     private var swipeUpProgress: Double {
         guard isTopCard else { return 0 }
         return min(1, max(0, -dragOffset.height / 120))
     }
 
-    /// Fades slightly as the card exits upward.
     private var cardOpacity: Double {
         guard isTopCard else { return 1.0 }
         return 1.0 - (swipeUpProgress * 0.45)
     }
 
-    /// Glow at full strength on back face; builds during upward drag on front face.
     private var glowIntensity: Double {
         guard isTopCard else { return 0 }
         return isFlipped ? 0.7 : swipeUpProgress * 0.9
     }
 
-    /// Card surface — warm parchment in light mode, warm near-black in dark mode.
     private var cardBackground: Color { SlangColor.cardSurface }
 
-    /// Tag labels derived from the term's generation tags and boolean properties.
     private var tagLabels: [String] {
         var tags: [String] = []
         for tag in term.generationTags {
@@ -57,230 +47,116 @@ public struct SlangCardView: View {
         return tags
     }
 
-    // MARK: - Body
-
     public var body: some View {
         ZStack {
-            // Opaque base — always fully visible, blocks the card beneath from
-            // bleeding through while both faces are semi-transparent mid-flip.
-            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                .fill(cardBackground)
-
-            // Front face: rotates away to -90° (edge-on) when flipping
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card).fill(cardBackground)
             frontFace
-                .rotation3DEffect(
-                    .degrees(isFlipped ? -90 : 0),
-                    axis: (x: 0, y: 1, z: 0),
-                    anchor: .center,
-                    perspective: 0.4
-                )
+                .rotation3DEffect(.degrees(isFlipped ? -90 : 0), axis: (x:0,y:1,z:0), anchor:.center, perspective:0.4)
                 .opacity(isFlipped ? 0 : 1)
-
-            // Back face: enters from +90° (edge-on) when flipping
             backFace
-                .rotation3DEffect(
-                    .degrees(isFlipped ? 0 : 90),
-                    axis: (x: 0, y: 1, z: 0),
-                    anchor: .center,
-                    perspective: 0.4
-                )
+                .rotation3DEffect(.degrees(isFlipped ? 0 : 90), axis: (x:0,y:1,z:0), anchor:.center, perspective:0.4)
                 .opacity(isFlipped ? 1 : 0)
         }
-        // No clipShape here — each face clips itself so shadows are not cut off.
-        .offset(
-            x: 0,
-            y: isTopCard
-                // Up: follows freely. Down: slight resistance.
-                ? (dragOffset.height < 0 ? dragOffset.height : dragOffset.height * 0.15)
-                : AppConstants.swiperBackCardOffset
-        )
+        .offset(x:0, y: isTopCard ? (dragOffset.height < 0 ? dragOffset.height : dragOffset.height * 0.15) : AppConstants.swiperBackCardOffset)
         .scaleEffect(isTopCard ? 1.0 : AppConstants.swiperBackCardIdleScale)
         .opacity(cardOpacity)
-        // Soft periwinkle glow — tight bloom → mid → wide ambient
         .shadow(color: SlangColor.secondary.opacity(glowIntensity * 0.80), radius: 8,  x: 0, y: 0)
         .shadow(color: SlangColor.secondary.opacity(glowIntensity * 0.40), radius: 24, x: 0, y: 0)
         .shadow(color: SlangColor.secondary.opacity(glowIntensity * 0.15), radius: 50, x: 0, y: 0)
     }
 
-    // MARK: - Front Face (Term Only)
-
     private var frontFace: some View {
         VStack(spacing: 0) {
             Spacer()
-
             Text(term.term)
                 .font(.slangTerm(size: 54))
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
                 .frame(maxWidth: .infinity, alignment: .center)
-
             Spacer()
-
-            tapHint
-                .frame(maxWidth: .infinity, alignment: .center)
+            tapHint.frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(SlangSpacing.lg)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                .fill(cardBackground)
-        )
+        .background(RoundedRectangle(cornerRadius: SlangCornerRadius.card).fill(cardBackground))
         .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.card))
-        .overlay(
-            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                .strokeBorder(SlangColor.primary.opacity(0.18), lineWidth: 1)
-        )
+        .overlay(RoundedRectangle(cornerRadius: SlangCornerRadius.card).strokeBorder(SlangColor.primary.opacity(0.18), lineWidth: 1))
     }
-
-    // MARK: - Back Face
 
     private var backFace: some View {
         VStack(alignment: .leading, spacing: SlangSpacing.md) {
             categoryChip
-
-            // Term — large and prominent on the revealed face
             Text(term.term)
                 .font(.slangTerm(size: 44))
                 .foregroundStyle(.primary)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
-
-            // Separator line below term
-            Rectangle()
-                .fill(SlangColor.accent.opacity(0.55))
-                .frame(height: 1)
-
-            // Definition — full text, larger for readability
+            Rectangle().fill(SlangColor.accent.opacity(0.55)).frame(height: 1)
             Text(term.definition)
                 .font(.slangDefinition(size: 17))
                 .foregroundStyle(.primary.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
-
-            // Example — blockquote with accent left bar and accent tinted text
             if !term.exampleSentence.isEmpty {
                 Text("\u{201C}\(term.exampleSentence)\u{201D}")
-                    .font(.system(size: 15, weight: .regular))
+                    .font(.slangDefinition(size: 15))
                     .foregroundStyle(SlangColor.accent.opacity(0.85))
                     .italic()
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, SlangSpacing.sm + 4)
-                    .background(
-                        Rectangle()
-                            .fill(SlangColor.accent)
-                            .frame(width: 2)
-                            .cornerRadius(1),
-                        alignment: .leading
-                    )
+                    .background(Rectangle().fill(SlangColor.accent).frame(width:2).cornerRadius(1), alignment:.leading)
             }
-
             Spacer(minLength: 0)
-
-            // Origin — icon + muted monospaced label, wraps to 2 lines for long text
             if !term.origin.isEmpty {
                 HStack(alignment: .top, spacing: SlangSpacing.xs) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.primary.opacity(0.40))
-                        .padding(.top, 1)
-                        .accessibilityHidden(true)
-                    Text(term.origin)
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundStyle(.primary.opacity(0.45))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .lineLimit(2)
+                    Image(systemName: "clock").font(.system(size:11)).foregroundStyle(.primary.opacity(0.40)).padding(.top,1).accessibilityHidden(true)
+                    Text(term.origin).font(.system(size:13,design:.monospaced)).foregroundStyle(.primary.opacity(0.45)).fixedSize(horizontal:false,vertical:true).lineLimit(2)
                 }
             }
-
-            // Tags pinned to bottom
-            if !tagLabels.isEmpty {
-                tagChips
-            }
+            if !tagLabels.isEmpty { tagChips }
         }
         .padding(SlangSpacing.lg)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                .fill(cardBackground)
-        )
+        .background(RoundedRectangle(cornerRadius: SlangCornerRadius.card).fill(cardBackground))
         .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.card))
-        .overlay(
-            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                .strokeBorder(SlangColor.secondary.opacity(0.45), lineWidth: 1.5)
-        )
+        .overlay(RoundedRectangle(cornerRadius: SlangCornerRadius.card).strokeBorder(SlangColor.secondary.opacity(0.45), lineWidth: 1.5))
     }
-
-    // MARK: - Supporting Sub-Views
 
     private var categoryChip: some View {
         Text(term.category.displayName.uppercased())
-            .font(.system(size: 10, weight: .semibold, design: .monospaced))
-            .tracking(1.5)
+            .font(.system(size:10,weight:.semibold,design:.monospaced)).tracking(1.5)
             .foregroundStyle(SlangColor.accent)
-            .padding(.horizontal, SlangSpacing.sm)
-            .padding(.vertical, SlangSpacing.xs)
-            .overlay(
-                RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
-                    .strokeBorder(SlangColor.accent.opacity(0.65), lineWidth: 1)
-            )
+            .padding(.horizontal, SlangSpacing.sm).padding(.vertical, SlangSpacing.xs)
+            .overlay(RoundedRectangle(cornerRadius: SlangCornerRadius.chip).strokeBorder(SlangColor.accent.opacity(0.65), lineWidth:1))
             .accessibilityLabel("Category: \(term.category.displayName)")
     }
 
     private var tapHint: some View {
         HStack(spacing: SlangSpacing.xs) {
-            Image(systemName: "hand.tap")
-                .font(.system(size: 13))
-                .accessibilityHidden(true)
-            Text(String(localized: "swiper.card.tapToFlip", defaultValue: "Tap to reveal definition"))
-                .font(.system(size: 12, design: .monospaced))
+            Image(systemName: "hand.tap").font(.system(size:13)).accessibilityHidden(true)
+            Text(String(localized:"swiper.card.tapToFlip",defaultValue:"Tap to reveal definition")).font(.system(size:12,design:.monospaced))
         }
         .foregroundStyle(.primary.opacity(0.35))
     }
 
     private var tagChips: some View {
         HStack(spacing: SlangSpacing.xs) {
-            Text("Tags:")
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(.primary.opacity(0.40))
-
-            ForEach(tagLabels, id: \.self) { tag in
-                Text(tag)
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(SlangColor.accent)
-                    .padding(.horizontal, SlangSpacing.sm)
-                    .padding(.vertical, SlangSpacing.xs)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
-                            .strokeBorder(SlangColor.accent.opacity(0.60), lineWidth: 1)
-                    )
+            Text("Tags:").font(.system(size:11,weight:.medium,design:.monospaced)).foregroundStyle(.primary.opacity(0.40))
+            ForEach(tagLabels, id:\.self) { tag in
+                Text(tag).font(.system(size:11,weight:.semibold,design:.monospaced)).foregroundStyle(SlangColor.accent)
+                    .padding(.horizontal,SlangSpacing.sm).padding(.vertical,SlangSpacing.xs)
+                    .overlay(RoundedRectangle(cornerRadius:SlangCornerRadius.chip).strokeBorder(SlangColor.accent.opacity(0.60),lineWidth:1))
             }
         }
     }
 }
 
-// MARK: - Preview
-
-#Preview("SlangCardView — Front") {
-    let term = SlangTerm(
-        id: UUID(),
-        term: "Extra",
-        definition: "Over the top, excessively dramatic behavior. Doing significantly more than what is required or expected.",
-        standardEnglish: "Overdramatic / Excessive",
-        exampleSentence: "She showed up to a casual dinner in a ballgown — so extra.",
-        category: .foundationalDescriptor,
-        origin: "AAVE / 2000s Pop Culture",
-        usageFrequency: .high,
-        generationTags: [.genZ],
-        addedDate: Date(),
-        isBrainrot: false,
-        isEmojiTerm: false
-    )
-    VStack(spacing: 24) {
-        SlangCardView(term: term, isFlipped: false, dragOffset: .zero, isTopCard: true)
-            .frame(height: 480)
-        SlangCardView(term: term, isFlipped: true, dragOffset: .zero, isTopCard: true)
-            .frame(height: 480)
+#Preview("SlangCardView") {
+    let term = SlangTerm(id:UUID(),term:"Extra",definition:"Over the top, excessively dramatic behavior.",standardEnglish:"Overdramatic",exampleSentence:"She showed up in a ballgown — so extra.",category:.foundationalDescriptor,origin:"AAVE / 2000s",usageFrequency:.high,generationTags:[.genZ],addedDate:Date(),isBrainrot:false,isEmojiTerm:false)
+    VStack(spacing:24) {
+        SlangCardView(term:term,isFlipped:false,dragOffset:.zero,isTopCard:true).frame(height:480)
+        SlangCardView(term:term,isFlipped:true,dragOffset:.zero,isTopCard:true).frame(height:480)
     }
-    .padding(.horizontal, 24)
-    .background(SlangColor.background)
+    .padding(.horizontal,24).background(SlangColor.background)
 }
+*/

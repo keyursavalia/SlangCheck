@@ -92,7 +92,7 @@
 "onboarding.segment.title" = "Who are you?";
 "onboarding.segment.message" = "Tell us a bit about yourself so we can personalize your experience.";
 "onboarding.swiper.title" = "How the Swiper Works";
-"onboarding.swiper.message" = "Swipe right to save a term. Swipe left to skip. Tap to flip the card and see the definition.";
+"onboarding.swiper.message" = "Each word is shown with its full definition. Swipe up to move to the next term. Tap Save to add it to your Lexicon.";
 "onboarding.ready.title" = "You're Ready!";
 "onboarding.ready.message" = "Dive into the Swiper or search the Glossary. Your slang journey starts now.";
 "onboarding.skip" = "Skip";
