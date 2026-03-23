@@ -1,8 +1,8 @@
 // DesignSystem/Components/SlangCardView.swift
 // SlangCheck
 //
-// Neon Tokyo-themed flashcard. Always-dark card background with a triple-layer
-// neon green glow border that ignites when the definition face is revealed.
+// Chill & Cozy flashcard. Warm parchment card in light mode, warm near-black in dark.
+// Soft blue / warm sand glow border reacts to swipe direction.
 // True 3D flip via rotation3DEffect (FR-S-004). No third-party libraries.
 
 import SwiftUI
@@ -11,8 +11,8 @@ import SwiftUI
 
 /// A single flashcard for the Swiper tab. Tap to flip (3D rotation). Drag to swipe.
 ///
-/// **Front face** — category chip + giant term + subtle "tap to reveal" hint.
-/// **Back face**  — full definition, example (blockquote), origin + neon green glow border.
+/// **Front face** — giant term + subtle "tap to reveal" hint.
+/// **Back face**  — full definition, example (blockquote), origin + soft glow border.
 public struct SlangCardView: View {
 
     // MARK: Properties
@@ -45,14 +45,8 @@ public struct SlangCardView: View {
         return max(0, -dragOffset.width / 80)
     }
 
-    /// The card is always dark regardless of system theme — neon accents require a dark canvas.
-    private var cardBackground: Color {
-        Color(UIColor { tc in
-            tc.userInterfaceStyle == .dark
-                ? UIColor(hex: "0D0D1A")
-                : UIColor(hex: "141033")
-        })
-    }
+    /// Card surface — warm parchment in light mode, warm near-black in dark mode.
+    private var cardBackground: Color { SlangColor.cardSurface }
 
     /// Tag labels derived from the term's generation tags and boolean properties.
     private var tagLabels: [String] {
@@ -133,7 +127,7 @@ public struct SlangCardView: View {
 
             Text(term.term)
                 .font(.system(size: 54, weight: .heavy))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -152,11 +146,11 @@ public struct SlangCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.card))
         .overlay(
             RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+                .strokeBorder(SlangColor.primary.opacity(0.18), lineWidth: 1)
         )
     }
 
-    // MARK: - Back Face (Definition + Neon Green Glow)
+    // MARK: - Back Face
 
     private var backFace: some View {
         VStack(alignment: .leading, spacing: SlangSpacing.md) {
@@ -165,11 +159,11 @@ public struct SlangCardView: View {
             // Term — large and prominent on the revealed face
             Text(term.term)
                 .font(.system(size: 44, weight: .heavy))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // Neon separator line below term
+            // Separator line below term
             Rectangle()
                 .fill(SlangColor.accent.opacity(0.55))
                 .frame(height: 1)
@@ -177,7 +171,7 @@ public struct SlangCardView: View {
             // Definition — full text, larger for readability
             Text(term.definition)
                 .font(.system(size: 17, weight: .regular))
-                .foregroundStyle(.white.opacity(0.92))
+                .foregroundStyle(.primary.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
 
             // Example — blockquote with amber left bar and amber tinted text
@@ -204,12 +198,12 @@ public struct SlangCardView: View {
                 HStack(alignment: .top, spacing: SlangSpacing.xs) {
                     Image(systemName: "clock")
                         .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.40))
+                        .foregroundStyle(.primary.opacity(0.40))
                         .padding(.top, 1)
                         .accessibilityHidden(true)
                     Text(term.origin)
                         .font(.system(size: 13, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.45))
+                        .foregroundStyle(.primary.opacity(0.45))
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(2)
                 }
@@ -303,14 +297,14 @@ public struct SlangCardView: View {
             Text(String(localized: "swiper.card.tapToFlip", defaultValue: "Tap to reveal definition"))
                 .font(.system(size: 12, design: .monospaced))
         }
-        .foregroundStyle(.white.opacity(0.30))
+        .foregroundStyle(.primary.opacity(0.35))
     }
 
     private var tagChips: some View {
         HStack(spacing: SlangSpacing.xs) {
             Text("Tags:")
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.35))
+                .foregroundStyle(.primary.opacity(0.40))
 
             ForEach(tagLabels, id: \.self) { tag in
                 Text(tag)

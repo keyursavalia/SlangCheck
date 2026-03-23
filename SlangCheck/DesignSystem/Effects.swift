@@ -61,17 +61,13 @@ struct NeumorphicSurfaceModifier: ViewModifier {
             .background(SlangColor.background)
             .cornerRadius(SlangCornerRadius.cell)
             .shadow(
-                color: colorScheme == .dark
-                    ? Color(red: 0.118, green: 0.161, blue: 0.231).opacity(0.80) // #1E293B
-                    : Color.white.opacity(0.80),
+                color: SlangColor.neumorphicShadowLight.opacity(0.80),
                 radius: 8,
                 x: -4,
                 y: -4
             )
             .shadow(
-                color: colorScheme == .dark
-                    ? Color.black.opacity(0.60)
-                    : Color(red: 0.796, green: 0.835, blue: 0.882).opacity(0.60), // #CBD5E1
+                color: SlangColor.neumorphicShadowDark.opacity(0.60),
                 radius: 8,
                 x: 4,
                 y: 4

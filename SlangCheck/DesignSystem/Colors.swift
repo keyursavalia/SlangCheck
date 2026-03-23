@@ -2,7 +2,8 @@
 // SlangCheck
 //
 // Single source of truth for all color tokens.
-// All colors adapt automatically between Light ("Vibrant Day") and Dark ("Midnight Cyber") modes.
+// Palette: "Chill & Cozy" — warm linens, dusty blue, muted olive, soft blush.
+// All colors adapt automatically between Light ("Warm Linen") and Dark ("Cozy Night") modes.
 // NEVER use a hex literal outside of this file.
 
 import SwiftUI
@@ -42,6 +43,9 @@ extension UIColor {
 /// The canonical color token system for SlangCheck.
 /// Reference these tokens in all views. Never use raw hex values.
 ///
+/// Palette philosophy: "Chill & Cozy" — warm linens and dusty tones that encourage
+/// relaxed reading. No neon or high-saturation hues.
+///
 /// Usage:
 /// ```swift
 /// Text("No Cap").foregroundStyle(SlangColor.primary)
@@ -51,42 +55,48 @@ public enum SlangColor {
 
     // MARK: - Core Semantic Tokens
 
-    /// Aura Purple — CTAs, active states, highlights, selected elements.
-    /// Light: #A855F7 Electric Lavender | Dark: #C084FC Neon Heliotrope
+    /// Muted Olive / Warm Sand — brand color, CTAs, active states, bookmarks, highlights.
+    /// Light: #8F917C Warm Olive | Dark: #D0BEA3 Warm Sand
     public static var primary: Color {
-        Color(lightHex: "A855F7", darkHex: "C084FC")
+        Color(lightHex: "8F917C", darkHex: "D0BEA3")
     }
 
-    /// Rizz Green — success states, streaks, saved confirmations, correct answers.
-    /// Light: #22C55E Vivid Emerald | Dark: #4ADE80 Cyber Mint
+    /// Soft Periwinkle — save confirmations, success states, correct answers, streaks.
+    /// Light: #BAC8E0 Dusty Periwinkle | Dark: #BAC8E0 Dusty Periwinkle
     public static var secondary: Color {
-        Color(lightHex: "22C55E", darkHex: "4ADE80")
+        Color(lightHex: "BAC8E0", darkHex: "BAC8E0")
     }
 
     /// Page/screen background canvas.
-    /// Light: #F8FAFC Frosted White | Dark: #0F172A Deep Slate
+    /// Light: #F5F4F7 Linen White | Dark: #1F1F1F Warm Charcoal
     public static var background: Color {
-        Color(lightHex: "F8FAFC", darkHex: "0F172A")
+        Color(lightHex: "F5F4F7", darkHex: "1F1F1F")
     }
 
-    /// Sunset Amber / Bright Gold — warnings, mid-level indicators, "Skip" action labels.
-    /// Light: #F59E0B Sunset Amber | Dark: #FBBF24 Bright Gold
+    /// Warm Sand / Soft Blush — attention states, "Skip" labels, chips, example blockquotes.
+    /// Light: #D0BEA3 Warm Sand | Dark: #EBDBD3 Soft Blush
     public static var accent: Color {
-        Color(lightHex: "F59E0B", darkHex: "FBBF24")
+        Color(lightHex: "D0BEA3", darkHex: "EBDBD3")
     }
 
     // MARK: - Surface Tokens
 
-    /// Elevated surface color for cards and panels (slightly above background).
-    /// Light: #FFFFFF | Dark: #1E293B
+    /// Card / panel surface — slightly elevated above background, the parchment layer.
+    /// Light: #EBDBD3 Warm Blush | Dark: #272420 Warm Near-Black
+    public static var cardSurface: Color {
+        Color(lightHex: "EBDBD3", darkHex: "272420")
+    }
+
+    /// Elevated surface color for list cells and settings panels.
+    /// Light: #F0EDE8 Warm Off-White | Dark: #252220 Warm Dark
     public static var surface: Color {
-        Color(lightHex: "FFFFFF", darkHex: "1E293B")
+        Color(lightHex: "F0EDE8", darkHex: "252220")
     }
 
     /// Subtle separator / divider color.
-    /// Light: #E2E8F0 | Dark: #334155
+    /// Light: #DCCFC7 Muted Blush | Dark: #383230 Warm Dark Border
     public static var separator: Color {
-        Color(lightHex: "E2E8F0", darkHex: "334155")
+        Color(lightHex: "DCCFC7", darkHex: "383230")
     }
 
     // MARK: - Text Tokens
@@ -100,32 +110,36 @@ public enum SlangColor {
 
     // MARK: - Semantic State Colors
 
-    /// Error / incorrect answer state.
-    /// Fixed: #EF4444 (red) — used for wrong answers and destructive actions.
+    /// Error / incorrect answer state — warm terracotta, softer than pure red.
+    /// Light: #B05A52 Warm Terracotta | Dark: #C87870 Dusty Rose Red
     public static var errorRed: Color {
-        Color(lightHex: "EF4444", darkHex: "EF4444")
+        Color(lightHex: "B05A52", darkHex: "C87870")
     }
 
     // MARK: - Neumorphism Shadow Tokens
 
-    /// Light shadow for neumorphic surfaces (light mode: white highlight; dark mode: dark highlight).
+    /// Light shadow for neumorphic surfaces (highlight side).
+    /// Light: #FFFFFF White Highlight | Dark: #2D2A27 Warm Lifted
     public static var neumorphicShadowLight: Color {
-        Color(lightHex: "FFFFFF", darkHex: "1E293B")
+        Color(lightHex: "FFFFFF", darkHex: "2D2A27")
     }
 
-    /// Dark shadow for neumorphic surfaces (light mode: blue-gray; dark mode: pure black).
+    /// Dark shadow for neumorphic surfaces (shadow side).
+    /// Light: #D4C9BF Warm Taupe Shadow | Dark: #131110 Deep Warm Black
     public static var neumorphicShadowDark: Color {
-        Color(lightHex: "CBD5E1", darkHex: "000000")
+        Color(lightHex: "D4C9BF", darkHex: "131110")
     }
 }
 
-// MARK: - SlangColor UIColor Variants (for UIKit interop in HapticService, etc.)
+// MARK: - SlangColor UIColor Variants (for UIKit interop)
 
 extension SlangColor {
     /// Primary color as UIColor, for contexts requiring UIKit types.
     public static var primaryUI: UIColor {
         UIColor { tc in
-            tc.userInterfaceStyle == .dark ? UIColor(hex: "C084FC") : UIColor(hex: "A855F7")
+            tc.userInterfaceStyle == .dark
+                ? UIColor(hex: "D0BEA3")
+                : UIColor(hex: "8F917C")
         }
     }
 }

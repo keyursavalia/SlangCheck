@@ -1,7 +1,7 @@
 // Features/Swiper/SwiperView.swift
 // SlangCheck
 //
-// Neon Tokyo-themed swiper. NavigationStack with "Learn" title.
+// Chill & Cozy swiper. NavigationStack with "Learn" title.
 // Two-button bottom row: SKIP (×) and SAVE (✓) with dynamic glow on drag.
 // Buttons only glow when the user drags in their respective direction.
 // Per FR-S-001 through FR-S-009. Pure SwiftUI gesture implementation.

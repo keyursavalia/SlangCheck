@@ -1,8 +1,8 @@
 // Features/Translator/TranslatorView.swift
 // SlangCheck
 //
-// Neon Tokyo-themed split-screen translator.
-// Panels use the same dark card aesthetic as SlangCardView.
+// Chill & Cozy split-screen translator.
+// Panels use the same warm card surface as SlangCardView.
 // Title style matches the SwiperView principal toolbar item.
 
 import SwiftUI
@@ -56,14 +56,8 @@ struct TranslatorContentView: View {
     /// Tracks focus on the input TextEditor for programmatic keyboard dismissal.
     @FocusState private var isInputFocused: Bool
 
-    /// The dark card background — always dark regardless of system theme.
-    private var cardBackground: Color {
-        Color(UIColor { tc in
-            tc.userInterfaceStyle == .dark
-                ? UIColor(hex: "0D0D1A")
-                : UIColor(hex: "141033")
-        })
-    }
+    /// Card surface — warm parchment in light mode, warm near-black in dark mode.
+    private var cardBackground: Color { SlangColor.cardSurface }
 
     var body: some View {
         NavigationStack {
@@ -114,14 +108,14 @@ struct TranslatorContentView: View {
                 if viewModel.inputText.isEmpty {
                     Text(viewModel.direction.inputPlaceholder)
                         .font(.system(size: 16))
-                        .foregroundStyle(.white.opacity(0.30))
+                        .foregroundStyle(.primary.opacity(0.35))
                         .padding(.horizontal, 4)
                         .padding(.vertical, 9)
                         .allowsHitTesting(false)
                 }
                 TextEditor(text: $viewModel.inputText)
                     .font(.system(size: 16))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                     .frame(minHeight: 90)
                     .scrollContentBackground(.hidden)
                     .focused($isInputFocused)
@@ -221,18 +215,18 @@ struct TranslatorContentView: View {
                 ProgressView().tint(SlangColor.secondary)
                 Text(String(localized: "translator.translating", defaultValue: "Translating…"))
                     .font(.system(size: 14, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.50))
+                    .foregroundStyle(.primary.opacity(0.50))
             }
         } else if let result = viewModel.result {
             Text(result.translatedText)
                 .font(.system(size: 16))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .textSelection(.enabled)
         } else {
             Text(String(localized: "translator.output.placeholder", defaultValue: "Translation will appear here…"))
                 .font(.system(size: 16))
-                .foregroundStyle(.white.opacity(0.25))
+                .foregroundStyle(.primary.opacity(0.30))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -285,7 +279,7 @@ struct TranslatorContentView: View {
                     substitutionChip(sub.originalToken, color: SlangColor.accent)
                     Image(systemName: "arrow.right")
                         .font(.caption2.weight(.bold))
-                        .foregroundStyle(.white.opacity(0.35))
+                        .foregroundStyle(.primary.opacity(0.35))
                     substitutionChip(sub.translatedToken, color: SlangColor.secondary)
                     Spacer()
                 }
@@ -355,16 +349,16 @@ struct TranslatorContentView: View {
         let termLower = slangTerm.lowercased()
 
         guard let range = lower.range(of: termLower) else {
-            return Text(sentence).foregroundColor(.white.opacity(0.80))
+            return Text(sentence).foregroundColor(Color.primary.opacity(0.80))
         }
 
         let before  = String(sentence[sentence.startIndex ..< range.lowerBound])
         let matched = String(sentence[range.lowerBound ..< range.upperBound])
         let after   = String(sentence[range.upperBound...])
 
-        return Text(before).foregroundColor(.white.opacity(0.80))
+        return Text(before).foregroundColor(Color.primary.opacity(0.80))
              + Text(matched).bold().foregroundColor(SlangColor.secondary)
-             + Text(after).foregroundColor(.white.opacity(0.80))
+             + Text(after).foregroundColor(Color.primary.opacity(0.80))
     }
 
     // MARK: - Helpers
@@ -378,7 +372,7 @@ struct TranslatorContentView: View {
             Text(title.uppercased())
                 .font(.system(size: 10, weight: .semibold, design: .monospaced))
                 .tracking(1.5)
-                .foregroundStyle(.white.opacity(0.50))
+                .foregroundStyle(.primary.opacity(0.50))
         }
     }
 
@@ -391,7 +385,7 @@ struct TranslatorContentView: View {
             Text(text.uppercased())
                 .font(.system(size: 10, weight: .semibold, design: .monospaced))
                 .tracking(1.5)
-                .foregroundStyle(.white.opacity(0.55))
+                .foregroundStyle(.primary.opacity(0.55))
         }
     }
 
