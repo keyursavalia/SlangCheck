@@ -2,7 +2,7 @@
 // SlangCheck
 //
 // ViewModel for the Swiper (flashcard stack) screen.
-// Manages the card queue, swipe actions, undo, and card-flip state.
+// Interaction model: swipe-up advances; tap flips; Save button persists to Lexicon.
 
 import Foundation
 import OSLog
@@ -15,24 +15,18 @@ import SwiftUI
 @MainActor
 final class SwiperViewModel {
 
-    // MARK: - Published State
+    // MARK: - State
 
     /// The current card stack. Index 0 is the top card.
     private(set) var cardQueue: [SlangTerm] = []
 
-    /// Whether the current top card is showing its definition (flipped state, FR-S-004).
+    /// Whether the current top card is showing its definition (flipped state).
     var isCardFlipped = false
 
-    /// The term that was last dismissed/saved, available for 1-level undo (FR-S-009).
-    private(set) var lastUndoneCard: (term: SlangTerm, wasSaved: Bool)? = nil
-
-    /// Whether the undo button is visible (shown for 3 seconds after each swipe).
-    private(set) var showUndoButton = false
-
-    /// True when the queue is exhausted (FR-S-008).
+    /// True when the queue is exhausted.
     private(set) var isQueueEmpty = false
 
-    /// The user's lexicon, observed reactively.
+    /// The user's lexicon, observed reactively to keep `isTopCardSaved` in sync.
     private(set) var lexicon: UserLexicon = UserLexicon()
 
     /// True while the initial queue is being loaded.
@@ -42,18 +36,15 @@ final class SwiperViewModel {
     private(set) var errorMessage: String? = nil
 
     /// Total number of terms in the session queue (set once on first load, resets on reshuffle).
-    /// Used by `SwiperContentView` to display the "seen / total" progress counter.
     private(set) var totalTermCount: Int = 0
 
     // MARK: - Private
 
     private let fetchTermsUseCase: FetchSlangTermsUseCase
     private let saveToLexiconUseCase: SaveTermToLexiconUseCase
-    private let removeFromLexiconUseCase: RemoveTermFromLexiconUseCase
     private let repository: any SlangTermRepository
     let hapticService: any HapticServiceProtocol
 
-    private var undoTimerTask: Task<Void, Never>?
     private var lexiconObserverTask: Task<Void, Never>?
 
     // MARK: - Initialization
@@ -62,11 +53,10 @@ final class SwiperViewModel {
         repository: any SlangTermRepository,
         hapticService: any HapticServiceProtocol
     ) {
-        self.repository              = repository
-        self.hapticService           = hapticService
-        self.fetchTermsUseCase       = FetchSlangTermsUseCase(repository: repository)
-        self.saveToLexiconUseCase    = SaveTermToLexiconUseCase(repository: repository)
-        self.removeFromLexiconUseCase = RemoveTermFromLexiconUseCase(repository: repository)
+        self.repository           = repository
+        self.hapticService        = hapticService
+        self.fetchTermsUseCase    = FetchSlangTermsUseCase(repository: repository)
+        self.saveToLexiconUseCase = SaveTermToLexiconUseCase(repository: repository)
     }
 
     // MARK: - Lifecycle
@@ -78,7 +68,6 @@ final class SwiperViewModel {
 
     func onDisappear() {
         lexiconObserverTask?.cancel()
-        undoTimerTask?.cancel()
     }
 
     // MARK: - Queue Loading
@@ -103,16 +92,21 @@ final class SwiperViewModel {
 
     // MARK: - Card Actions
 
-    /// Called when the user right-swipes (save to Lexicon) — FR-S-002.
-    func swipeRight() {
-        guard let top = cardQueue.first else { return }
+    /// Advances to the next card — triggered by swipe-up gesture.
+    func swipeUp() {
+        guard !cardQueue.isEmpty else { return }
         hapticService.swipeCompleted()
-        lastUndoneCard = (term: top, wasSaved: true)
         cardQueue.removeFirst()
         isCardFlipped = false
         isQueueEmpty = cardQueue.isEmpty
-        showUndoButtonBriefly()
+    }
 
+    /// Saves the current top card to the Lexicon — triggered by the Save button.
+    /// No-ops silently if the card is already saved.
+    func saveCurrentCard() {
+        guard let top = cardQueue.first,
+              !lexicon.savedTermIDs.contains(top.id) else { return }
+        hapticService.swipeCompleted()
         Task {
             do {
                 try await saveToLexiconUseCase.execute(termID: top.id)
@@ -122,71 +116,22 @@ final class SwiperViewModel {
         }
     }
 
-    /// Called when the user left-swipes (dismiss/skip) — FR-S-003.
-    func swipeLeft() {
-        guard let top = cardQueue.first else { return }
-        hapticService.swipeCompleted()
-        lastUndoneCard = (term: top, wasSaved: false)
-        cardQueue.removeFirst()
-        isCardFlipped = false
-        isQueueEmpty = cardQueue.isEmpty
-        showUndoButtonBriefly()
-        Logger.swiper.debug("Dismissed term: \(top.term)")
-    }
-
-    /// Flips the current card to show/hide the definition — FR-S-004.
+    /// Flips the current card to show/hide the definition.
     func flipCard() {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
             isCardFlipped.toggle()
         }
     }
 
-    /// Undoes the last swipe action — FR-S-009.
-    func undo() {
-        guard let last = lastUndoneCard else { return }
-
-        // Re-insert the card at the front.
-        cardQueue.insert(last.term, at: 0)
-        isQueueEmpty = false
-        isCardFlipped = false
-
-        // If it was saved, remove it from the lexicon.
-        if last.wasSaved {
-            Task {
-                do {
-                    try await removeFromLexiconUseCase.execute(termID: last.term.id)
-                } catch {
-                    Logger.swiper.error("Undo remove from lexicon failed: \(error.localizedDescription)")
-                }
-            }
-        }
-
-        lastUndoneCard = nil
-        showUndoButton = false
-        undoTimerTask?.cancel()
-        Logger.swiper.info("Undo: restored \(last.term.term) to queue.")
-    }
-
-    /// Reshuffles all terms back into the queue — FR-S-008.
+    /// Reshuffles all terms back into the queue.
     func reshuffleAll() {
         Task { await loadQueue() }
     }
 
-    // MARK: - Private: Undo Timer (FR-S-009: visible for 3 seconds)
-
-    private func showUndoButtonBriefly() {
-        undoTimerTask?.cancel()
-        showUndoButton = true
-        undoTimerTask = Task {
-            do {
-                try await Task.sleep(for: .seconds(AppConstants.swiperUndoVisibilitySeconds))
-                guard !Task.isCancelled else { return }
-                showUndoButton = false
-                lastUndoneCard = nil
-            } catch {
-                // Task cancelled — undo was used or view disappeared.
-            }
-        }
+    /// Whether the current top card is already saved in the user's Lexicon.
+    var isTopCardSaved: Bool {
+        guard let top = cardQueue.first else { return false }
+        return lexicon.savedTermIDs.contains(top.id)
     }
 
     // MARK: - Lexicon Observer

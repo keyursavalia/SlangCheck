@@ -1,15 +1,15 @@
 // DesignSystem/Components/SlangCardView.swift
 // SlangCheck
 //
-// Chill & Cozy flashcard. Warm parchment card in light mode, warm near-black in dark.
-// Soft blue / warm sand glow border reacts to swipe direction.
+// Chill & Cozy flashcard. Warm parchment in light mode, warm near-black in dark.
+// Swipe-up to advance; tap to flip. Soft periwinkle glow on back face and during upward drag.
 // True 3D flip via rotation3DEffect (FR-S-004). No third-party libraries.
 
 import SwiftUI
 
 // MARK: - SlangCardView
 
-/// A single flashcard for the Swiper tab. Tap to flip (3D rotation). Drag to swipe.
+/// A single flashcard for the Swiper tab. Tap to flip (3D rotation). Drag up to advance.
 ///
 /// **Front face** — giant term + subtle "tap to reveal" hint.
 /// **Back face**  — full definition, example (blockquote), origin + soft glow border.
@@ -19,30 +19,28 @@ public struct SlangCardView: View {
 
     let term: SlangTerm
     let isFlipped: Bool
+    /// Vertical drag offset from the parent gesture. Only the Y component is used.
     let dragOffset: CGSize
     let isTopCard: Bool
 
     // MARK: - Computed Visual Properties
 
-    private var rotationAngle: Double {
+    /// 0→1 as the card is dragged upward by 120 pt.
+    private var swipeUpProgress: Double {
         guard isTopCard else { return 0 }
-        return (dragOffset.width / UIScreen.main.bounds.width) * AppConstants.swiperMaxRotationDegrees
+        return min(1, max(0, -dragOffset.height / 120))
     }
 
+    /// Fades slightly as the card exits upward.
     private var cardOpacity: Double {
         guard isTopCard else { return 1.0 }
-        let progress = abs(dragOffset.width) / UIScreen.main.bounds.width
-        return 1.0 - (progress * (1.0 - AppConstants.swiperMinCardOpacity))
+        return 1.0 - (swipeUpProgress * 0.45)
     }
 
-    private var saveOpacity: Double {
+    /// Glow at full strength on back face; builds during upward drag on front face.
+    private var glowIntensity: Double {
         guard isTopCard else { return 0 }
-        return max(0, dragOffset.width / 80)
-    }
-
-    private var skipOpacity: Double {
-        guard isTopCard else { return 0 }
-        return max(0, -dragOffset.width / 80)
+        return isFlipped ? 0.7 : swipeUpProgress * 0.9
     }
 
     /// Card surface — warm parchment in light mode, warm near-black in dark mode.
@@ -88,35 +86,20 @@ public struct SlangCardView: View {
                 )
                 .opacity(isFlipped ? 1 : 0)
         }
-        // No clipShape here — each face clips itself. A clipShape at this level
-        // would cut off all shadow/glow modifiers applied below.
-        .overlay(actionLabels)
-        .rotationEffect(.degrees(rotationAngle))
+        // No clipShape here — each face clips itself so shadows are not cut off.
         .offset(
-            x: isTopCard ? dragOffset.width : 0,
-            y: isTopCard ? dragOffset.height * 0.1 : AppConstants.swiperBackCardOffset
+            x: 0,
+            y: isTopCard
+                // Up: follows freely. Down: slight resistance.
+                ? (dragOffset.height < 0 ? dragOffset.height : dragOffset.height * 0.15)
+                : AppConstants.swiperBackCardOffset
         )
         .scaleEffect(isTopCard ? 1.0 : AppConstants.swiperBackCardIdleScale)
         .opacity(cardOpacity)
-        // Unified glow — tight inner bloom → mid → wide ambient
-        .shadow(color: cardGlowColor.opacity(cardGlowIntensity * 0.85), radius: 8,  x: 0, y: 0)
-        .shadow(color: cardGlowColor.opacity(cardGlowIntensity * 0.40), radius: 24, x: 0, y: 0)
-        .shadow(color: cardGlowColor.opacity(cardGlowIntensity * 0.15), radius: 50, x: 0, y: 0)
-    }
-
-    // MARK: - Glow Helpers
-
-    /// Amber when the user drags left (skip); green for everything else.
-    private var cardGlowColor: Color {
-        guard isTopCard else { return .clear }
-        return skipOpacity > 0 ? SlangColor.accent : SlangColor.secondary
-    }
-
-    /// Back face glows permanently at full intensity; front face scales with drag amount.
-    private var cardGlowIntensity: Double {
-        guard isTopCard else { return 0 }
-        if isFlipped { return 1.0 }
-        return min(1, max(saveOpacity, skipOpacity))
+        // Soft periwinkle glow — tight bloom → mid → wide ambient
+        .shadow(color: SlangColor.secondary.opacity(glowIntensity * 0.80), radius: 8,  x: 0, y: 0)
+        .shadow(color: SlangColor.secondary.opacity(glowIntensity * 0.40), radius: 24, x: 0, y: 0)
+        .shadow(color: SlangColor.secondary.opacity(glowIntensity * 0.15), radius: 50, x: 0, y: 0)
     }
 
     // MARK: - Front Face (Term Only)
@@ -174,7 +157,7 @@ public struct SlangCardView: View {
                 .foregroundStyle(.primary.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
 
-            // Example — blockquote with amber left bar and amber tinted text
+            // Example — blockquote with accent left bar and accent tinted text
             if !term.exampleSentence.isEmpty {
                 Text("\u{201C}\(term.exampleSentence)\u{201D}")
                     .font(.system(size: 15, weight: .regular))
@@ -221,56 +204,10 @@ public struct SlangCardView: View {
                 .fill(cardBackground)
         )
         .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.card))
-        // Border reacts to swipe direction: amber on left drag, green otherwise
         .overlay(
             RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                .strokeBorder(cardGlowColor, lineWidth: 1.5)
+                .strokeBorder(SlangColor.secondary.opacity(0.45), lineWidth: 1.5)
         )
-    }
-
-    // MARK: - Action Labels (SAVE / SKIP Stamps)
-
-    private var actionLabels: some View {
-        HStack {
-            // SAVE stamp — appears during right-swipe, centered over the term
-            stampLabel(
-                text: String(localized: "swiper.action.save", defaultValue: "SAVE"),
-                color: SlangColor.secondary,
-                rotation: -15
-            )
-            .opacity(saveOpacity)
-            .accessibilityHidden(true)
-
-            Spacer()
-
-            // SKIP stamp — appears during left-swipe, centered over the term
-            stampLabel(
-                text: String(localized: "swiper.action.skip", defaultValue: "SKIP"),
-                color: SlangColor.accent,
-                rotation: 15
-            )
-            .opacity(skipOpacity)
-            .accessibilityHidden(true)
-        }
-        .padding(.horizontal, SlangSpacing.xl)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-    }
-
-    private func stampLabel(text: String, color: Color, rotation: Double) -> some View {
-        Text(text)
-            .font(.system(size: 34, weight: .black, design: .monospaced))
-            .foregroundStyle(color)
-            .padding(.horizontal, SlangSpacing.md)
-            .padding(.vertical, SlangSpacing.sm)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(cardBackground)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .strokeBorder(color, lineWidth: 2.5)
-                    )
-            )
-            .rotationEffect(.degrees(rotation))
     }
 
     // MARK: - Supporting Sub-Views

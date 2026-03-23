@@ -47,17 +47,17 @@
 "swiper.action.skip" = "SKIP";
 "swiper.card.tapToFlip" = "Tap to reveal definition";
 "swiper.card.category %@" = "Category: %@";
-"swiper.button.save" = "Save to Lexicon";
-"swiper.button.skip" = "Skip";
-"swiper.undo" = "Undo";
+"swiper.save.button" = "Save";
+"swiper.save.saved" = "Saved";
+"swiper.save.button.accessibility" = "Save this term to your Lexicon";
 "swiper.empty.title" = "You've seen them all!";
 "swiper.empty.message" = "Your slang knowledge is growing. What's next?";
 "swiper.empty.reshuffle" = "Reshuffle All Terms";
+"swiper.accessibility.next" = "Next card";
 "swiper.accessibility.save" = "Save term";
-"swiper.accessibility.skip" = "Skip term";
 "swiper.accessibility.flip" = "Flip card";
 "swiper.accessibility.card %@" = "Flashcard: %@. Double tap to reveal definition.";
-"swiper.hint.swipe" = "swipe to skip or save";
+"swiper.hint.swipe" = "swipe up for next";
 
 // MARK: - Lexicon
 "lexicon.title" = "My Lexicon";

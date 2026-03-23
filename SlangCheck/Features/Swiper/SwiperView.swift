@@ -2,8 +2,7 @@
 // SlangCheck
 //
 // Chill & Cozy swiper. NavigationStack with "Learn" title.
-// Two-button bottom row: SKIP (×) and SAVE (✓) with dynamic glow on drag.
-// Buttons only glow when the user drags in their respective direction.
+// Single gesture: swipe up to advance. Tap to flip. Save button below card.
 // Per FR-S-001 through FR-S-009. Pure SwiftUI gesture implementation.
 
 import SwiftUI
@@ -30,16 +29,10 @@ struct SwiperView: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 6) {
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 9, weight: .black))
-                            .foregroundStyle(SlangColor.accent)
                         Text(String(localized: "swiper.title.full", defaultValue: "Learn GenZ Lingo").uppercased())
                             .font(.system(size: 12, weight: .black, design: .monospaced))
                             .tracking(2.5)
                             .foregroundStyle(.primary)
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 9, weight: .black))
-                            .foregroundStyle(SlangColor.accent)
                     }
                 }
             }
@@ -80,11 +73,13 @@ private struct SwiperContentView: View {
 
                     Spacer(minLength: SlangSpacing.md)
 
+                    saveButton
+                        .padding(.bottom, SlangSpacing.sm)
+
                     swipeHint
                         .padding(.bottom, SlangSpacing.lg)
                 }
             }
-
         }
         .onDisappear { viewModel.onDisappear() }
     }
@@ -116,11 +111,11 @@ private struct SwiperContentView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(accessibilityLabel(for: term, isFlipped: isTop && viewModel.isCardFlipped))
                 .accessibilityAction(
-                    named: String(localized: "swiper.accessibility.save", defaultValue: "Save term")
-                ) { viewModel.swipeRight() }
+                    named: String(localized: "swiper.accessibility.next", defaultValue: "Next card")
+                ) { viewModel.swipeUp() }
                 .accessibilityAction(
-                    named: String(localized: "swiper.accessibility.skip", defaultValue: "Skip term")
-                ) { viewModel.swipeLeft() }
+                    named: String(localized: "swiper.accessibility.save", defaultValue: "Save term")
+                ) { viewModel.saveCurrentCard() }
                 .accessibilityAction(
                     named: String(localized: "swiper.accessibility.flip", defaultValue: "Flip card")
                 ) { viewModel.flipCard() }
@@ -128,7 +123,7 @@ private struct SwiperContentView: View {
         }
     }
 
-    // MARK: - Swipe Gesture (FR-S-002, FR-S-003, FR-S-005)
+    // MARK: - Swipe Gesture (upward only)
 
     private var swipeGesture: some Gesture {
         DragGesture()
@@ -136,29 +131,58 @@ private struct SwiperContentView: View {
                 state = value.translation
             }
             .onEnded { value in
-                let threshold = AppConstants.swiperSwipeThreshold
-                if value.translation.width > threshold {
-                    viewModel.swipeRight()
-                } else if value.translation.width < -threshold {
-                    viewModel.swipeLeft()
+                if value.translation.height < -AppConstants.swiperSwipeThreshold {
+                    viewModel.swipeUp()
                 }
-                // Under threshold → card snaps back via GestureState reset
+                // Under threshold or downward drag → card snaps back via GestureState reset
             }
+    }
+
+    // MARK: - Save Button
+
+    private var saveButton: some View {
+        Button {
+            viewModel.saveCurrentCard()
+        } label: {
+            HStack(spacing: SlangSpacing.sm) {
+                Image(systemName: viewModel.isTopCardSaved ? "bookmark.fill" : "bookmark")
+                    .font(.system(size: 15, weight: .semibold))
+                Text(viewModel.isTopCardSaved
+                     ? String(localized: "swiper.save.saved", defaultValue: "Saved")
+                     : String(localized: "swiper.save.button", defaultValue: "Save"))
+                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+            }
+            .foregroundStyle(
+                viewModel.isTopCardSaved ? SlangColor.primary : SlangColor.secondary
+            )
+            .padding(.horizontal, SlangSpacing.lg)
+            .padding(.vertical, SlangSpacing.sm)
+            .background(
+                Capsule().fill(
+                    viewModel.isTopCardSaved
+                        ? SlangColor.primary.opacity(0.12)
+                        : SlangColor.secondary.opacity(0.12)
+                )
+            )
+        }
+        .disabled(viewModel.isTopCardSaved)
+        .animation(.easeInOut(duration: 0.2), value: viewModel.isTopCardSaved)
+        .accessibilityLabel(
+            viewModel.isTopCardSaved
+                ? String(localized: "swiper.save.saved", defaultValue: "Saved")
+                : String(localized: "swiper.save.button.accessibility", defaultValue: "Save this term to your Lexicon")
+        )
     }
 
     // MARK: - Swipe Hint
 
-    /// Subtle instruction nudge sitting between the card stack and the tab bar.
     private var swipeHint: some View {
-        HStack(spacing: SlangSpacing.sm) {
-            Image(systemName: "arrow.left")
+        HStack(spacing: SlangSpacing.xs) {
+            Image(systemName: "arrow.up")
                 .font(.system(size: 11, weight: .medium))
                 .accessibilityHidden(true)
-            Text(String(localized: "swiper.hint.swipe", defaultValue: "swipe to skip or save"))
+            Text(String(localized: "swiper.hint.swipe", defaultValue: "swipe up for next"))
                 .font(.system(size: 12, design: .monospaced))
-            Image(systemName: "arrow.right")
-                .font(.system(size: 11, weight: .medium))
-                .accessibilityHidden(true)
         }
         .foregroundStyle(Color(.tertiaryLabel))
     }
