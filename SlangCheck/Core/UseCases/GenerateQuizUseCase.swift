@@ -134,7 +134,8 @@ public struct GenerateQuizUseCase: Sendable {
             correctDefinition: term.definition,
             exampleSentence:   exampleSentence,
             distractors:       Array(distractors),
-            type:              type
+            type:              type,
+            category:          term.category
         )
     }
 }

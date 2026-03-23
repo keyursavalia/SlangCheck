@@ -6,6 +6,7 @@
 
 import SwiftUI
 import OSLog
+import FirebaseCore
 
 // MARK: - SlangCheckApp
 
@@ -23,6 +24,7 @@ struct SlangCheckApp: App {
     // MARK: - Initialization
 
     init() {
+        FirebaseApp.configure()
         let env = AppEnvironment.production()
         environment = env
         // AuthState is created here so it exists before the first view body evaluation.

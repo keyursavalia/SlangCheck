@@ -26,6 +26,7 @@ Podfile.lock
 # Add to Xcode target manually. Share with teammates via a secrets manager, NOT git.
 GoogleService-Info.plist
 **/GoogleService-Info.plist
+SlangCheck/GoogleService-Info.plist
 
 # Firebase service account JSON — grants admin access to all Firebase services.
 # Used only for CI/CD scripts, stored exclusively in CI secret vaults.
@@ -82,3 +83,4 @@ fastlane/test_output/
 
 # Instruments
 *.trace
+SCREENS/

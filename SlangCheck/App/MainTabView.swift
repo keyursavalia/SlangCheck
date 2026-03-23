@@ -77,6 +77,17 @@ struct MainTabView: View {
     }
 }
 
+// MARK: - MoreMenuRoute
+
+/// Typed navigation destinations for the More tab's NavigationStack.
+/// Using value-based navigation ensures a single consistent path throughout the stack,
+/// so `NavigationLink(value:)` calls within destination views (e.g. Glossary → Term)
+/// operate on the same path and don't cause ordering glitches.
+private enum MoreMenuRoute: Hashable {
+    case glossary
+    case profile
+}
+
 // MARK: - MoreMenuView
 
 /// Presents Glossary and Profile as navigation destinations from a simple menu list.
@@ -89,11 +100,9 @@ private struct MoreMenuView: View {
     var body: some View {
         NavigationStack {
             List {
-                // Glossary
-                NavigationLink {
-                    GlossaryView()
-                        .toolbarRole(.navigationStack)
-                } label: {
+                // Glossary — value-based so the entire More→Glossary→Term path
+                // is managed by this single NavigationStack.
+                NavigationLink(value: MoreMenuRoute.glossary) {
                     moreRow(
                         icon: "books.vertical.fill",
                         iconColor: SlangColor.primary,
@@ -103,11 +112,8 @@ private struct MoreMenuView: View {
                     )
                 }
 
-                // Profile
-                NavigationLink {
-                    ProfileView()
-                        .toolbarRole(.navigationStack)
-                } label: {
+                // Profile — value-based to stay consistent with the path system.
+                NavigationLink(value: MoreMenuRoute.profile) {
                     moreRow(
                         icon: "person.fill",
                         iconColor: SlangColor.secondary,
@@ -122,6 +128,17 @@ private struct MoreMenuView: View {
             .background(SlangColor.background.ignoresSafeArea())
             .navigationTitle(String(localized: "tab.more", defaultValue: "More"))
             .navigationBarTitleDisplayMode(.large)
+            // All destinations for the More tab live here. GlossaryView registers an
+            // additional .navigationDestination(for: SlangTerm.self) inside itself,
+            // extending this stack for the Glossary → Term level.
+            .navigationDestination(for: MoreMenuRoute.self) { route in
+                switch route {
+                case .glossary:
+                    GlossaryView()
+                case .profile:
+                    ProfileView()
+                }
+            }
         }
         .task { await refreshLexiconBadge() }
     }
