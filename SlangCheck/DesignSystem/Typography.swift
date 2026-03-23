@@ -77,6 +77,19 @@ public extension Font {
     static func slang(_ style: SlangType) -> Font {
         style.font
     }
+
+    /// **Big Caslon Medium** — used for all slang term/word display.
+    /// Scales relative to the large-title Dynamic Type axis.
+    /// PostScript name: BigCaslon-Medium (bundled on iOS).
+    static func slangTerm(size: CGFloat) -> Font {
+        .custom("BigCaslon-Medium", size: size, relativeTo: .largeTitle)
+    }
+
+    /// **Baskerville Regular** — used for slang definitions and body descriptions.
+    /// Scales relative to the body Dynamic Type axis.
+    static func slangDefinition(size: CGFloat) -> Font {
+        .custom("Baskerville", size: size, relativeTo: .body)
+    }
 }
 
 // MARK: - Text Extension for Body Line Spacing

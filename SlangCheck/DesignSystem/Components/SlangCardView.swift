@@ -109,7 +109,7 @@ public struct SlangCardView: View {
             Spacer()
 
             Text(term.term)
-                .font(.system(size: 54, weight: .heavy))
+                .font(.slangTerm(size: 54))
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
@@ -141,7 +141,7 @@ public struct SlangCardView: View {
 
             // Term — large and prominent on the revealed face
             Text(term.term)
-                .font(.system(size: 44, weight: .heavy))
+                .font(.slangTerm(size: 44))
                 .foregroundStyle(.primary)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
@@ -153,7 +153,7 @@ public struct SlangCardView: View {
 
             // Definition — full text, larger for readability
             Text(term.definition)
-                .font(.system(size: 17, weight: .regular))
+                .font(.slangDefinition(size: 17))
                 .foregroundStyle(.primary.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
 
