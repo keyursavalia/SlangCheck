@@ -91,6 +91,14 @@ final class QuizViewModel {
         !isAnswerRevealed && eliminatedChoice == nil && currentQuestion != nil
     }
 
+    // MARK: - Timer State
+
+    /// Seconds remaining on the current question's countdown. Resets to `questionTimeLimit` each question.
+    private(set) var timeRemaining: Int = QuizViewModel.questionTimeLimit
+
+    /// Number of seconds allowed per question before auto-advancing.
+    static let questionTimeLimit: Int = 30
+
     // MARK: - Dependencies
 
     private let generateQuizUseCase: GenerateQuizUseCase
@@ -103,7 +111,10 @@ final class QuizViewModel {
 
     // MARK: - Private
 
-    private var sessionStartDate: Date? = nil
+    @ObservationIgnored private var sessionStartDate: Date? = nil
+    @ObservationIgnored private var timerTask: Task<Void, Never>? = nil
+    @ObservationIgnored private var unansweredCount: Int = 0
+    @ObservationIgnored private var categoryBonusAccumulated: Int = 0
 
     // MARK: - Initialization
 
@@ -130,21 +141,25 @@ final class QuizViewModel {
 
     /// Generates a new quiz session and transitions to `.active`.
     func startQuiz() async {
-        phase         = .loading
-        errorMessage  = nil
-        hintsUsed     = 0
-        correctCount  = 0
-        currentIndex  = 0
-        selectedAnswer   = nil
-        isAnswerRevealed = false
-        eliminatedChoice = nil
+        timerTask?.cancel()
+        phase                    = .loading
+        errorMessage             = nil
+        hintsUsed                = 0
+        correctCount             = 0
+        currentIndex             = 0
+        unansweredCount          = 0
+        categoryBonusAccumulated = 0
+        selectedAnswer           = nil
+        isAnswerRevealed         = false
+        eliminatedChoice         = nil
 
         do {
             let session = try await generateQuizUseCase.execute()
-            questions   = session.questions
+            questions        = session.questions
             sessionStartDate = Date()
             refreshShuffledChoices()
             phase = .active
+            startTimer()
         } catch {
             errorMessage = error.localizedDescription
             phase        = .idle
@@ -155,11 +170,13 @@ final class QuizViewModel {
     /// Records the user's choice and reveals answer feedback.
     func submitAnswer(_ choice: String) {
         guard !isAnswerRevealed, let question = currentQuestion else { return }
+        timerTask?.cancel()
         selectedAnswer   = choice
         isAnswerRevealed = true
 
         if choice == question.correctAnswer {
-            correctCount += 1
+            correctCount             += 1
+            categoryBonusAccumulated += AuraScoringEngine.categoryBonus(for: question.category)
             hapticService.answerCorrect()
         } else {
             hapticService.answerIncorrect()
@@ -179,12 +196,14 @@ final class QuizViewModel {
     /// Moves to the next question, or finalises the session if on the last question.
     func advanceToNextQuestion() {
         if currentIndex + 1 < questions.count {
-            currentIndex    += 1
-            selectedAnswer   = nil
-            isAnswerRevealed = false
-            eliminatedChoice = nil
+            currentIndex     += 1
+            selectedAnswer    = nil
+            isAnswerRevealed  = false
+            eliminatedChoice  = nil
             refreshShuffledChoices()
+            startTimer()
         } else {
+            timerTask?.cancel()
             finishSession()
         }
     }
@@ -196,16 +215,20 @@ final class QuizViewModel {
 
     /// Resets to `.idle` without starting a new session.
     func dismissResult() {
-        questions        = []
-        shuffledChoices  = []
-        currentIndex     = 0
-        selectedAnswer   = nil
-        isAnswerRevealed = false
-        eliminatedChoice = nil
-        hintsUsed        = 0
-        correctCount     = 0
-        sessionStartDate = nil
-        phase            = .idle
+        timerTask?.cancel()
+        timerTask                = nil
+        questions                = []
+        shuffledChoices          = []
+        currentIndex             = 0
+        selectedAnswer           = nil
+        isAnswerRevealed         = false
+        eliminatedChoice         = nil
+        hintsUsed                = 0
+        correctCount             = 0
+        unansweredCount          = 0
+        categoryBonusAccumulated = 0
+        sessionStartDate         = nil
+        phase                    = .idle
     }
 
     // MARK: - Private
@@ -214,14 +237,43 @@ final class QuizViewModel {
         shuffledChoices = currentQuestion?.allChoices.shuffled() ?? []
     }
 
+    /// Starts a 30-second countdown for the current question.
+    /// Cancels any previously running timer. On expiry, calls `handleTimeout()`.
+    private func startTimer() {
+        timerTask?.cancel()
+        timeRemaining = Self.questionTimeLimit
+        timerTask = Task { [weak self] in
+            for countdown in stride(from: Self.questionTimeLimit - 1, through: 0, by: -1) {
+                try? await Task.sleep(for: .seconds(1))
+                if Task.isCancelled { return }
+                self?.timeRemaining = countdown
+            }
+            guard !Task.isCancelled else { return }
+            self?.handleTimeout()
+        }
+    }
+
+    /// Called when the per-question timer reaches zero without a user answer.
+    private func handleTimeout() {
+        // Guard against a race where the user tapped an answer at the exact moment the timer fired.
+        guard !isAnswerRevealed, phase == .active else { return }
+        unansweredCount += 1
+        hapticService.answerIncorrect()
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+            advanceToNextQuestion()
+        }
+    }
+
     private func finishSession() {
         guard let startDate = sessionStartDate else { return }
         let elapsed = Date().timeIntervalSince(startDate)
         let input   = ScoringInput(
-            correctCount:   correctCount,
-            totalCount:     questions.count,
-            hintsUsed:      hintsUsed,
-            elapsedSeconds: elapsed
+            correctCount:        correctCount,
+            totalCount:          questions.count,
+            hintsUsed:           hintsUsed,
+            elapsedSeconds:      elapsed,
+            unansweredCount:     unansweredCount,
+            categoryBonusPoints: categoryBonusAccumulated
         )
         let result = scoringEngine.result(sessionID: UUID(), input: input)
         phase = .result(result)

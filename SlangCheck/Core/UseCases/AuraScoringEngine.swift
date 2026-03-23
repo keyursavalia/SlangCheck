@@ -20,36 +20,61 @@ public struct ScoringInput: Equatable, Sendable {
     /// Number of hints consumed during the session.
     public let hintsUsed: Int
 
-    /// Wall-clock duration of the session in seconds.
+    /// Wall-clock duration of the session in seconds (stored for records; not used in score).
     public let elapsedSeconds: TimeInterval
 
-    public init(correctCount: Int, totalCount: Int, hintsUsed: Int, elapsedSeconds: TimeInterval) {
+    /// Questions that timed out without a user answer.
+    public let unansweredCount: Int
+
+    /// Bonus points accumulated from correct answers on premium-category questions.
+    /// Computed by `QuizViewModel` using `AuraScoringEngine.categoryBonus(for:)`.
+    public let categoryBonusPoints: Int
+
+    public init(
+        correctCount: Int,
+        totalCount: Int,
+        hintsUsed: Int,
+        elapsedSeconds: TimeInterval,
+        unansweredCount: Int = 0,
+        categoryBonusPoints: Int = 0
+    ) {
         precondition(correctCount >= 0,          "correctCount must be non-negative.")
         precondition(totalCount > 0,             "totalCount must be positive.")
         precondition(correctCount <= totalCount, "correctCount cannot exceed totalCount.")
         precondition(hintsUsed >= 0,             "hintsUsed must be non-negative.")
         precondition(elapsedSeconds >= 0,        "elapsedSeconds must be non-negative.")
-        self.correctCount   = correctCount
-        self.totalCount     = totalCount
-        self.hintsUsed      = hintsUsed
-        self.elapsedSeconds = elapsedSeconds
+        precondition(unansweredCount >= 0,       "unansweredCount must be non-negative.")
+        precondition(categoryBonusPoints >= 0,   "categoryBonusPoints must be non-negative.")
+        self.correctCount        = correctCount
+        self.totalCount          = totalCount
+        self.hintsUsed           = hintsUsed
+        self.elapsedSeconds      = elapsedSeconds
+        self.unansweredCount     = unansweredCount
+        self.categoryBonusPoints = categoryBonusPoints
     }
 
-    /// Elapsed time expressed in whole minutes (truncated), matching the `T` term in the formula.
-    public var elapsedMinutes: Int { Int(elapsedSeconds / 60) }
+    /// Questions answered incorrectly (not timed out).
+    public var wrongCount: Int { max(0, totalCount - correctCount - unansweredCount) }
 }
 
 // MARK: - AuraScoringEngine
 
 /// Computes the Aura Points earned for a single quiz session.
 ///
-/// **Formula:** `S = (C × 100) / (1 + H) - (T × 2)`
+/// **Formula:** `S = max(0, (C × 100 + B) / (1 + H) - (W × 10) - (U × 25))`
 ///
 /// | Symbol | Meaning |
 /// |--------|---------|
 /// | C      | Correct answers |
+/// | B      | Category bonus points (premium categories award extra per correct answer) |
 /// | H      | Hints used |
-/// | T      | Elapsed time in whole minutes |
+/// | W      | Wrong answers (answered, but incorrectly) |
+/// | U      | Unanswered questions (timed out) |
+///
+/// Category bonus per correct answer (applied before hint division):
+/// - `brainrot`, `emerging2026` → +20 pts  (rarest / hardest vocab)
+/// - `gamingInternet`, `emojiDescriptor`, `emojiReaction`, `emojiTone` → +10 pts  (niche but learnable)
+/// - all other categories → +0 pts
 ///
 /// The result is floored at `minimumScore` (0) — a session can never subtract points.
 ///
@@ -59,11 +84,20 @@ public struct AuraScoringEngine: Sendable {
 
     // MARK: - Formula Constants
 
-    /// Points awarded per correct answer before hint and time penalties. (`C` multiplier = 100)
+    /// Points awarded per correct answer before hint penalty. (`C` multiplier)
     public static let pointsPerCorrectAnswer: Int = 100
 
-    /// Penalty subtracted per elapsed minute. (`T` coefficient = 2)
-    public static let timePenaltyPerMinute: Int = 2
+    /// Penalty per wrong answer (answered incorrectly, not timed out).
+    public static let wrongAnswerPenalty: Int = 10
+
+    /// Penalty per unanswered question (timed out).
+    public static let unansweredPenalty: Int = 25
+
+    /// Category bonus for premium brainrot / emerging vocabulary.
+    public static let categoryBonusHigh: Int = 20
+
+    /// Category bonus for niche gaming / emoji vocabulary.
+    public static let categoryBonusMedium: Int = 10
 
     /// The floor value — a session can never yield a negative point award.
     public static let minimumScore: Int = 0
@@ -72,20 +106,34 @@ public struct AuraScoringEngine: Sendable {
 
     public init() {}
 
+    // MARK: - Category Bonus
+
+    /// Returns the bonus points awarded when a question of the given category is answered correctly.
+    public static func categoryBonus(for category: SlangCategory) -> Int {
+        switch category {
+        case .brainrot, .emerging2026:     return categoryBonusHigh
+        case .gamingInternet, .emojiDescriptor, .emojiReaction, .emojiTone: return categoryBonusMedium
+        default:                           return 0
+        }
+    }
+
     // MARK: - Scoring
 
     /// Returns the Aura Points earned for the given session inputs.
     ///
-    /// Applies `S = (C × 100) / (1 + H) - (T × 2)`, then clamps to `minimumScore`.
+    /// Applies `S = max(0, (C × 100 + B) / (1 + H) - (W × 10) - (U × 25))`.
     public func score(for input: ScoringInput) -> Int {
         let c = input.correctCount
+        let b = input.categoryBonusPoints
         let h = input.hintsUsed
-        let t = input.elapsedMinutes
+        let w = input.wrongCount
+        let u = input.unansweredCount
 
-        // Integer arithmetic: divides first to match the formula's intended precedence.
-        // (C × 100) uses integer multiply; then we divide by (1 + H); then subtract time penalty.
-        // Division is integer (truncated toward zero), which is appropriate for a point award.
-        let raw = (c * Self.pointsPerCorrectAnswer) / (1 + h) - (t * Self.timePenaltyPerMinute)
+        // Integer arithmetic: base + bonus are summed before hint division to reward premium
+        // category mastery even when hints are used.
+        let afterHints = (c * Self.pointsPerCorrectAnswer + b) / (1 + h)
+        let penalties  = (w * Self.wrongAnswerPenalty) + (u * Self.unansweredPenalty)
+        let raw        = afterHints - penalties
         return Swift.max(raw, Self.minimumScore)
     }
 
@@ -106,6 +154,8 @@ public struct AuraScoringEngine: Sendable {
             hintsUsed: input.hintsUsed,
             elapsedSeconds: input.elapsedSeconds,
             auraPointsEarned: score(for: input),
+            unansweredCount: input.unansweredCount,
+            categoryBonusPoints: input.categoryBonusPoints,
             completedAt: completedAt
         )
     }
@@ -116,21 +166,26 @@ public struct AuraScoringEngine: Sendable {
     /// Intended for the `QuizResultView` summary panel.
     public func breakdown(for input: ScoringInput) -> ScoringBreakdown {
         let c = input.correctCount
+        let b = input.categoryBonusPoints
         let h = input.hintsUsed
-        let t = input.elapsedMinutes
+        let w = input.wrongCount
+        let u = input.unansweredCount
 
-        let basePoints    = c * Self.pointsPerCorrectAnswer
-        let afterHints    = basePoints / (1 + h)
-        let timePenalty   = t * Self.timePenaltyPerMinute
-        let finalScore    = Swift.max(afterHints - timePenalty, Self.minimumScore)
-        let wasClamped    = (afterHints - timePenalty) < Self.minimumScore
+        let basePoints          = c * Self.pointsPerCorrectAnswer
+        let afterHints          = (basePoints + b) / (1 + h)
+        let wrongPenalty        = w * Self.wrongAnswerPenalty
+        let unansweredPenalty   = u * Self.unansweredPenalty
+        let raw                 = afterHints - wrongPenalty - unansweredPenalty
+        let finalScore          = Swift.max(raw, Self.minimumScore)
 
         return ScoringBreakdown(
-            basePoints: basePoints,
-            afterHintPenalty: afterHints,
-            timePenalty: timePenalty,
-            finalScore: finalScore,
-            wasClamped: wasClamped
+            basePoints:           basePoints,
+            categoryBonus:        b,
+            afterHintPenalty:     afterHints,
+            wrongAnswerPenalty:   wrongPenalty,
+            unansweredPenalty:    unansweredPenalty,
+            finalScore:           finalScore,
+            wasClamped:           raw < Self.minimumScore
         )
     }
 }
@@ -144,11 +199,17 @@ public struct ScoringBreakdown: Equatable, Sendable {
     /// Raw points before any penalties: `C × 100`.
     public let basePoints: Int
 
-    /// Points remaining after the hint penalty: `basePoints / (1 + H)`.
+    /// Bonus points from premium-category correct answers.
+    public let categoryBonus: Int
+
+    /// Points remaining after the hint penalty: `(basePoints + categoryBonus) / (1 + H)`.
     public let afterHintPenalty: Int
 
-    /// Points deducted for elapsed time: `T × 2`.
-    public let timePenalty: Int
+    /// Points deducted for incorrect answers: `W × 10`.
+    public let wrongAnswerPenalty: Int
+
+    /// Points deducted for timed-out questions: `U × 25`.
+    public let unansweredPenalty: Int
 
     /// The final awarded score (never below 0).
     public let finalScore: Int

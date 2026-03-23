@@ -77,4 +77,11 @@ public enum AppConstants {
 
     /// The file extension of the seed data file.
     public static let seedDataExtension = "json"
+
+    /// Monotonically increasing integer. Bump this whenever `slang_seed.json` is updated
+    /// so existing installs automatically re-seed with the new terms on next launch.
+    public static let seedVersion = 2
+
+    /// UserDefaults key that stores the last-applied seed version on this device.
+    public static let seedVersionKey = "slangSeedVersion"
 }

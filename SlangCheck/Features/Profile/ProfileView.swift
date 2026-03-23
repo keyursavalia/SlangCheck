@@ -10,29 +10,35 @@ import SwiftUI
 struct ProfileView: View {
 
     @Environment(\.appEnvironment) private var env
+    @Environment(AuthState.self) private var authState
     @AppStorage(AppConstants.userSegmentKey) private var userSegmentRaw = UserSegment.languageEnthusiast.rawValue
     @State private var lexiconCount: Int = 0
     @State private var auraProfile: AuraProfile? = nil
-    @State private var showingLexicon = false
+    @State private var showingLexicon  = false
+    @State private var showingSettings = false
 
     private var userSegment: UserSegment {
         UserSegment(rawValue: userSegmentRaw) ?? .languageEnthusiast
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: SlangSpacing.lg) {
-                    profileHeader
-                    statsSection
-                    navigationSection
+        // No NavigationStack here — ProfileView is always pushed inside MoreMenuView's
+        // NavigationStack via a value-based NavigationLink. A nested stack would produce
+        // a double navigation bar. .navigationTitle propagates to the outer stack.
+        ScrollView {
+            VStack(spacing: SlangSpacing.lg) {
+                profileHeader
+                statsSection
+                if auraProfile != nil {
+                    auraStatusSection
                 }
-                .padding(SlangSpacing.md)
+                navigationSection
             }
-            .background(SlangColor.background.ignoresSafeArea())
-            .navigationTitle(String(localized: "profile.title", defaultValue: "Profile"))
-            .navigationBarTitleDisplayMode(.large)
+            .padding(SlangSpacing.md)
         }
+        .background(SlangColor.background.ignoresSafeArea())
+        .navigationTitle(String(localized: "profile.title", defaultValue: "Profile"))
+        .navigationBarTitleDisplayMode(.large)
         .task {
             await refreshLexiconCount()
             auraProfile = try? await env.auraRepository.fetchProfile()
@@ -42,30 +48,50 @@ struct ProfileView: View {
         }) {
             LexiconView()
         }
+        .sheet(isPresented: $showingSettings) {
+            ProfileSettingsView()
+        }
     }
 
     // MARK: - Profile Header
 
     private var profileHeader: some View {
         VStack(spacing: SlangSpacing.md) {
-            Circle()
-                .fill(SlangColor.primary.opacity(0.15))
-                .frame(width: 80, height: 80)
-                .overlay(
-                    Image(systemName: userSegment.symbolName)
-                        .font(.system(size: 36, weight: .light))
-                        .foregroundStyle(SlangColor.primary)
-                        .accessibilityHidden(true)
-                )
+            // Avatar
+            ZStack {
+                Circle()
+                    .fill(SlangColor.primary.opacity(0.12))
+                    .frame(width: 88, height: 88)
+
+                if let url = authState.currentProfile?.photoURL {
+                    AsyncImage(url: url) { phase in
+                        if case .success(let image) = phase {
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 88, height: 88)
+                                .clipShape(Circle())
+                        } else {
+                            avatarFallback
+                        }
+                    }
+                } else {
+                    avatarFallback
+                }
+            }
+            .overlay(Circle().strokeBorder(SlangColor.primary.opacity(0.2), lineWidth: 2))
 
             VStack(spacing: SlangSpacing.xs) {
-                Text(userSegment.displayName)
+                Text(authState.currentProfile?.displayName
+                     ?? String(localized: "profile.guest", defaultValue: "Guest User"))
                     .font(.slang(.heading))
                     .foregroundStyle(.primary)
 
-                Text(String(localized: "profile.guest", defaultValue: "Guest User"))
-                    .font(.slang(.caption))
-                    .foregroundStyle(.secondary)
+                if let username = authState.currentProfile?.username {
+                    Text("@\(username)")
+                        .font(.slang(.caption))
+                        .foregroundStyle(.secondary)
+                }
             }
 
             if let profile = auraProfile {
@@ -75,19 +101,86 @@ struct ProfileView: View {
                     .padding(.horizontal, SlangSpacing.md)
                     .padding(.vertical, SlangSpacing.xs)
                     .background(Capsule().fill(SlangColor.primary.opacity(0.12)))
-            } else {
-                Text(String(localized: "profile.auraComingSoon",
-                            defaultValue: "Aura System — Coming in the Quizzes Update"))
-                    .font(.slang(.caption))
-                    .foregroundStyle(SlangColor.primary.opacity(0.7))
-                    .padding(.horizontal, SlangSpacing.md)
-                    .padding(.vertical, SlangSpacing.xs)
-                    .background(Capsule().fill(SlangColor.primary.opacity(0.10)))
             }
         }
         .padding(SlangSpacing.md)
         .frame(maxWidth: .infinity)
         .glassCard()
+    }
+
+    private var avatarFallback: some View {
+        Image(systemName: "person.fill")
+            .font(.system(size: 36, weight: .light))
+            .foregroundStyle(SlangColor.primary.opacity(0.6))
+    }
+
+    // MARK: - Aura Status Section
+
+    /// Full Aura tier progress card shown between the stats tiles and nav rows.
+    @ViewBuilder
+    private var auraStatusSection: some View {
+        if let profile = auraProfile {
+            VStack(alignment: .leading, spacing: SlangSpacing.md) {
+                HStack {
+                    Text(profile.currentTier.displayName)
+                        .font(.slang(.label))
+                        .foregroundStyle(.primary)
+                    Text("·")
+                        .foregroundStyle(.secondary)
+                    Text(profile.currentTier.subtitle)
+                        .font(.slang(.caption))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(profile.totalPoints) pts")
+                        .font(.slang(.label))
+                        .foregroundStyle(auraColor(for: profile.currentTier))
+                        .contentTransition(.numericText())
+                }
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
+                            .fill(SlangColor.separator)
+                            .frame(height: 8)
+                        RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
+                            .fill(auraColor(for: profile.currentTier))
+                            .frame(width: geo.size.width * profile.tierProgress, height: 8)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.75),
+                                       value: profile.tierProgress)
+                    }
+                }
+                .frame(height: 8)
+
+                if let ptsNeeded = profile.pointsToNextTier {
+                    Text(
+                        String(
+                            format: String(localized: "aura.profile.nextTier %d",
+                                           defaultValue: "%d pts to next tier"),
+                            ptsNeeded
+                        )
+                    )
+                    .font(.slang(.caption))
+                    .foregroundStyle(.secondary)
+                } else {
+                    Text(String(localized: "aura.profile.topTier",
+                                defaultValue: "You've reached the top!"))
+                        .font(.slang(.caption))
+                        .foregroundStyle(SlangColor.primary)
+                }
+            }
+            .padding(SlangSpacing.md)
+            .frame(maxWidth: .infinity)
+            .glassCard()
+        }
+    }
+
+    private func auraColor(for tier: AuraTier) -> Color {
+        switch tier {
+        case .unc:        return .secondary
+        case .lurk:       return SlangColor.accent
+        case .auraFarmer: return SlangColor.secondary
+        case .rizzler:    return SlangColor.primary
+        }
     }
 
     // MARK: - Stats Section
@@ -128,18 +221,10 @@ struct ProfileView: View {
                 action: { showingLexicon = true }
             )
             ProfileNavRow(
-                symbolName: "chart.bar.fill",
-                title: String(localized: "profile.nav.quizHistory",
-                              defaultValue: "Quiz History"),
-                badge: nil,
-                isLocked: true,
-                action: {}
-            )
-            ProfileNavRow(
                 symbolName: "gearshape.fill",
                 title: String(localized: "profile.nav.settings", defaultValue: "Settings"),
                 badge: nil,
-                action: {}
+                action: { showingSettings = true }
             )
         }
         .background(SlangColor.surface)
@@ -236,6 +321,12 @@ private struct ProfileNavRow: View {
 // MARK: - Preview
 
 #Preview("ProfileView") {
-    ProfileView()
-        .environment(\.appEnvironment, .preview())
+    NavigationStack {
+        ProfileView()
+    }
+    .environment(\.appEnvironment, .preview())
+    .environment(AuthState(
+        authService:       NoOpAuthenticationService(),
+        profileRepository: NoOpUserProfileRepository()
+    ))
 }

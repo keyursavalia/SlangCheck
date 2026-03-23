@@ -38,6 +38,12 @@ public struct QuizResult: Codable, Identifiable, Equatable, Sendable {
     /// UTC timestamp when the last answer was submitted.
     public let completedAt: Date
 
+    /// Questions that timed out without a user answer.
+    public let unansweredCount: Int
+
+    /// Bonus points accumulated from premium-category correct answers.
+    public let categoryBonusPoints: Int
+
     // MARK: Initialization
 
     public init(
@@ -47,6 +53,8 @@ public struct QuizResult: Codable, Identifiable, Equatable, Sendable {
         hintsUsed: Int,
         elapsedSeconds: TimeInterval,
         auraPointsEarned: Int,
+        unansweredCount: Int = 0,
+        categoryBonusPoints: Int = 0,
         completedAt: Date = Date()
     ) {
         precondition(correctCount >= 0,           "correctCount must be non-negative.")
@@ -55,13 +63,17 @@ public struct QuizResult: Codable, Identifiable, Equatable, Sendable {
         precondition(hintsUsed >= 0,              "hintsUsed must be non-negative.")
         precondition(elapsedSeconds >= 0,         "elapsedSeconds must be non-negative.")
         precondition(auraPointsEarned >= 0,       "auraPointsEarned must be non-negative.")
-        self.id                = id
-        self.correctCount      = correctCount
-        self.totalCount        = totalCount
-        self.hintsUsed         = hintsUsed
-        self.elapsedSeconds    = elapsedSeconds
-        self.auraPointsEarned  = auraPointsEarned
-        self.completedAt       = completedAt
+        precondition(unansweredCount >= 0,        "unansweredCount must be non-negative.")
+        precondition(categoryBonusPoints >= 0,    "categoryBonusPoints must be non-negative.")
+        self.id                  = id
+        self.correctCount        = correctCount
+        self.totalCount          = totalCount
+        self.hintsUsed           = hintsUsed
+        self.elapsedSeconds      = elapsedSeconds
+        self.auraPointsEarned    = auraPointsEarned
+        self.unansweredCount     = unansweredCount
+        self.categoryBonusPoints = categoryBonusPoints
+        self.completedAt         = completedAt
     }
 
     // MARK: Derived
@@ -81,4 +93,30 @@ public struct QuizResult: Codable, Identifiable, Equatable, Sendable {
 
     /// `true` if the user used no hints at all.
     public var isHintFree: Bool { hintsUsed == 0 }
+
+    /// Number of questions answered incorrectly (not timed out).
+    public var wrongCount: Int { max(0, totalCount - correctCount - unansweredCount) }
+}
+
+// MARK: - Codable (backward-compatible decoder)
+
+extension QuizResult {
+    private enum CodingKeys: String, CodingKey {
+        case id, correctCount, totalCount, hintsUsed, elapsedSeconds
+        case auraPointsEarned, completedAt, unansweredCount, categoryBonusPoints
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id                  = try c.decode(UUID.self,         forKey: .id)
+        correctCount        = try c.decode(Int.self,          forKey: .correctCount)
+        totalCount          = try c.decode(Int.self,          forKey: .totalCount)
+        hintsUsed           = try c.decode(Int.self,          forKey: .hintsUsed)
+        elapsedSeconds      = try c.decode(TimeInterval.self, forKey: .elapsedSeconds)
+        auraPointsEarned    = try c.decode(Int.self,          forKey: .auraPointsEarned)
+        completedAt         = try c.decode(Date.self,         forKey: .completedAt)
+        // Default to 0 for records created before these fields were added.
+        unansweredCount     = (try? c.decode(Int.self, forKey: .unansweredCount))     ?? 0
+        categoryBonusPoints = (try? c.decode(Int.self, forKey: .categoryBonusPoints)) ?? 0
+    }
 }

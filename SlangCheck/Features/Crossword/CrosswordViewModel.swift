@@ -206,6 +206,11 @@ final class CrosswordViewModel {
         selectedCellID    = clue.cellIDs.first
     }
 
+    /// Clears the cursor selection, dismissing the keyboard.
+    func deselectCell() {
+        selectedCellID = nil
+    }
+
     // MARK: - Letter Entry
 
     /// Enters a single uppercase letter at the current cursor position and advances the cursor.

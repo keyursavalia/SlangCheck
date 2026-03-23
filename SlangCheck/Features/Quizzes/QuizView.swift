@@ -77,7 +77,7 @@ struct QuizView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.currentIndex)
     }
 
-    // MARK: - Header (Progress + Hint)
+    // MARK: - Header (Progress + Timer + Hint)
 
     private var quizHeader: some View {
         VStack(spacing: SlangSpacing.sm) {
@@ -85,6 +85,15 @@ struct QuizView: View {
                 Text("Question \(viewModel.questionNumber) of \(viewModel.totalQuestions)")
                 .font(.slang(.caption))
                 .foregroundStyle(.secondary)
+
+                Spacer()
+
+                // 30-second countdown ring
+                TimerRingView(
+                    timeRemaining: viewModel.timeRemaining,
+                    total: QuizViewModel.questionTimeLimit
+                )
+                .frame(width: 36, height: 36)
 
                 Spacer()
 
@@ -311,3 +320,47 @@ private struct QuizChoiceButton: View {
 
 private enum ChoiceState { case neutral, correct, wrong, dimmed, eliminated }
 extension ChoiceState: Equatable {}
+
+// MARK: - TimerRingView
+
+/// Circular countdown ring shown in the quiz header. Color shifts from green → amber → red
+/// as the timer approaches zero, giving the user an urgency signal.
+private struct TimerRingView: View {
+
+    let timeRemaining: Int
+    let total: Int
+
+    private var progress: Double {
+        guard total > 0 else { return 0 }
+        return Double(timeRemaining) / Double(total)
+    }
+
+    private var ringColor: Color {
+        if timeRemaining > 10 { return SlangColor.secondary }
+        if timeRemaining >  5 { return SlangColor.accent }
+        return SlangColor.errorRed
+    }
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(SlangColor.separator, lineWidth: 3)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(
+                    ringColor,
+                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                )
+                // Start at the top (12 o'clock) and shrink clockwise.
+                .rotationEffect(.degrees(-90))
+                .animation(.linear(duration: 1), value: progress)
+            Text("\(timeRemaining)")
+                .font(.slang(.caption))
+                .foregroundStyle(ringColor)
+                .monospacedDigit()
+                .contentTransition(.numericText(countsDown: true))
+                .animation(.linear(duration: 1), value: timeRemaining)
+        }
+        .accessibilityLabel("\(timeRemaining) seconds remaining")
+    }
+}

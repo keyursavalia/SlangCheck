@@ -16,9 +16,49 @@ build/
 Pods/
 Podfile.lock
 
-# Secrets — never commit API keys (NF-S-006)
+# ──────────────────────────────────────────────────────────────────────────────
+# SECRETS — NEVER COMMIT ANY OF THESE FILES.
+# If any of these ever appear in `git status` as untracked, do NOT `git add .`
+# Add them explicitly by name only and verify nothing sensitive is staged.
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Firebase configuration plist — contains API keys, project IDs, and client IDs.
+# Add to Xcode target manually. Share with teammates via a secrets manager, NOT git.
+GoogleService-Info.plist
+**/GoogleService-Info.plist
+SlangCheck/GoogleService-Info.plist
+
+# Firebase service account JSON — grants admin access to all Firebase services.
+# Used only for CI/CD scripts, stored exclusively in CI secret vaults.
+*-service-account.json
+service-account*.json
+firebase-adminsdk*.json
+
+# Xcconfig files that may contain injected secrets (API keys, bundle IDs, etc.)
 Secrets.xcconfig
 *.xcconfig.local
+*.xcconfig.secret
+
+# Local Firebase CLI state — not sensitive but project-specific, don't share.
+.firebaserc
+firebase.json
+
+# Firebase emulator data (local dev only)
+.firebase/
+firebase-export-*/
+
+# Environment variable files (if ever used for local scripts)
+.env
+.env.local
+.env.*.local
+
+# Apple private key downloads (.p8 files) — used for APNs / Sign in with Apple.
+# Download once, store in a password manager. If lost, generate a new one.
+*.p8
+AuthKey_*.p8
+
+# Local developer documentation that may contain secrets, keys, or internal notes.
+FIREBASE_SETUP.md
 
 # macOS
 .DS_Store
@@ -43,3 +83,4 @@ fastlane/test_output/
 
 # Instruments
 *.trace
+SCREENS/

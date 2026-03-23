@@ -87,10 +87,12 @@ struct QuizResultView: View {
     private var breakdownSection: some View {
         let engine = AuraScoringEngine()
         let input  = ScoringInput(
-            correctCount:   result.correctCount,
-            totalCount:     result.totalCount,
-            hintsUsed:      result.hintsUsed,
-            elapsedSeconds: result.elapsedSeconds
+            correctCount:        result.correctCount,
+            totalCount:          result.totalCount,
+            hintsUsed:           result.hintsUsed,
+            elapsedSeconds:      result.elapsedSeconds,
+            unansweredCount:     result.unansweredCount,
+            categoryBonusPoints: result.categoryBonusPoints
         )
         let bd = engine.breakdown(for: input)
 
@@ -101,19 +103,35 @@ struct QuizResultView: View {
                 value: "+\(bd.basePoints)",
                 color: SlangColor.secondary
             )
+            if bd.categoryBonus > 0 {
+                breakdownRow(
+                    label: String(localized: "quizResult.breakdown.categoryBonus",
+                                  defaultValue: "Category Bonus"),
+                    value: "+\(bd.categoryBonus)",
+                    color: SlangColor.secondary
+                )
+            }
             if result.hintsUsed > 0 {
                 breakdownRow(
                     label: String(localized: "quizResult.breakdown.hints",
                                   defaultValue: "Hint Penalty"),
-                    value: "−\(bd.basePoints - bd.afterHintPenalty)",
+                    value: "−\(bd.basePoints + bd.categoryBonus - bd.afterHintPenalty)",
                     color: SlangColor.errorRed
                 )
             }
-            if bd.timePenalty > 0 {
+            if bd.wrongAnswerPenalty > 0 {
                 breakdownRow(
-                    label: String(localized: "quizResult.breakdown.time",
-                                  defaultValue: "Time Penalty"),
-                    value: "−\(bd.timePenalty)",
+                    label: String(localized: "quizResult.breakdown.wrong",
+                                  defaultValue: "Wrong Answers"),
+                    value: "−\(bd.wrongAnswerPenalty)",
+                    color: SlangColor.errorRed
+                )
+            }
+            if bd.unansweredPenalty > 0 {
+                breakdownRow(
+                    label: String(localized: "quizResult.breakdown.unanswered",
+                                  defaultValue: "Unanswered"),
+                    value: "−\(bd.unansweredPenalty)",
                     color: SlangColor.accent
                 )
             }

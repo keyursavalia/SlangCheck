@@ -57,6 +57,10 @@ public struct QuizQuestion: Codable, Identifiable, Hashable, Sendable {
     /// The format of this question.
     public let type: QuestionType
 
+    /// The thematic category of the term being tested.
+    /// Used by `AuraScoringEngine` to award category bonus points for premium categories.
+    public let category: SlangCategory
+
     // MARK: Initialization
 
     public init(
@@ -66,7 +70,8 @@ public struct QuizQuestion: Codable, Identifiable, Hashable, Sendable {
         correctDefinition: String,
         exampleSentence: String,
         distractors: [String],
-        type: QuestionType
+        type: QuestionType,
+        category: SlangCategory
     ) {
         precondition(distractors.count == 3, "QuizQuestion must have exactly 3 distractors.")
         self.id                = id
@@ -76,6 +81,7 @@ public struct QuizQuestion: Codable, Identifiable, Hashable, Sendable {
         self.exampleSentence   = exampleSentence
         self.distractors       = distractors
         self.type              = type
+        self.category          = category
     }
 
     // MARK: Derived

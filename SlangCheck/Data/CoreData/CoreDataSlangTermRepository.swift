@@ -32,31 +32,35 @@ public actor CoreDataSlangTermRepository: SlangTermRepository {
     // MARK: - SlangTermRepository: Seed
 
     public func seedIfNeeded() async throws(SlangRepositoryError) {
-        let context = persistence.newBackgroundContext()
-        let existingCount = await context.perform {
-            (try? context.count(for: CDSlangTerm.fetchRequest())) ?? 0
-        }
-
-        guard existingCount == 0 else {
-            Logger.repository.info("Seed check: \(existingCount) terms already present. Skipping seed.")
+        let storedVersion = UserDefaults.standard.integer(forKey: AppConstants.seedVersionKey)
+        guard storedVersion < AppConstants.seedVersion else {
+            Logger.repository.info("Seed is up to date (v\(AppConstants.seedVersion)). Skipping.")
             return
         }
 
-        Logger.repository.info("Database is empty. Loading seed from bundle.")
+        Logger.repository.info("Seed version mismatch (stored: \(storedVersion) → current: \(AppConstants.seedVersion)). Re-seeding dictionary.")
         let terms = try loadSeedData()
+        let context = persistence.newBackgroundContext()
 
         await context.perform {
+            // Remove all existing dictionary terms; CDLexiconEntry rows are a separate
+            // entity and are intentionally preserved across reseeds.
+            if let existing = try? context.fetch(CDSlangTerm.fetchRequest()) {
+                existing.forEach { context.delete($0) }
+            }
             for term in terms {
                 let entity = CDSlangTerm(context: context)
                 entity.populate(from: term)
             }
             do {
                 try context.save()
-                Logger.repository.info("Seed complete: \(terms.count) terms written.")
+                Logger.repository.info("Seed complete: \(terms.count) terms written (v\(AppConstants.seedVersion)).")
             } catch {
                 Logger.repository.error("Seed save failed: \(error.localizedDescription)")
             }
         }
+
+        UserDefaults.standard.set(AppConstants.seedVersion, forKey: AppConstants.seedVersionKey)
     }
 
     // MARK: - SlangTermRepository: Dictionary

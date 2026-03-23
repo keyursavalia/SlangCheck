@@ -1,8 +1,9 @@
 // Features/Swiper/SwiperView.swift
 // SlangCheck
 //
-// The Swiper tab screen. Gesture-driven card stack with tap-to-flip,
-// right/left swipe to save/dismiss, button alternatives, and undo.
+// Neon Tokyo-themed swiper. NavigationStack with "Learn" title.
+// Two-button bottom row: SKIP (×) and SAVE (✓) with dynamic glow on drag.
+// Buttons only glow when the user drags in their respective direction.
 // Per FR-S-001 through FR-S-009. Pure SwiftUI gesture implementation.
 
 import SwiftUI
@@ -15,13 +16,24 @@ struct SwiperView: View {
     @State private var viewModel: SwiperViewModel?
 
     var body: some View {
-        Group {
-            if let viewModel {
-                SwiperContentView(viewModel: viewModel)
-            } else {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(SlangColor.background.ignoresSafeArea())
+        NavigationStack {
+            Group {
+                if let viewModel {
+                    SwiperContentView(viewModel: viewModel)
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(SlangColor.background.ignoresSafeArea())
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text(String(localized: "swiper.title.full", defaultValue: "Learn GenZ Lingo"))
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .tracking(2.5)
+                        .foregroundStyle(.primary)
+                }
             }
         }
         .task {
@@ -41,40 +53,30 @@ struct SwiperView: View {
 private struct SwiperContentView: View {
 
     @Bindable var viewModel: SwiperViewModel
-
-    /// Current drag offset for the top card.
     @GestureState private var dragOffset: CGSize = .zero
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                SlangColor.background.ignoresSafeArea()
+        ZStack {
+            SlangColor.background.ignoresSafeArea()
 
-                if viewModel.isLoading {
-                    ProgressView()
-                        .tint(SlangColor.primary)
-                } else if viewModel.isQueueEmpty {
-                    emptyQueueState
-                } else {
-                    VStack(spacing: SlangSpacing.lg) {
-                        cardStack
-                        controlButtons
-                    }
-                }
+            if viewModel.isLoading {
+                ProgressView().tint(SlangColor.secondary)
+            } else if viewModel.isQueueEmpty {
+                emptyQueueState
+            } else {
+                VStack(spacing: 0) {
+                    Spacer(minLength: SlangSpacing.md)
 
-                // Undo button (FR-S-009)
-                if viewModel.showUndoButton {
-                    VStack {
-                        Spacer()
-                        undoButton
-                            .padding(.bottom, SlangSpacing.xl)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
+                    cardStack
+                        .padding(.horizontal, SlangSpacing.xl)
+
+                    Spacer(minLength: SlangSpacing.md)
+
+                    swipeHint
+                        .padding(.bottom, SlangSpacing.lg)
                 }
             }
-            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.showUndoButton)
-            .navigationTitle(String(localized: "swiper.title", defaultValue: "Learn"))
-            .navigationBarTitleDisplayMode(.inline)
+
         }
         .onDisappear { viewModel.onDisappear() }
     }
@@ -82,9 +84,13 @@ private struct SwiperContentView: View {
     // MARK: - Card Stack
 
     private var cardStack: some View {
-        ZStack {
-            // Show up to 2 cards (top + one below for depth effect)
-            ForEach(Array(viewModel.cardQueue.prefix(2).enumerated().reversed()), id: \.element.id) { index, term in
+        let cardHeight = min(520, UIScreen.main.bounds.height * 0.58)
+
+        return ZStack {
+            ForEach(
+                Array(viewModel.cardQueue.prefix(2).enumerated().reversed()),
+                id: \.element.id
+            ) { index, term in
                 let isTop = index == 0
                 SlangCardView(
                     term: term,
@@ -92,8 +98,8 @@ private struct SwiperContentView: View {
                     dragOffset: isTop ? dragOffset : .zero,
                     isTopCard: isTop
                 )
-                .frame(width: UIScreen.main.bounds.width - SlangSpacing.xl * 2,
-                       height: 480)
+                .frame(maxWidth: .infinity)
+                .frame(height: cardHeight)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     if isTop { viewModel.flipCard() }
@@ -101,15 +107,15 @@ private struct SwiperContentView: View {
                 .gesture(isTop ? swipeGesture : nil)
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(accessibilityLabel(for: term, isFlipped: isTop && viewModel.isCardFlipped))
-                .accessibilityAction(named: String(localized: "swiper.accessibility.save", defaultValue: "Save term")) {
-                    viewModel.swipeRight()
-                }
-                .accessibilityAction(named: String(localized: "swiper.accessibility.skip", defaultValue: "Skip term")) {
-                    viewModel.swipeLeft()
-                }
-                .accessibilityAction(named: String(localized: "swiper.accessibility.flip", defaultValue: "Flip card")) {
-                    viewModel.flipCard()
-                }
+                .accessibilityAction(
+                    named: String(localized: "swiper.accessibility.save", defaultValue: "Save term")
+                ) { viewModel.swipeRight() }
+                .accessibilityAction(
+                    named: String(localized: "swiper.accessibility.skip", defaultValue: "Skip term")
+                ) { viewModel.swipeLeft() }
+                .accessibilityAction(
+                    named: String(localized: "swiper.accessibility.flip", defaultValue: "Flip card")
+                ) { viewModel.flipCard() }
             }
         }
     }
@@ -128,56 +134,25 @@ private struct SwiperContentView: View {
                 } else if value.translation.width < -threshold {
                     viewModel.swipeLeft()
                 }
-                // If under threshold, card snaps back (dragOffset returns to .zero via GestureState)
+                // Under threshold → card snaps back via GestureState reset
             }
     }
 
-    // MARK: - Control Buttons (FR-S-006)
+    // MARK: - Swipe Hint
 
-    private var controlButtons: some View {
-        HStack(spacing: SlangSpacing.xxl) {
-            // Dismiss / Skip button
-            CircleActionButton(
-                symbolName: "xmark",
-                color: SlangColor.accent,
-                accessibilityLabel: String(localized: "swiper.button.skip", defaultValue: "Skip")
-            ) {
-                viewModel.hapticService.swipeButtonTapped()
-                viewModel.swipeLeft()
-            }
-
-            // Save button
-            CircleActionButton(
-                symbolName: "checkmark",
-                color: SlangColor.secondary,
-                accessibilityLabel: String(localized: "swiper.button.save", defaultValue: "Save to Lexicon")
-            ) {
-                viewModel.hapticService.swipeButtonTapped()
-                viewModel.swipeRight()
-            }
+    /// Subtle instruction nudge sitting between the card stack and the tab bar.
+    private var swipeHint: some View {
+        HStack(spacing: SlangSpacing.sm) {
+            Image(systemName: "arrow.left")
+                .font(.system(size: 11, weight: .medium))
+                .accessibilityHidden(true)
+            Text(String(localized: "swiper.hint.swipe", defaultValue: "swipe to skip or save"))
+                .font(.system(size: 12, design: .monospaced))
+            Image(systemName: "arrow.right")
+                .font(.system(size: 11, weight: .medium))
+                .accessibilityHidden(true)
         }
-    }
-
-    // MARK: - Undo Button (FR-S-009)
-
-    private var undoButton: some View {
-        Button {
-            viewModel.undo()
-        } label: {
-            HStack(spacing: SlangSpacing.xs) {
-                Image(systemName: "arrow.uturn.backward")
-                    .font(.system(size: 14, weight: .semibold))
-                    .accessibilityHidden(true)
-                Text(String(localized: "swiper.undo", defaultValue: "Undo"))
-                    .font(.slang(.label))
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, SlangSpacing.lg)
-            .padding(.vertical, SlangSpacing.sm + 2)
-            .background(Capsule().fill(Color(.systemGray)))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(String(localized: "swiper.undo", defaultValue: "Undo last swipe"))
+        .foregroundStyle(Color(.tertiaryLabel))
     }
 
     // MARK: - Empty Queue State (FR-S-008)
@@ -200,42 +175,14 @@ private struct SwiperContentView: View {
         if isFlipped {
             return "\(term.term). \(term.definition)"
         } else {
-            return "Flashcard: \(term.term). Double tap to reveal definition."
+            return String(
+                format: String(
+                    localized: "swiper.accessibility.card %@",
+                    defaultValue: "Flashcard: %@. Double tap to reveal definition."
+                ),
+                term.term
+            )
         }
-    }
-}
-
-// MARK: - CircleActionButton
-
-private struct CircleActionButton: View {
-    let symbolName: String
-    let color: Color
-    let accessibilityLabel: String
-    let action: () -> Void
-
-    @State private var isPressed = false
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: symbolName)
-                .font(.system(size: 24, weight: .bold))
-                .foregroundStyle(color)
-                .frame(width: SlangTapTarget.minimum + 16,
-                       height: SlangTapTarget.minimum + 16)
-                .background(
-                    Circle()
-                        .fill(color.opacity(0.12))
-                        .overlay(Circle().stroke(color.opacity(0.3), lineWidth: 1.5))
-                )
-        }
-        .buttonStyle(.plain)
-        .pressedState(isPressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded   { _ in isPressed = false }
-        )
-        .accessibilityLabel(accessibilityLabel)
     }
 }
 

@@ -16,9 +16,15 @@ public enum SlangCategory: String, Codable, CaseIterable, Identifiable, Sendable
     case socialArchetype        = "social_archetype"
     case relationship           = "relationship"
     case gamingInternet         = "gaming_internet"
-    case emojiSlang             = "emoji_slang"
+    case reaction               = "reaction"
     case aesthetic              = "aesthetic"
     case emerging2026           = "emerging_2026"
+    case emojiDescriptor        = "emoji_descriptor"
+    case emojiReaction          = "emoji_reaction"
+    case emojiTone              = "emoji_tone"
+    case regionalNorCal         = "regional_norcal"
+    case regionalSoCal          = "regional_socal"
+    case techSiliconValley      = "tech_silicon_valley"
 
     public var id: String { rawValue }
 
@@ -26,13 +32,19 @@ public enum SlangCategory: String, Codable, CaseIterable, Identifiable, Sendable
     public var displayName: String {
         switch self {
         case .foundationalDescriptor: return String(localized: "category.foundationalDescriptor", defaultValue: "Descriptors")
-        case .brainrot:               return String(localized: "category.brainrot", defaultValue: "Brainrot")
-        case .socialArchetype:        return String(localized: "category.socialArchetype", defaultValue: "Archetypes")
-        case .relationship:           return String(localized: "category.relationship", defaultValue: "Relationships")
-        case .gamingInternet:         return String(localized: "category.gamingInternet", defaultValue: "Gaming")
-        case .emojiSlang:             return String(localized: "category.emojiSlang", defaultValue: "Emoji")
-        case .aesthetic:              return String(localized: "category.aesthetic", defaultValue: "Aesthetics")
-        case .emerging2026:           return String(localized: "category.emerging2026", defaultValue: "Emerging")
+        case .brainrot:               return String(localized: "category.brainrot",               defaultValue: "Brainrot")
+        case .socialArchetype:        return String(localized: "category.socialArchetype",        defaultValue: "Archetypes")
+        case .relationship:           return String(localized: "category.relationship",           defaultValue: "Relationships")
+        case .gamingInternet:         return String(localized: "category.gamingInternet",         defaultValue: "Gaming")
+        case .reaction:               return String(localized: "category.reaction",               defaultValue: "Reactions")
+        case .aesthetic:              return String(localized: "category.aesthetic",              defaultValue: "Aesthetics")
+        case .emerging2026:           return String(localized: "category.emerging2026",           defaultValue: "Emerging")
+        case .emojiDescriptor:        return String(localized: "category.emojiDescriptor",        defaultValue: "Emoji")
+        case .emojiReaction:          return String(localized: "category.emojiReaction",          defaultValue: "Emoji Reactions")
+        case .emojiTone:              return String(localized: "category.emojiTone",              defaultValue: "Emoji Tone")
+        case .regionalNorCal:         return String(localized: "category.regionalNorCal",         defaultValue: "NorCal")
+        case .regionalSoCal:          return String(localized: "category.regionalSoCal",          defaultValue: "SoCal")
+        case .techSiliconValley:      return String(localized: "category.techSiliconValley",      defaultValue: "Tech / SV")
         }
     }
 }
@@ -65,8 +77,9 @@ public enum UsageFrequency: String, Codable, Sendable, Comparable {
 
 /// The generational cohort(s) that primarily use a slang term.
 public enum GenerationTag: String, Codable, Sendable {
-    case genZ     = "genZ"
-    case genAlpha = "genAlpha"
+    case genZ        = "genZ"
+    case genAlpha    = "genAlpha"
+    case millennials = "millennials"
 }
 
 // MARK: - SlangTerm
