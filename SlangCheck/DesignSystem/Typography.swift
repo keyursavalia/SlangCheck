@@ -78,11 +78,11 @@ public extension Font {
         style.font
     }
 
-    /// **Big Caslon Medium** — used for all slang term/word display.
+    /// **Noticia Text Regular** — used for all slang term/word display.
     /// Scales relative to the large-title Dynamic Type axis.
-    /// PostScript name: BigCaslon-Medium (bundled on iOS).
+    /// PostScript name: NoticiaText-Regular (bundled in app via FontsInfo.plist).
     static func slangTerm(size: CGFloat) -> Font {
-        .custom("BigCaslon-Medium", size: size, relativeTo: .largeTitle)
+        .custom("NoticiaText-Regular", size: size, relativeTo: .largeTitle)
     }
 
     /// **Baskerville Regular** — used for slang definitions and body descriptions.
