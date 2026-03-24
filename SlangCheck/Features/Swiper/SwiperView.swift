@@ -2,10 +2,10 @@
 // SlangCheck
 //
 // Full-screen term layout — term + definition always visible, no tap-to-flip.
-// Swipe up to advance to the next term. Save button at bottom.
-// The 3D flip card design is preserved (commented out) in SlangCardView.swift.
+// Swipe up to advance, swipe down to revisit the previous term.
 
 import SwiftUI
+import UIKit
 
 // MARK: - SwiperView
 
@@ -54,14 +54,23 @@ struct SwiperView: View {
 private struct SwiperContentView: View {
 
     @Bindable var viewModel: SwiperViewModel
-    /// Live vertical drag offset from the gesture — resets on release.
-    @GestureState private var dragY: CGFloat = 0
+    /// Live vertical drag offset from the gesture. Using @State (not @GestureState) so we
+    /// can control exactly when and how it resets — preventing the flicker caused by
+    /// @GestureState's implicit reset racing against the withAnimation model update.
+    @State private var dragY: CGFloat = 0
     /// Persisted swipe count — swipe hint hides permanently after 3 swipes.
     @AppStorage("swiperSwipeCount") private var swiperSwipeCount: Int = 0
+    /// Term whose info sheet is currently open; nil when the sheet is dismissed.
+    @State private var infoTerm: SlangTerm? = nil
 
     /// 0→1 as the user drags 160pt upward; drives next-term preview opacity/position.
     private var swipeProgress: Double {
         min(1.0, max(0, -dragY / 160))
+    }
+
+    /// 0→1 as the user drags 160pt downward; drives previous-term preview from above.
+    private var swipeDownProgress: Double {
+        min(1.0, max(0, dragY / 160))
     }
 
     /// True until the user has swiped 3 times — then permanently false.
@@ -80,14 +89,31 @@ private struct SwiperContentView: View {
             }
         }
         .onDisappear { viewModel.onDisappear() }
+        .sheet(item: $infoTerm) { term in
+            TermInfoSheet(term: term)
+        }
     }
 
     // MARK: - Term Stack
 
-    /// Two layers: current term (draggable) + next term fading up from behind.
+    /// Three layers: previous term (above), current term (draggable), next term (below).
+    ///
+    /// Preview cards are always kept in the view hierarchy (no conditional insertion) to
+    /// prevent SwiftUI from triggering its default fade transition when they cross zero.
+    /// The model (swipeUp/swipeDown) is updated inside the withAnimation completion handler,
+    /// so it fires only AFTER the exit animation finishes. dragY then resets to 0 without
+    /// animation, giving the new card a clean snap into place with no cross-fade conflict.
     private var termStack: some View {
         ZStack {
-            // Next term — fades and rises into view as swipe progresses
+            // Previous term — always in hierarchy; visible only while swiping down
+            if viewModel.canGoBack, let previous = viewModel.historyStack.last {
+                termView(previous)
+                    .opacity(swipeDownProgress * 0.95)
+                    .offset(y: -48 * (1.0 - swipeDownProgress))
+                    .allowsHitTesting(false)
+            }
+
+            // Next term — always in hierarchy; visible only while swiping up
             if viewModel.cardQueue.count > 1 {
                 termView(viewModel.cardQueue[1])
                     .opacity(swipeProgress * 0.95)
@@ -95,23 +121,39 @@ private struct SwiperContentView: View {
                     .allowsHitTesting(false)
             }
 
-            // Current term — follows the drag upward
+            // Current term — follows the drag in either direction
             termView(viewModel.cardQueue[0])
                 .offset(y: dragY < 0 ? dragY : dragY * 0.12)
-                .opacity(1.0 - swipeProgress * 0.70)
+                .opacity(dragY < 0
+                         ? 1.0 - swipeProgress * 0.70
+                         : 1.0 - swipeDownProgress * 0.70)
         }
         .contentShape(Rectangle())
         .gesture(
             DragGesture(minimumDistance: 20)
-                .updating($dragY) { value, state, _ in
-                    state = value.translation.height
+                .onChanged { value in
+                    dragY = value.translation.height
                 }
                 .onEnded { value in
-                    if value.translation.height < -AppConstants.swiperSwipeThreshold {
-                        // Track swipes so the hint auto-hides after 3
-                        if swiperSwipeCount < 10 { swiperSwipeCount += 1 }
-                        withAnimation(.spring(response: 0.38, dampingFraction: 0.88)) {
+                    let dy = value.translation.height
+                    if dy < -AppConstants.swiperSwipeThreshold {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
+                            dragY = -1000
+                        } completion: {
+                            if swiperSwipeCount < 10 { swiperSwipeCount += 1 }
                             viewModel.swipeUp()
+                            dragY = 0
+                        }
+                    } else if dy > AppConstants.swiperSwipeThreshold, viewModel.canGoBack {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
+                            dragY = 1000
+                        } completion: {
+                            viewModel.swipeDown()
+                            dragY = 0
+                        }
+                    } else {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                            dragY = 0
                         }
                     }
                 }
@@ -125,8 +167,8 @@ private struct SwiperContentView: View {
 
         return VStack(spacing: 0) {
 
-            // Fixed top anchor — every term starts at the same Y regardless of length
-            Spacer().frame(height: 100)
+            // Equal top spacer — centers the content block vertically
+            Spacer()
 
             // ── Term ──────────────────────────────────────
             Text(term.term.lowercased())
@@ -138,7 +180,7 @@ private struct SwiperContentView: View {
             // ── Definition with inline bold POS tag ────────
             // "(adj.) Some text" — the abbreviation is bold, rest is regular weight.
             definitionText(posTag: posTag, definition: cleanDefinition)
-                .font(.slangDefinition(size: 22))
+                .font(.slangDefinition(size: 24))
                 .foregroundStyle(.primary.opacity(0.82))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, SlangSpacing.xl)
@@ -148,9 +190,9 @@ private struct SwiperContentView: View {
             // ── Example sentence ──────────────────────────
             if !term.exampleSentence.isEmpty {
                 Text("\u{201C}\(term.exampleSentence)\u{201D}")
-                    .font(.slangDefinition(size: 18))
+                    .font(.slangDefinition(size: 20))
                     .fontWeight(.medium)
-                    .foregroundStyle(.primary.opacity(0.42))
+                    .foregroundStyle(.primary.opacity(0.5))
                     .multilineTextAlignment(.center)
                     .italic()
                     .padding(.horizontal, SlangSpacing.xl + SlangSpacing.md)
@@ -158,6 +200,7 @@ private struct SwiperContentView: View {
                     .padding(.top, SlangSpacing.lg)
             }
 
+            // Equal bottom spacer — mirrors the top spacer to vertically center content
             Spacer()
 
             // ── Bottom action row ─────────────────────────
@@ -209,14 +252,16 @@ private struct SwiperContentView: View {
 
     private func actionButtons(term: SlangTerm) -> some View {
         HStack(spacing: SlangSpacing.xl) {
-            // Info — placeholder; detail view coming later
-            Button { } label: {
+            // Info — opens the term detail bottom sheet
+            Button {
+                infoTerm = term
+            } label: {
                 Image(systemName: "info.circle")
                     .font(.system(size: 22, weight: .light))
                     .foregroundStyle(Color(.label).opacity(0.40))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Term info")
+            .accessibilityLabel(String(localized: "swiper.info.accessibility", defaultValue: "Term info"))
 
             // Save to Lexicon
             Button {
@@ -238,14 +283,16 @@ private struct SwiperContentView: View {
                              defaultValue: "Save this term to your Lexicon")
             )
 
-            // Share — placeholder; share sheet coming later
-            Button { } label: {
+            // Share — renders a share card image and presents the iOS share sheet
+            Button {
+                SlangShareCard.share(term: term)
+            } label: {
                 Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 22, weight: .light))
                     .foregroundStyle(Color(.label).opacity(0.40))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Share term")
+            .accessibilityLabel(String(localized: "swiper.share.accessibility", defaultValue: "Share term"))
         }
     }
 
@@ -263,15 +310,39 @@ private struct SwiperContentView: View {
     // MARK: - Empty Queue State
 
     private var emptyQueueState: some View {
-        EmptyStateView(
-            symbolName: "checkmark.circle",
-            title: String(localized: "swiper.empty.title", defaultValue: "You've seen them all!"),
-            message: String(localized: "swiper.empty.message",
-                            defaultValue: "Your slang knowledge is growing. What's next?"),
-            actionTitle: String(localized: "swiper.empty.reshuffle",
-                                defaultValue: "Reshuffle All Terms"),
-            action: { viewModel.reshuffleAll() }
-        )
+        VStack(spacing: SlangSpacing.lg) {
+            Text("💀")
+                .font(.system(size: 72))
+
+            VStack(spacing: SlangSpacing.sm) {
+                Text(String(localized: "swiper.empty.title", defaultValue: "stack cleared."))
+                    .font(.slangTerm(size: 38))
+                    .foregroundStyle(.primary)
+
+                Text(String(localized: "swiper.empty.message",
+                            defaultValue: "you've seen every banger in the deck.\nlowkey impressive fr fr 🤌"))
+                    .font(.slangDefinition(size: 18))
+                    .foregroundStyle(.primary.opacity(0.55))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, SlangSpacing.xl)
+            }
+
+            Button {
+                viewModel.reshuffleAll()
+            } label: {
+                Text(String(localized: "swiper.empty.reshuffle", defaultValue: "run it back"))
+                    .font(.system(size: 14, weight: .black, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(SlangColor.background)
+                    .padding(.horizontal, SlangSpacing.xl)
+                    .padding(.vertical, SlangSpacing.md)
+                    .background(SlangColor.primary,
+                                in: RoundedRectangle(cornerRadius: SlangCornerRadius.button))
+            }
+            .padding(.top, SlangSpacing.sm)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(SlangColor.background.ignoresSafeArea())
     }
 }
 

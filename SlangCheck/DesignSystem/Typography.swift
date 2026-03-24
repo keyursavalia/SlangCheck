@@ -82,7 +82,7 @@ public extension Font {
     /// Scales relative to the large-title Dynamic Type axis.
     /// PostScript name: NoticiaText-Regular (bundled in app via FontsInfo.plist).
     static func slangTerm(size: CGFloat) -> Font {
-        .custom("NoticiaText-Regular", size: size, relativeTo: .largeTitle)
+        .custom("NoticiaText-Bold", size: size, relativeTo: .largeTitle)
     }
 
     /// **Baskerville Regular** — used for slang definitions and body descriptions.

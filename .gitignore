@@ -84,3 +84,4 @@ fastlane/test_output/
 # Instruments
 *.trace
 SCREENS/
+noticia-text/

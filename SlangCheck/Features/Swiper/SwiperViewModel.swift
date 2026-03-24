@@ -20,8 +20,11 @@ final class SwiperViewModel {
     /// The current card stack. Index 0 is the top card.
     private(set) var cardQueue: [SlangTerm] = []
 
-    // isCardFlipped and flipCard() commented out — full-screen layout shows all content directly.
-    // var isCardFlipped = false
+    /// Cards previously swiped through; last element is the most recently dismissed card.
+    private(set) var historyStack: [SlangTerm] = []
+
+    /// True when there is at least one card in history to navigate back to.
+    var canGoBack: Bool { !historyStack.isEmpty }
 
     /// True when the queue is exhausted.
     private(set) var isQueueEmpty = false
@@ -80,6 +83,7 @@ final class SwiperViewModel {
             let currentLexicon = try await repository.fetchLexicon()
             lexicon = currentLexicon
             cardQueue = try await fetchTermsUseCase.fetchSwiperQueue(lexicon: currentLexicon)
+            historyStack = []
             totalTermCount = cardQueue.count
             isQueueEmpty = cardQueue.isEmpty
         } catch {
@@ -96,8 +100,16 @@ final class SwiperViewModel {
     func swipeUp() {
         guard !cardQueue.isEmpty else { return }
         hapticService.swipeCompleted()
-        cardQueue.removeFirst()
+        historyStack.append(cardQueue.removeFirst())
         isQueueEmpty = cardQueue.isEmpty
+    }
+
+    /// Returns to the previous card — triggered by swipe-down gesture.
+    func swipeDown() {
+        guard let previous = historyStack.popLast() else { return }
+        hapticService.swipeCompleted()
+        cardQueue.insert(previous, at: 0)
+        isQueueEmpty = false
     }
 
     /// Saves the current top card to the Lexicon — triggered by the Save button.
