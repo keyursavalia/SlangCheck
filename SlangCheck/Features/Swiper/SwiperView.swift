@@ -56,11 +56,16 @@ private struct SwiperContentView: View {
     @Bindable var viewModel: SwiperViewModel
     /// Live vertical drag offset from the gesture — resets on release.
     @GestureState private var dragY: CGFloat = 0
+    /// Persisted swipe count — swipe hint hides permanently after 3 swipes.
+    @AppStorage("swiperSwipeCount") private var swiperSwipeCount: Int = 0
 
     /// 0→1 as the user drags 160pt upward; drives next-term preview opacity/position.
     private var swipeProgress: Double {
         min(1.0, max(0, -dragY / 160))
     }
+
+    /// True until the user has swiped 3 times — then permanently false.
+    private var showSwipeHint: Bool { swiperSwipeCount < 3 }
 
     var body: some View {
         ZStack {
@@ -103,6 +108,8 @@ private struct SwiperContentView: View {
                 }
                 .onEnded { value in
                     if value.translation.height < -AppConstants.swiperSwipeThreshold {
+                        // Track swipes so the hint auto-hides after 3
+                        if swiperSwipeCount < 10 { swiperSwipeCount += 1 }
                         withAnimation(.spring(response: 0.38, dampingFraction: 0.88)) {
                             viewModel.swipeUp()
                         }
@@ -114,9 +121,12 @@ private struct SwiperContentView: View {
     // MARK: - Term View
 
     private func termView(_ term: SlangTerm) -> some View {
-        VStack(spacing: 0) {
+        let (posTag, cleanDefinition) = extractPOS(term.definition)
 
-            Spacer()
+        return VStack(spacing: 0) {
+
+            // Fixed top anchor — every term starts at the same Y regardless of length
+            Spacer().frame(height: 100)
 
             // ── Term ──────────────────────────────────────
             Text(term.term.lowercased())
@@ -125,62 +135,94 @@ private struct SwiperContentView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, SlangSpacing.xl)
 
-            // Category pill — sits just below the term like a subtle label
-            Text(term.category.displayName.uppercased())
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .tracking(1.2)
-                .foregroundStyle(SlangColor.accent)
-                .padding(.horizontal, SlangSpacing.sm)
-                .padding(.vertical, 5)
-                .background(Capsule().fill(SlangColor.accent.opacity(0.14)))
-                .padding(.top, SlangSpacing.sm)
-
-            Spacer().frame(height: 32)
+            // ── Part of speech (bold, independent label) ───
+            if let label = posDisplayName(posTag) {
+                Text(label)
+                    .font(.slangDefinition(size: 14))
+                    .bold()
+                    .foregroundStyle(.primary.opacity(0.45))
+                    .padding(.top, 14)
+            }
 
             // ── Definition ────────────────────────────────
-            Text(term.definition)
-                .font(.slangDefinition(size: 18))
-                .foregroundStyle(.primary.opacity(0.78))
+            Text(cleanDefinition)
+                .font(.slangDefinition(size: 22))
+                .fontWeight(.medium)
+                .foregroundStyle(.primary.opacity(0.82))
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, SlangSpacing.xl + SlangSpacing.sm)
+                .padding(.horizontal, SlangSpacing.xl)
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, SlangSpacing.xl)
 
-            // ── Example sentence (muted, italic) ──────────
+            // ── Example sentence ──────────────────────────
             if !term.exampleSentence.isEmpty {
                 Text("\u{201C}\(term.exampleSentence)\u{201D}")
-                    .font(.slangDefinition(size: 14))
-                    .foregroundStyle(.primary.opacity(0.38))
+                    .font(.slangDefinition(size: 18))
+                    .fontWeight(.medium)
+                    .foregroundStyle(.primary.opacity(0.42))
                     .multilineTextAlignment(.center)
                     .italic()
                     .padding(.horizontal, SlangSpacing.xl + SlangSpacing.md)
-                    .padding(.top, SlangSpacing.sm)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, SlangSpacing.lg)
             }
 
             Spacer()
 
             // ── Bottom action row ─────────────────────────
-            saveButton(term: term)
+            actionButtons(term: term)
                 .padding(.bottom, SlangSpacing.sm)
 
-            // ── Swipe hint ────────────────────────────────
-            swipeHint
+            // ── Swipe hint — fades permanently after 3 swipes ─
+            swipeHintView
                 .padding(.bottom, SlangSpacing.lg)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(term.term). \(term.definition)")
-        .accessibilityAction(named: String(localized: "swiper.accessibility.next", defaultValue: "Next card")) {
+        .accessibilityLabel("\(term.term). \(cleanDefinition)")
+        .accessibilityAction(named: String(localized: "swiper.accessibility.next",
+                                          defaultValue: "Next card")) {
             viewModel.swipeUp()
         }
-        .accessibilityAction(named: String(localized: "swiper.accessibility.save", defaultValue: "Save term")) {
+        .accessibilityAction(named: String(localized: "swiper.accessibility.save",
+                                          defaultValue: "Save term")) {
             viewModel.saveCurrentCard()
         }
     }
 
+    // MARK: - POS Helpers
+
+    /// Splits `"(adj.) Some definition"` into `("adj.", "Some definition")`.
+    /// Returns `(nil, original)` if no POS prefix is present.
+    private func extractPOS(_ definition: String) -> (String?, String) {
+        guard definition.hasPrefix("("),
+              let endIdx = definition.firstIndex(of: ")") else {
+            return (nil, definition)
+        }
+        let tag = String(definition[definition.index(after: definition.startIndex)..<endIdx])
+        let rest = String(definition[definition.index(after: endIdx)...])
+            .trimmingCharacters(in: .whitespaces)
+        return (tag, rest)
+    }
+
+    /// Maps abbreviated POS tags to their full display names.
+    private func posDisplayName(_ tag: String?) -> String? {
+        guard let tag else { return nil }
+        let map: [String: String] = [
+            "n.":          "noun",
+            "v.":          "verb",
+            "adj.":        "adjective",
+            "adv.":        "adverb",
+            "phr.":        "phrase",
+            "interjection": "interjection",
+            "n., v.":      "noun, verb",
+        ]
+        return map[tag]
+    }
+
     // MARK: - Action Buttons
 
-    private func saveButton(term: SlangTerm) -> some View {
+    private func actionButtons(term: SlangTerm) -> some View {
         HStack(spacing: SlangSpacing.xl) {
             // Info — placeholder; detail view coming later
             Button { } label: {
@@ -224,10 +266,13 @@ private struct SwiperContentView: View {
 
     // MARK: - Swipe Hint
 
-    private var swipeHint: some View {
+    /// Reserves layout space even when invisible so the action bar never shifts.
+    private var swipeHintView: some View {
         Text(String(localized: "swiper.hint.swipe", defaultValue: "swipe up for next"))
             .font(.system(size: 12, design: .monospaced))
             .foregroundStyle(Color(.tertiaryLabel))
+            .opacity(showSwipeHint ? 1 : 0)
+            .animation(.easeOut(duration: 0.6), value: showSwipeHint)
     }
 
     // MARK: - Empty Queue State
