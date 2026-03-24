@@ -77,6 +77,19 @@ public extension Font {
     static func slang(_ style: SlangType) -> Font {
         style.font
     }
+
+    /// **Noticia Text Regular** — used for all slang term/word display.
+    /// Scales relative to the large-title Dynamic Type axis.
+    /// PostScript name: NoticiaText-Regular (bundled in app via FontsInfo.plist).
+    static func slangTerm(size: CGFloat) -> Font {
+        .custom("NoticiaText-Bold", size: size, relativeTo: .largeTitle)
+    }
+
+    /// **Baskerville Regular** — used for slang definitions and body descriptions.
+    /// Scales relative to the body Dynamic Type axis.
+    static func slangDefinition(size: CGFloat) -> Font {
+        .custom("Baskerville", size: size, relativeTo: .body)
+    }
 }
 
 // MARK: - Text Extension for Body Line Spacing

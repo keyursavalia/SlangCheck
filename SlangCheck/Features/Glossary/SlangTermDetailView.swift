@@ -42,7 +42,7 @@ struct SlangTermDetailView: View {
     private var termHeader: some View {
         VStack(alignment: .leading, spacing: SlangSpacing.sm) {
             Text(term.term)
-                .font(.slang(.title))
+                .font(.slangTerm(size: 28))
                 .foregroundStyle(.primary)
 
             HStack(spacing: SlangSpacing.sm) {
@@ -65,7 +65,7 @@ struct SlangTermDetailView: View {
             title: String(localized: "termDetail.definition", defaultValue: "Definition")
         ) {
             Text(term.definition)
-                .font(.slang(.body))
+                .font(.slangDefinition(size: 15))
                 .foregroundStyle(.primary)
                 .slangBodySpacing()
                 .fixedSize(horizontal: false, vertical: true)
@@ -80,7 +80,7 @@ struct SlangTermDetailView: View {
             title: String(localized: "termDetail.example", defaultValue: "Example")
         ) {
             Text("\u{201C}\(term.exampleSentence)\u{201D}")
-                .font(.slang(.body))
+                .font(.slangDefinition(size: 15))
                 .foregroundStyle(.secondary)
                 .italic()
                 .slangBodySpacing()

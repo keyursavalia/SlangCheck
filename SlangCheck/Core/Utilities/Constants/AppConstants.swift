@@ -18,23 +18,13 @@ public enum AppConstants {
 
     // MARK: Swiper
 
-    /// Rotation angle applied to the swipe card at full drag width (DESIGN_SYSTEM.md §6.4).
-    /// Formula: (drag.x / screenWidth) * maxRotationDegrees
-    public static let swiperMaxRotationDegrees: Double = 12
-
-    /// The minimum opacity of a card during a full swipe drag (DESIGN_SYSTEM.md §6.4).
-    public static let swiperMinCardOpacity: Double = 0.6
-
-    /// Scale of the background (next) card when the top card is idle (DESIGN_SYSTEM.md §7.1).
+    /// Scale of the background (next) card when the top card is idle.
     public static let swiperBackCardIdleScale: Double = 0.94
 
-    /// Vertical offset of the background card in the stack (DESIGN_SYSTEM.md §7.1).
+    /// Vertical offset of the background card in the stack (slight peek from below).
     public static let swiperBackCardOffset: Double = 12
 
-    /// Number of seconds the Undo button is visible after a swipe action (FR-S-009).
-    public static let swiperUndoVisibilitySeconds: Double = 3
-
-    /// The horizontal translation threshold (in points) to register a definitive swipe action.
+    /// The upward translation threshold (in points) to register a definitive swipe-up action.
     public static let swiperSwipeThreshold: Double = 100
 
     // MARK: Translator
@@ -80,7 +70,7 @@ public enum AppConstants {
 
     /// Monotonically increasing integer. Bump this whenever `slang_seed.json` is updated
     /// so existing installs automatically re-seed with the new terms on next launch.
-    public static let seedVersion = 2
+    public static let seedVersion = 3
 
     /// UserDefaults key that stores the last-applied seed version on this device.
     public static let seedVersionKey = "slangSeedVersion"
