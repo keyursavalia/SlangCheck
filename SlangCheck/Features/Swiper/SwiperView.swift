@@ -135,19 +135,10 @@ private struct SwiperContentView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, SlangSpacing.xl)
 
-            // ── Part of speech (bold, independent label) ───
-            if let label = posDisplayName(posTag) {
-                Text(label)
-                    .font(.slangDefinition(size: 14))
-                    .bold()
-                    .foregroundStyle(.primary.opacity(0.45))
-                    .padding(.top, 14)
-            }
-
-            // ── Definition ────────────────────────────────
-            Text(cleanDefinition)
+            // ── Definition with inline bold POS tag ────────
+            // "(adj.) Some text" — the abbreviation is bold, rest is regular weight.
+            definitionText(posTag: posTag, definition: cleanDefinition)
                 .font(.slangDefinition(size: 22))
-                .fontWeight(.medium)
                 .foregroundStyle(.primary.opacity(0.82))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, SlangSpacing.xl)
@@ -205,19 +196,13 @@ private struct SwiperContentView: View {
         return (tag, rest)
     }
 
-    /// Maps abbreviated POS tags to their full display names.
-    private func posDisplayName(_ tag: String?) -> String? {
-        guard let tag else { return nil }
-        let map: [String: String] = [
-            "n.":          "noun",
-            "v.":          "verb",
-            "adj.":        "adjective",
-            "adv.":        "adverb",
-            "phr.":        "phrase",
-            "interjection": "interjection",
-            "n., v.":      "noun, verb",
-        ]
-        return map[tag]
+    /// Builds an inline `Text` where the POS abbreviation is bold and the
+    /// definition body follows in regular weight: **(adj.)** Some text…
+    private func definitionText(posTag: String?, definition: String) -> Text {
+        guard let tag = posTag else {
+            return Text(definition)
+        }
+        return Text("(\(tag)) ").bold() + Text(definition)
     }
 
     // MARK: - Action Buttons
