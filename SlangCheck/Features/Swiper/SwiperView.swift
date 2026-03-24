@@ -119,7 +119,7 @@ private struct SwiperContentView: View {
             Spacer()
 
             // ── Term ──────────────────────────────────────
-            Text(term.term)
+            Text(term.term.lowercased())
                 .font(.slangTerm(size: 52))
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
@@ -178,40 +178,48 @@ private struct SwiperContentView: View {
         }
     }
 
-    // MARK: - Save Button
+    // MARK: - Action Buttons
 
     private func saveButton(term: SlangTerm) -> some View {
-        Button {
-            viewModel.saveCurrentCard()
-        } label: {
-            HStack(spacing: SlangSpacing.sm) {
-                Image(systemName: viewModel.isTopCardSaved ? "bookmark.fill" : "bookmark")
-                    .font(.system(size: 18, weight: .light))
-                Text(viewModel.isTopCardSaved
-                     ? String(localized: "swiper.save.saved", defaultValue: "Saved")
-                     : String(localized: "swiper.save.button", defaultValue: "Save"))
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+        HStack(spacing: SlangSpacing.xl) {
+            // Info — placeholder; detail view coming later
+            Button { } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(Color(.label).opacity(0.40))
             }
-            .foregroundStyle(
-                viewModel.isTopCardSaved ? SlangColor.primary : Color(.label).opacity(0.45)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Term info")
+
+            // Save to Lexicon
+            Button {
+                viewModel.saveCurrentCard()
+            } label: {
+                Image(systemName: viewModel.isTopCardSaved ? "bookmark.fill" : "bookmark")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(
+                        viewModel.isTopCardSaved ? SlangColor.primary : Color(.label).opacity(0.40)
+                    )
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.isTopCardSaved)
+            .animation(.easeInOut(duration: 0.2), value: viewModel.isTopCardSaved)
+            .accessibilityLabel(
+                viewModel.isTopCardSaved
+                    ? String(localized: "swiper.save.saved", defaultValue: "Saved")
+                    : String(localized: "swiper.save.button.accessibility",
+                             defaultValue: "Save this term to your Lexicon")
             )
-            .padding(.horizontal, SlangSpacing.lg)
-            .padding(.vertical, SlangSpacing.sm)
-            .background(
-                Capsule().fill(
-                    viewModel.isTopCardSaved
-                        ? SlangColor.primary.opacity(0.12)
-                        : Color(.label).opacity(0.06)
-                )
-            )
+
+            // Share — placeholder; share sheet coming later
+            Button { } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(Color(.label).opacity(0.40))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Share term")
         }
-        .disabled(viewModel.isTopCardSaved)
-        .animation(.easeInOut(duration: 0.2), value: viewModel.isTopCardSaved)
-        .accessibilityLabel(
-            viewModel.isTopCardSaved
-                ? String(localized: "swiper.save.saved", defaultValue: "Saved")
-                : String(localized: "swiper.save.button.accessibility", defaultValue: "Save this term to your Lexicon")
-        )
     }
 
     // MARK: - Swipe Hint

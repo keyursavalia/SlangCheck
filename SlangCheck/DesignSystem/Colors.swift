@@ -68,9 +68,9 @@ public enum SlangColor {
     }
 
     /// Page/screen background canvas.
-    /// Light: #F5F4F7 Linen White | Dark: #1F1F1F Warm Charcoal
+    /// Light: #E1C7B7 Warm Clay | Dark: #1F1F1F Warm Charcoal
     public static var background: Color {
-        Color(lightHex: "F5F4F7", darkHex: "1F1F1F")
+        Color(lightHex: "E1C7B7", darkHex: "1F1F1F")
     }
 
     /// Warm Sand / Soft Blush — attention states, "Skip" labels, chips, example blockquotes.

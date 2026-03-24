@@ -6,6 +6,7 @@
 
 import SwiftUI
 import OSLog
+import CoreText
 import FirebaseCore
 
 // MARK: - SlangCheckApp
@@ -33,6 +34,7 @@ struct SlangCheckApp: App {
             authService:       env.authService,
             profileRepository: env.userProfileRepository
         ))
+        SlangCheckApp.registerBundledFonts()
         Logger.app.info("SlangCheckApp initialized. Environment: production.")
     }
 
@@ -48,6 +50,33 @@ struct SlangCheckApp: App {
                     // Restore persisted Firebase session (if any) before the first render.
                     await authState.reload()
                 }
+        }
+    }
+
+    // MARK: - Font Registration
+
+    /// Registers bundled custom fonts with CoreText at launch.
+    /// This is the reliable alternative to UIAppFonts in Info.plist when the
+    /// project uses a generated Info.plist (GENERATE_INFOPLIST_FILE = YES).
+    private static func registerBundledFonts() {
+        let fontFiles = [
+            "NoticiaText-Regular",
+            "NoticiaText-Bold",
+            "NoticiaText-Italic",
+            "NoticiaText-BoldItalic"
+        ]
+        for name in fontFiles {
+            guard let url = Bundle.main.url(forResource: name, withExtension: "ttf") else {
+                Logger.app.error("Font file missing from bundle: \(name).ttf")
+                continue
+            }
+            var error: Unmanaged<CFError>?
+            let success = CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error)
+            if !success, let err = error?.takeRetainedValue() {
+                Logger.app.error("Failed to register font \(name): \(err.localizedDescription)")
+            } else {
+                Logger.app.debug("Registered font: \(name)")
+            }
         }
     }
 
