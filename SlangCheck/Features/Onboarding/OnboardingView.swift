@@ -1,17 +1,14 @@
 // Features/Onboarding/OnboardingView.swift
 // SlangCheck
 //
-// Onboarding flow (FR-O-001 through FR-O-005):
-//   Page 0: Welcome
-//   Page 1: Segment picker
-//   Page 2: Interactive Swiper demo
-//   Page 3: Ready screen
-// Skippable at any point (FR-O-004). Shows only once (FR-O-005).
+// Root onboarding container: step routing and shared UI components
+// (OnboardingOptionRow, OnboardingCTAButton).
 
 import SwiftUI
 
 // MARK: - OnboardingView
 
+/// Entry point for the onboarding flow. Routes to each step and calls onComplete when done.
 struct OnboardingView: View {
 
     @State private var viewModel = OnboardingViewModel()
@@ -20,293 +17,263 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             SlangColor.background.ignoresSafeArea()
-
             VStack(spacing: 0) {
-                // Skip button (FR-O-004)
-                HStack {
-                    Spacer()
-                    Button(action: viewModel.skip) {
-                        Text(String(localized: "onboarding.skip", defaultValue: "Skip"))
-                            .font(.slang(.label))
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.trailing, SlangSpacing.md)
-                    .padding(.top, SlangSpacing.md)
-                    .accessibilityLabel(
-                        String(localized: "onboarding.skip.accessibility",
-                               defaultValue: "Skip onboarding and go to the app")
-                    )
-                }
+                skipRow
+                    .frame(height: 44)
+                    .padding(.top, SlangSpacing.sm)
 
-                TabView(selection: $viewModel.currentPage) {
-                    ForEach(OnboardingPage.allCases, id: \.rawValue) { page in
-                        pageView(for: page)
-                            .tag(page.rawValue)
-                    }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .always))
-                .indexViewStyle(.page(backgroundDisplayMode: .always))
-
-                continueButton
-                    .padding(.horizontal, SlangSpacing.md)
-                    .padding(.bottom, SlangSpacing.xl)
+                stepContent
+                    .id(viewModel.currentStep)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal:   .move(edge: .leading).combined(with: .opacity)
+                    ))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .onChange(of: viewModel.isComplete) { _, isComplete in
-            if isComplete { onComplete() }
+        .onChange(of: viewModel.isComplete) { _, done in
+            if done { onComplete() }
         }
     }
 
-    // MARK: - Page View Builder
+    // MARK: - Skip Row
+
+    private var skipRow: some View {
+        HStack {
+            Spacer()
+            if viewModel.currentStep.isSkippable {
+                Button(action: viewModel.skip) {
+                    Text(String(localized: "onboarding.skip", defaultValue: "Skip"))
+                        .font(.slang(.label))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, SlangSpacing.md)
+                .accessibilityLabel(
+                    String(localized: "onboarding.skip.accessibility",
+                           defaultValue: "Skip this step")
+                )
+            }
+        }
+    }
+
+    // MARK: - Step Routing
 
     @ViewBuilder
-    private func pageView(for page: OnboardingPage) -> some View {
-        switch page {
-        case .welcome:
-            StandardOnboardingPage(page: page)
-        case .segmentPicker:
-            SegmentPickerPage(selectedSegment: $viewModel.selectedSegment)
-        case .swiperDemo:
-            SwiperDemoPage()
-        case .ready:
-            StandardOnboardingPage(page: page)
-        }
-    }
+    private var stepContent: some View {
+        switch viewModel.currentStep {
 
-    // MARK: - Continue Button
+        case .splash:
+            SplashStep(onStart: viewModel.advance)
 
-    private var continueButton: some View {
-        Button(action: viewModel.advance) {
-            Text(viewModel.continueButtonTitle)
-                .font(.slang(.label))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, SlangSpacing.md)
-                .background(
-                    RoundedRectangle(cornerRadius: SlangCornerRadius.button)
-                        .fill(viewModel.canAdvance
-                              ? SlangColor.primary
-                              : SlangColor.primary.opacity(0.4))
-                )
+        case .displayName:
+            DisplayNameStep(name: $viewModel.displayName, onContinue: viewModel.advance)
+
+        case .gender:
+            SingleSelectStep(
+                question: String(localized: "onboarding.gender.question",
+                                 defaultValue: "Which option represents\nyou best?"),
+                options: OnboardingGender.allCases.map(\.rawValue),
+                selected: Binding(
+                    get: { viewModel.selectedGender?.rawValue },
+                    set: { v in viewModel.selectedGender = v.flatMap(OnboardingGender.init(rawValue:)) }
+                ),
+                onContinue: viewModel.advance
+            )
+
+        case .learningGoal:
+            SingleSelectStep(
+                question: String(localized: "onboarding.goal.question",
+                                 defaultValue: "Do you have a specific goal\nin mind?"),
+                options: OnboardingGoal.allCases.map(\.rawValue),
+                selected: Binding(
+                    get: { viewModel.selectedGoal?.rawValue },
+                    set: { v in viewModel.selectedGoal = v.flatMap(OnboardingGoal.init(rawValue:)) }
+                ),
+                onContinue: viewModel.advance
+            )
+
+        case .slangLevel:
+            SingleSelectStep(
+                question: String(localized: "onboarding.level.question",
+                                 defaultValue: "What's your slang level?"),
+                options: OnboardingSlangLevel.allCases.map(\.rawValue),
+                selected: Binding(
+                    get: { viewModel.selectedSlangLevel?.rawValue },
+                    set: { v in viewModel.selectedSlangLevel = v.flatMap(OnboardingSlangLevel.init(rawValue:)) }
+                ),
+                onContinue: viewModel.advance
+            )
+
+        case .wordFrequency:
+            SingleSelectStep(
+                question: String(localized: "onboarding.frequency.question",
+                                 defaultValue: "Do you often encounter slang\nyou don't know?"),
+                options: OnboardingWordFrequency.allCases.map(\.rawValue),
+                selected: Binding(
+                    get: { viewModel.selectedFrequency?.rawValue },
+                    set: { v in viewModel.selectedFrequency = v.flatMap(OnboardingWordFrequency.init(rawValue:)) }
+                ),
+                onContinue: viewModel.advance
+            )
+
+        case .vocabDescription:
+            SingleSelectStep(
+                question: String(localized: "onboarding.vocabdesc.question",
+                                 defaultValue: "How would you describe your\nslang knowledge?"),
+                options: OnboardingVocabDescription.allCases.map(\.rawValue),
+                selected: Binding(
+                    get: { viewModel.selectedVocabDescription?.rawValue },
+                    set: { v in viewModel.selectedVocabDescription = v.flatMap(OnboardingVocabDescription.init(rawValue:)) }
+                ),
+                onContinue: viewModel.advance
+            )
+
+        case .weeklyGoal:
+            SingleSelectStep(
+                question: String(localized: "onboarding.weekly.question",
+                                 defaultValue: "How many slang terms do you\nwant to learn per week?"),
+                options: OnboardingWeeklyGoal.allCases.map(\.rawValue),
+                selected: Binding(
+                    get: { viewModel.selectedWeeklyGoal?.rawValue },
+                    set: { v in viewModel.selectedWeeklyGoal = v.flatMap(OnboardingWeeklyGoal.init(rawValue:)) }
+                ),
+                onContinue: viewModel.advance
+            )
+
+        case .testIntro:
+            TestIntroStep(onContinue: viewModel.advance)
+
+        case .testBeginner:
+            WordTestStep(
+                level: String(localized: "onboarding.test.beginner", defaultValue: "Beginner slang"),
+                words: OnboardingWordBank.beginner,
+                knownWords: $viewModel.knownBeginnerTerms,
+                onContinue: viewModel.advance
+            )
+
+        case .testIntermediate:
+            WordTestStep(
+                level: String(localized: "onboarding.test.intermediate", defaultValue: "Intermediate slang"),
+                words: OnboardingWordBank.intermediate,
+                knownWords: $viewModel.knownIntermediateTerms,
+                onContinue: viewModel.advance
+            )
+
+        case .testAdvanced:
+            WordTestStep(
+                level: String(localized: "onboarding.test.advanced", defaultValue: "Advanced slang"),
+                words: OnboardingWordBank.advanced,
+                knownWords: $viewModel.knownAdvancedTerms,
+                onContinue: viewModel.advance
+            )
+
+        case .notificationSchedule:
+            NotificationScheduleStep(
+                count: $viewModel.notificationCount,
+                startTime: $viewModel.notificationStartTime,
+                endTime: $viewModel.notificationEndTime,
+                onSave: viewModel.requestNotifications
+            )
+
+        case .notificationPermission:
+            NotificationPermissionStep(
+                onGoToSettings: {
+                    // SAFE: openSettingsURLString is a compile-time constant known-valid URL.
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                    viewModel.advance()
+                },
+                onSkip: viewModel.advance
+            )
+
+        case .welcomeSplash:
+            WelcomeSplashStep(onContinue: viewModel.advance)
         }
-        .buttonStyle(.plain)
-        .disabled(!viewModel.canAdvance)
-        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: viewModel.canAdvance)
     }
 }
 
-// MARK: - StandardOnboardingPage
+// MARK: - OnboardingOptionRow
 
-private struct StandardOnboardingPage: View {
-    let page: OnboardingPage
+/// Full-width pill-shaped option row with radio indicator and hard drop shadow.
+/// Used for single-select (radio behaviour) and multi-select (toggle behaviour).
+struct OnboardingOptionRow: View {
 
-    var body: some View {
-        VStack(spacing: SlangSpacing.xl) {
-            Spacer()
-
-            Image(systemName: page.symbolName)
-                .font(.system(size: 72, weight: .ultraLight))
-                .foregroundStyle(SlangColor.primary)
-                .accessibilityHidden(true)
-
-            VStack(spacing: SlangSpacing.md) {
-                Text(page.title)
-                    .font(.slang(.display))
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.center)
-
-                Text(page.message)
-                    .font(.slang(.body))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .slangBodySpacing()
-            }
-            .padding(.horizontal, SlangSpacing.lg)
-
-            Spacer()
-        }
-    }
-}
-
-// MARK: - SegmentPickerPage (FR-O-002)
-
-private struct SegmentPickerPage: View {
-    @Binding var selectedSegment: UserSegment?
-
-    var body: some View {
-        VStack(spacing: SlangSpacing.xl) {
-            Spacer()
-
-            VStack(spacing: SlangSpacing.md) {
-                Text(OnboardingPage.segmentPicker.title)
-                    .font(.slang(.display))
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.center)
-
-                Text(OnboardingPage.segmentPicker.message)
-                    .font(.slang(.body))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .slangBodySpacing()
-            }
-            .padding(.horizontal, SlangSpacing.lg)
-
-            VStack(spacing: SlangSpacing.md) {
-                ForEach(UserSegment.allCases, id: \.rawValue) { segment in
-                    SegmentCard(
-                        segment: segment,
-                        isSelected: selectedSegment == segment,
-                        onSelect: { selectedSegment = segment }
-                    )
-                    .padding(.horizontal, SlangSpacing.md)
-                }
-            }
-
-            Spacer()
-        }
-    }
-}
-
-// MARK: - SegmentCard
-
-private struct SegmentCard: View {
-    let segment: UserSegment
+    let label: String
     let isSelected: Bool
-    let onSelect: () -> Void
+    let action: () -> Void
 
     var body: some View {
-        Button(action: onSelect) {
-            HStack(spacing: SlangSpacing.md) {
-                Image(systemName: segment.symbolName)
-                    .font(.system(size: 24, weight: .light))
-                    .foregroundStyle(isSelected ? .white : SlangColor.primary)
-                    .frame(width: 32)
-                    .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: SlangSpacing.xs) {
-                    Text(segment.displayName)
-                        .font(.slang(.subheading))
-                        .foregroundStyle(isSelected ? .white : .primary)
-                    Text(segment.description)
-                        .font(.slang(.caption))
-                        .foregroundStyle(isSelected ? .white.opacity(0.8) : .secondary)
-                        .multilineTextAlignment(.leading)
-                }
-
+        Button(action: action) {
+            HStack {
+                Text(label)
+                    .font(.custom("NoticiaText-Regular", size: 17))
+                    .foregroundStyle(isSelected ? Color.white : Color.primary)
                 Spacer()
-
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.white)
-                        .accessibilityHidden(true)
+                // Radio / check indicator
+                ZStack {
+                    Circle()
+                        .strokeBorder(
+                            isSelected ? Color.white.opacity(0.5) : Color.primary.opacity(0.3),
+                            lineWidth: 1.5
+                        )
+                        .frame(width: 24, height: 24)
+                    if isSelected {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 13, height: 13)
+                    }
                 }
             }
-            .padding(SlangSpacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
-                    .fill(isSelected ? SlangColor.primary : SlangColor.surface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
-                            .strokeBorder(
-                                isSelected ? SlangColor.primary : SlangColor.separator,
-                                lineWidth: isSelected ? 0 : 1
-                            )
-                    )
-            )
+            .padding(.horizontal, SlangSpacing.md)
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(isSelected ? SlangColor.onboardingTeal : Color(.systemBackground))
+                    .overlay {
+                        if !isSelected {
+                            RoundedRectangle(cornerRadius: 28)
+                                .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1.5)
+                        }
+                    }
+            }
+            // Hard (radius: 0) shadow gives the raised-sticker look matching the MVP designs.
+            .shadow(color: .black.opacity(0.55), radius: 0, x: 0, y: 3)
         }
         .buttonStyle(.plain)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
-        .accessibilityLabel("\(segment.displayName). \(segment.description)")
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .animation(.easeOut(duration: 0.15), value: isSelected)
     }
 }
 
-// MARK: - SwiperDemoPage (FR-O-003)
+// MARK: - OnboardingCTAButton
 
-private struct SwiperDemoPage: View {
+/// Full-width pill CTA button (teal fill, hard shadow). Primary action on every step.
+struct OnboardingCTAButton: View {
 
-    private let demoTerm = SlangTerm(
-        id: UUID(),
-        term: "No Cap",
-        definition: "An intensifier meaning 'for real'; used to assert truthfulness.",
-        standardEnglish: "Honestly / For real",
-        exampleSentence: "No cap, that was the best movie ever.",
-        category: .foundationalDescriptor,
-        origin: "AAVE",
-        usageFrequency: .high,
-        generationTags: [.genZ],
-        addedDate: Date(),
-        isBrainrot: false,
-        isEmojiTerm: false
-    )
+    let title: String
+    var isEnabled: Bool = true
+    let action: () -> Void
 
     var body: some View {
-        VStack(spacing: SlangSpacing.xl) {
-            Spacer()
-
-            VStack(spacing: SlangSpacing.sm) {
-                Text(OnboardingPage.swiperDemo.title)
-                    .font(.slang(.title))
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.center)
-                Text(OnboardingPage.swiperDemo.message)
-                    .font(.slang(.body))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .slangBodySpacing()
-            }
-            .padding(.horizontal, SlangSpacing.lg)
-
-            // Demo — mirrors the full-screen layout used in the Swiper tab
-            VStack(spacing: 0) {
-                Text(demoTerm.term)
-                    .font(.slangTerm(size: 44))
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.center)
-
-                Text(demoTerm.category.displayName.uppercased())
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .tracking(1.2)
-                    .foregroundStyle(SlangColor.accent)
-                    .padding(.horizontal, SlangSpacing.sm)
-                    .padding(.vertical, 4)
-                    .background(Capsule().fill(SlangColor.accent.opacity(0.14)))
-                    .padding(.top, SlangSpacing.xs)
-
-                Spacer().frame(height: 20)
-
-                Text(demoTerm.definition)
-                    .font(.slangDefinition(size: 16))
-                    .foregroundStyle(.primary.opacity(0.75))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, SlangSpacing.lg)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Spacer().frame(height: SlangSpacing.xl)
-
-                HStack(spacing: SlangSpacing.xs) {
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: 10, weight: .medium))
-                        .accessibilityHidden(true)
-                    Text(String(localized: "swiper.hint.swipe", defaultValue: "swipe up for next"))
-                        .font(.system(size: 11, design: .monospaced))
+        Button(action: action) {
+            Text(title)
+                .font(.custom("NoticiaText-Bold", size: 18))
+                .foregroundStyle(Color(.label))
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background {
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(isEnabled
+                              ? SlangColor.onboardingTeal
+                              : SlangColor.onboardingTeal.opacity(0.4))
                 }
-                .foregroundStyle(Color(.tertiaryLabel))
-            }
-            .padding(SlangSpacing.lg)
-            .frame(width: UIScreen.main.bounds.width - 64)
-            .background(
-                RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                    .fill(SlangColor.cardSurface)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                    .strokeBorder(SlangColor.primary.opacity(0.15), lineWidth: 1)
-            )
-
-            Spacer()
+                .shadow(color: .black.opacity(0.65), radius: 0, x: 0, y: 4)
         }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .animation(.easeOut(duration: 0.15), value: isEnabled)
     }
 }
 
