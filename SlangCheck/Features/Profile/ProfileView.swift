@@ -95,7 +95,7 @@ struct ProfileView: View {
         }
         .padding(SlangSpacing.md)
         .frame(maxWidth: .infinity)
-        .glassCard()
+        .profileCard()
     }
 
     @ViewBuilder
@@ -229,7 +229,7 @@ private struct CategoryCard: View {
             }
             .padding(SlangSpacing.md)
             .frame(maxWidth: .infinity, minHeight: 100, alignment: .topLeading)
-            .glassCard()
+            .profileCard()
         }
         .buttonStyle(.plain)
         .accessibilityLabel(category.displayName)
@@ -315,7 +315,7 @@ private struct QuickAccessRow: View {
             }
             .padding(.horizontal, SlangSpacing.md)
             .padding(.vertical, SlangSpacing.md)
-            .glassCard()
+            .profileCard()
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
