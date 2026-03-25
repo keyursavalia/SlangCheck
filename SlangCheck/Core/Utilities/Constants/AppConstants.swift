@@ -74,4 +74,7 @@ public enum AppConstants {
 
     /// UserDefaults key that stores the last-applied seed version on this device.
     public static let seedVersionKey = "slangSeedVersion"
+
+    /// UserDefaults key for the user's liked/favorited term IDs (JSON-encoded UserFavorites).
+    public static let userFavoritesKey = "userFavorites"
 }
