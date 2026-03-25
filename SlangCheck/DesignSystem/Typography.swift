@@ -86,10 +86,10 @@ public extension Font {
         .custom("NoticiaText-Bold", size: size, relativeTo: .largeTitle)
     }
 
-    /// **Baskerville Regular** — used for slang definitions and body descriptions.
+    /// **System font** — used for slang definitions and body descriptions.
     /// Scales relative to the body Dynamic Type axis.
     static func slangDefinition(size: CGFloat) -> Font {
-        .custom("Baskerville", size: size, relativeTo: .body)
+        .system(size: size, weight: .regular, design: .default)
     }
 }
 

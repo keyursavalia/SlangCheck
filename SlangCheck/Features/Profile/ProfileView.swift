@@ -1,8 +1,8 @@
 // Features/Profile/ProfileView.swift
 // SlangCheck
 //
-// Profile sheet. 2-column feature card grid + "YOUR VOCABULARY" section.
-// Presented as a full-screen cover from SwiperView's avatar button.
+// Profile sheet: avatar header, category browsing grid, and quick-access vocabulary rows.
+// Presented as a full-screen cover from SwiperView's profile avatar button.
 
 import SwiftUI
 
@@ -16,9 +16,10 @@ struct ProfileView: View {
 
     @State private var lexiconCount: Int = 0
     @State private var favoritesCount: Int = 0
-    @State private var auraProfile: AuraProfile? = nil
     @State private var showingLexicon = false
     @State private var showingFavorites = false
+    @State private var showingGlossary = false
+    @State private var glossaryCategory: SlangCategory? = nil
 
     private let columns = [
         GridItem(.flexible(), spacing: SlangSpacing.md),
@@ -30,8 +31,8 @@ struct ProfileView: View {
             ScrollView {
                 VStack(spacing: SlangSpacing.lg) {
                     profileHeader
-                    featureGrid
-                    vocabularySection
+                    categoryGrid
+                    quickAccessSection
                 }
                 .padding(.horizontal, SlangSpacing.lg)
                 .padding(.top, SlangSpacing.md)
@@ -67,6 +68,12 @@ struct ProfileView: View {
         }) {
             LexiconView()
         }
+        .fullScreenCover(isPresented: $showingGlossary) {
+            NavigationStack {
+                GlossaryView(initialCategory: glossaryCategory)
+            }
+            .environment(\.appEnvironment, env)
+        }
         .task { await refreshCounts() }
     }
 
@@ -82,19 +89,13 @@ struct ProfileView: View {
                      ?? String(localized: "profile.guest", defaultValue: "Guest User"))
                     .font(.slang(.heading))
                     .foregroundStyle(.primary)
-
-                if let profile = auraProfile {
-                    Text(profile.currentTier.displayName)
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .foregroundStyle(SlangColor.primary)
-                        .padding(.horizontal, SlangSpacing.sm)
-                        .padding(.vertical, 3)
-                        .background(Capsule().fill(SlangColor.primary.opacity(0.12)))
-                }
             }
 
             Spacer()
         }
+        .padding(SlangSpacing.md)
+        .frame(maxWidth: .infinity)
+        .glassCard()
     }
 
     @ViewBuilder
@@ -123,100 +124,67 @@ struct ProfileView: View {
             .foregroundStyle(SlangColor.primary.opacity(0.6))
     }
 
-    // MARK: - Feature Grid
+    // MARK: - Category Grid
 
-    private var featureGrid: some View {
-        LazyVGrid(columns: columns, spacing: SlangSpacing.md) {
-            FeatureCard(
+    /// 2-column grid of slang categories. Tapping each opens the Glossary filtered to that category.
+    private var categoryGrid: some View {
+        VStack(alignment: .leading, spacing: SlangSpacing.sm) {
+            Text(String(localized: "profile.section.browse", defaultValue: "BROWSE BY VIBE"))
+                .font(.system(size: 10, weight: .black, design: .monospaced))
+                .tracking(2)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 2)
+
+            LazyVGrid(columns: columns, spacing: SlangSpacing.md) {
+                ForEach(featuredCategories, id: \.self) { category in
+                    CategoryCard(category: category) {
+                        glossaryCategory = category
+                        showingGlossary = true
+                    }
+                }
+            }
+        }
+    }
+
+    private let featuredCategories: [SlangCategory] = [
+        .foundationalDescriptor,
+        .brainrot,
+        .socialArchetype,
+        .reaction,
+        .gamingInternet,
+        .aesthetic,
+        .relationship,
+        .emerging2026
+    ]
+
+    // MARK: - Quick Access Section
+
+    private var quickAccessSection: some View {
+        VStack(spacing: SlangSpacing.sm) {
+            QuickAccessRow(
                 symbolName: "heart.fill",
-                title: String(localized: "profile.feature.favorites", defaultValue: "Favorites"),
+                title: String(localized: "profile.nav.favorites", defaultValue: "Favorites"),
                 badge: favoritesCount > 0 ? "\(favoritesCount)" : nil,
                 color: .red.opacity(0.75),
                 action: { showingFavorites = true }
             )
-            FeatureCard(
+            QuickAccessRow(
                 symbolName: "bookmark.fill",
-                title: String(localized: "profile.feature.lexicon", defaultValue: "My Lexicon"),
+                title: String(localized: "profile.nav.lexicon", defaultValue: "My Lexicon"),
                 badge: lexiconCount > 0 ? "\(lexiconCount)" : nil,
                 color: SlangColor.primary,
                 action: { showingLexicon = true }
             )
-            FeatureCard(
-                symbolName: "puzzlepiece.fill",
-                title: String(localized: "profile.feature.crossword", defaultValue: "Daily Crossword"),
+            QuickAccessRow(
+                symbolName: "books.vertical.fill",
+                title: String(localized: "profile.nav.glossary", defaultValue: "All Slang"),
                 badge: nil,
                 color: SlangColor.secondary,
-                isLocked: true,
-                action: {}
+                action: {
+                    glossaryCategory = nil
+                    showingGlossary = true
+                }
             )
-            FeatureCard(
-                symbolName: "questionmark.circle.fill",
-                title: String(localized: "profile.feature.quizzes", defaultValue: "Quizzes"),
-                badge: nil,
-                color: SlangColor.accent,
-                isLocked: true,
-                action: {}
-            )
-            FeatureCard(
-                symbolName: "character.book.closed.fill",
-                title: String(localized: "profile.feature.translator", defaultValue: "Translator"),
-                badge: nil,
-                color: SlangColor.onboardingTeal,
-                isLocked: true,
-                action: {}
-            )
-            FeatureCard(
-                symbolName: "chart.bar.fill",
-                title: String(localized: "profile.feature.stats", defaultValue: "Stats"),
-                badge: auraProfile.map { "\($0.totalPoints) pts" },
-                color: SlangColor.secondary,
-                action: {}
-            )
-        }
-    }
-
-    // MARK: - YOUR VOCABULARY Section
-
-    private var vocabularySection: some View {
-        VStack(alignment: .leading, spacing: SlangSpacing.sm) {
-            Text(String(localized: "profile.section.vocabulary", defaultValue: "YOUR VOCABULARY"))
-                .font(.system(size: 10, weight: .black, design: .monospaced))
-                .tracking(2)
-                .foregroundStyle(.secondary)
-
-            VStack(spacing: 1) {
-                ProfileNavRow(
-                    symbolName: "heart.fill",
-                    title: String(localized: "profile.nav.favorites", defaultValue: "Favorites"),
-                    badge: favoritesCount > 0 ? "\(favoritesCount)" : nil,
-                    action: { showingFavorites = true }
-                )
-                Divider().padding(.leading, 52)
-                ProfileNavRow(
-                    symbolName: "bookmark.fill",
-                    title: String(localized: "profile.nav.lexicon", defaultValue: "My Lexicon"),
-                    badge: lexiconCount > 0 ? "\(lexiconCount)" : nil,
-                    action: { showingLexicon = true }
-                )
-                Divider().padding(.leading, 52)
-                ProfileNavRow(
-                    symbolName: "square.stack.fill",
-                    title: String(localized: "profile.nav.collections", defaultValue: "Collections"),
-                    badge: nil,
-                    isLocked: true,
-                    action: {}
-                )
-                Divider().padding(.leading, 52)
-                ProfileNavRow(
-                    symbolName: "clock.fill",
-                    title: String(localized: "profile.nav.history", defaultValue: "History"),
-                    badge: nil,
-                    isLocked: true,
-                    action: {}
-                )
-            }
-            .background(SlangColor.surface)
-            .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.cell))
         }
     }
 
@@ -230,84 +198,103 @@ struct ProfileView: View {
            let fav = try? JSONDecoder().decode(UserFavorites.self, from: data) {
             favoritesCount = fav.count
         }
-        auraProfile = try? await env.auraRepository.fetchProfile()
     }
 }
 
-// MARK: - FeatureCard
+// MARK: - CategoryCard
 
-private struct FeatureCard: View {
-    let symbolName: String
-    let title: String
-    let badge: String?
-    let color: Color
-    var isLocked: Bool = false
+private struct CategoryCard: View {
+    let category: SlangCategory
     let action: () -> Void
 
     var body: some View {
-        Button(action: isLocked ? {} : action) {
-            VStack(alignment: .leading, spacing: SlangSpacing.sm) {
-                HStack(alignment: .top) {
-                    Image(systemName: symbolName)
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(isLocked ? Color(.tertiaryLabel) : color)
-                        .accessibilityHidden(true)
-                    Spacer()
-                    if isLocked {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Color(.tertiaryLabel))
-                            .accessibilityHidden(true)
-                    } else if let badge {
-                        Text(badge)
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Capsule().fill(color.opacity(0.85)))
-                    }
-                }
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: SlangSpacing.xs) {
+                Image(systemName: categoryIcon(category))
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(SlangColor.primary)
+                    .accessibilityHidden(true)
 
                 Spacer()
 
-                Text(title)
+                Text(category.displayName)
                     .font(.slang(.label))
-                    .foregroundStyle(isLocked ? Color(.secondaryLabel) : .primary)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(2)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Text(categoryTagline(category))
+                    .font(.slang(.caption))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
             .padding(SlangSpacing.md)
-            .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
-            .background(SlangColor.surface)
-            .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.cell))
+            .frame(maxWidth: .infinity, minHeight: 100, alignment: .topLeading)
+            .glassCard()
         }
         .buttonStyle(.plain)
-        .disabled(isLocked)
-        .accessibilityLabel(isLocked ? "\(title), locked" : title)
+        .accessibilityLabel(category.displayName)
+    }
+
+    private func categoryIcon(_ cat: SlangCategory) -> String {
+        switch cat {
+        case .foundationalDescriptor: return "book.fill"
+        case .brainrot:               return "brain.fill"
+        case .socialArchetype:        return "person.2.fill"
+        case .reaction:               return "bubble.left.fill"
+        case .gamingInternet:         return "gamecontroller.fill"
+        case .aesthetic:              return "paintbrush.fill"
+        case .relationship:           return "heart.fill"
+        case .emerging2026:           return "arrow.up.right.circle.fill"
+        case .emojiDescriptor:        return "face.smiling.fill"
+        case .emojiReaction:          return "ellipsis.bubble.fill"
+        case .emojiTone:              return "theatermasks.fill"
+        case .regionalNorCal:         return "map.fill"
+        case .regionalSoCal:          return "sun.max.fill"
+        case .techSiliconValley:      return "laptopcomputer"
+        }
+    }
+
+    private func categoryTagline(_ cat: SlangCategory) -> String {
+        switch cat {
+        case .foundationalDescriptor: return "Core slang"
+        case .brainrot:               return "Gen Alpha coded"
+        case .socialArchetype:        return "Who are you?"
+        case .reaction:               return "Express yourself"
+        case .gamingInternet:         return "For the gamers"
+        case .aesthetic:              return "Vibes only"
+        case .relationship:           return "Ship or skip"
+        case .emerging2026:           return "Just dropped"
+        case .emojiDescriptor:        return "Say it in emoji"
+        case .emojiReaction:          return "React differently"
+        case .emojiTone:              return "Tone check"
+        case .regionalNorCal:         return "Bay Area speak"
+        case .regionalSoCal:          return "SoCal vibes"
+        case .techSiliconValley:      return "Tech bro lingo"
+        }
     }
 }
 
-// MARK: - ProfileNavRow
+// MARK: - QuickAccessRow
 
-private struct ProfileNavRow: View {
+private struct QuickAccessRow: View {
     let symbolName: String
     let title: String
-    let badge: String?
-    var isLocked: Bool = false
+    var badge: String? = nil
+    let color: Color
     let action: () -> Void
 
     var body: some View {
-        Button(action: isLocked ? {} : action) {
+        Button(action: action) {
             HStack(spacing: SlangSpacing.md) {
                 Image(systemName: symbolName)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(isLocked ? Color(.tertiaryLabel) : SlangColor.primary)
-                    .frame(width: 22)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(color)
+                    .frame(width: 24)
                     .accessibilityHidden(true)
 
                 Text(title)
                     .font(.slang(.subheading))
-                    .foregroundStyle(isLocked ? Color(.secondaryLabel) : .primary)
+                    .foregroundStyle(.primary)
 
                 Spacer()
 
@@ -317,22 +304,21 @@ private struct ProfileNavRow: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, SlangSpacing.sm)
                         .padding(.vertical, 2)
-                        .background(Capsule().fill(SlangColor.primary))
+                        .background(Capsule().fill(color.opacity(0.85)))
                         .accessibilityLabel("\(badge) items")
                 }
 
-                Image(systemName: isLocked ? "lock.fill" : "chevron.right")
+                Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Color(.tertiaryLabel))
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, SlangSpacing.md)
             .padding(.vertical, SlangSpacing.md)
-            .contentShape(Rectangle())
+            .glassCard()
         }
         .buttonStyle(.plain)
-        .disabled(isLocked)
-        .accessibilityLabel(isLocked ? "\(title), locked" : title)
+        .accessibilityLabel(title)
     }
 }
 

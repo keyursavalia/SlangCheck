@@ -50,9 +50,6 @@ struct SettingsView: View {
             aboutYouSection(vm: vm)
             makeItYoursSection
             accountSection(vm: vm)
-            supportSection
-            followSection
-            otherSection
             footerSection
         }
         .listStyle(.insetGrouped)
@@ -136,11 +133,11 @@ struct SettingsView: View {
                     .accessibilityHidden(true)
                 Text(String(localized: "settings.manageSubscription",
                             defaultValue: "Manage Subscription"))
-                    .font(.slang(.body))
+                    .font(.system(size: 17))
                     .foregroundStyle(.primary)
                 Spacer()
                 Text(String(localized: "settings.comingSoon", defaultValue: "Coming soon"))
-                    .font(.slang(.caption))
+                    .font(.system(size: 15))
                     .foregroundStyle(.secondary)
             }
         }
@@ -217,11 +214,11 @@ struct SettingsView: View {
                             .frame(width: 22)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(String(localized: "settings.signIn", defaultValue: "Sign In"))
-                                .font(.slang(.body))
+                                .font(.system(size: 17))
                                 .foregroundStyle(.primary)
                             Text(String(localized: "settings.signIn.subtitle",
                                         defaultValue: "Unlock quizzes, streaks & more"))
-                                .font(.slang(.caption))
+                                .font(.system(size: 13))
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -241,7 +238,7 @@ struct SettingsView: View {
                             .foregroundStyle(SlangColor.primary)
                             .frame(width: 22)
                         Text(String(localized: "settings.changePhoto", defaultValue: "Change Photo"))
-                            .font(.slang(.body))
+                            .font(.system(size: 17))
                             .foregroundStyle(.primary)
                         Spacer()
                         if vm.isLoading {
@@ -254,10 +251,10 @@ struct SettingsView: View {
                 // Email (read-only)
                 HStack {
                     Text(String(localized: "settings.email", defaultValue: "Email"))
-                        .font(.slang(.body)).foregroundStyle(.primary)
+                        .font(.system(size: 17)).foregroundStyle(.primary)
                     Spacer()
                     Text(authState.currentProfile?.email ?? "--")
-                        .font(.slang(.body)).foregroundStyle(.secondary).lineLimit(1)
+                        .font(.system(size: 17)).foregroundStyle(.secondary).lineLimit(1)
                 }
 
                 // Sign Out
@@ -266,7 +263,7 @@ struct SettingsView: View {
                         String(localized: "settings.signOut", defaultValue: "Sign Out"),
                         systemImage: "rectangle.portrait.and.arrow.right"
                     )
-                    .font(.slang(.body))
+                    .font(.system(size: 17))
                     .foregroundStyle(SlangColor.primary)
                 }
 
@@ -276,66 +273,9 @@ struct SettingsView: View {
                         String(localized: "settings.deleteAccount", defaultValue: "Delete Account"),
                         systemImage: "trash.fill"
                     )
-                    .font(.slang(.body))
+                    .font(.system(size: 17))
                 }
             }
-        }
-    }
-
-    // MARK: - SUPPORT US Section
-
-    private var supportSection: some View {
-        Section(String(localized: "settings.section.support", defaultValue: "SUPPORT US")) {
-            Button { shareApp() } label: {
-                settingsActionRow(
-                    icon: "square.and.arrow.up",
-                    title: String(localized: "settings.share", defaultValue: "Share SlangCheck")
-                )
-            }
-            .buttonStyle(.plain)
-
-            Button {} label: {
-                settingsActionRow(
-                    icon: "star.fill",
-                    title: String(localized: "settings.review", defaultValue: "Leave a Review")
-                )
-            }
-            .buttonStyle(.plain)
-
-            Button {} label: {
-                settingsActionRow(
-                    icon: "hand.thumbsup.fill",
-                    title: String(localized: "settings.vote", defaultValue: "Vote on Next Features")
-                )
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    // MARK: - FOLLOW US Section
-
-    private var followSection: some View {
-        Section(String(localized: "settings.section.follow", defaultValue: "FOLLOW US")) {
-            settingsLinkRow(icon: "camera", title: "Instagram", urlString: "https://instagram.com")
-            settingsLinkRow(icon: "person.2.fill", title: "Facebook", urlString: "https://facebook.com")
-            settingsLinkRow(icon: "xmark", title: "X (formerly Twitter)", urlString: "https://x.com")
-        }
-    }
-
-    // MARK: - OTHER Section
-
-    private var otherSection: some View {
-        Section(String(localized: "settings.section.other", defaultValue: "OTHER")) {
-            settingsLinkRow(
-                icon: "lock.shield",
-                title: String(localized: "settings.privacy", defaultValue: "Privacy Policy"),
-                urlString: "https://slangcheck.app/privacy"
-            )
-            settingsLinkRow(
-                icon: "doc.text",
-                title: String(localized: "settings.terms", defaultValue: "Terms and Conditions"),
-                urlString: "https://slangcheck.app/terms"
-            )
         }
     }
 
@@ -374,55 +314,14 @@ struct SettingsView: View {
                 .frame(width: 22)
                 .accessibilityHidden(true)
             Text(title)
-                .font(.slang(.body))
+                .font(.system(size: 17))
                 .foregroundStyle(.primary)
             Spacer()
             if let value {
                 Text(value)
-                    .font(.slang(.caption))
+                    .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-            }
-        }
-    }
-
-    private func settingsActionRow(icon: String, title: String) -> some View {
-        HStack(spacing: SlangSpacing.md) {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(SlangColor.primary)
-                .frame(width: 22)
-                .accessibilityHidden(true)
-            Text(title)
-                .font(.slang(.body))
-                .foregroundStyle(.primary)
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color(.tertiaryLabel))
-                .accessibilityHidden(true)
-        }
-    }
-
-    @ViewBuilder
-    private func settingsLinkRow(icon: String, title: String, urlString: String) -> some View {
-        if let url = URL(string: urlString) {
-            Link(destination: url) {
-                HStack(spacing: SlangSpacing.md) {
-                    Image(systemName: icon)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(SlangColor.primary)
-                        .frame(width: 22)
-                        .accessibilityHidden(true)
-                    Text(title)
-                        .font(.slang(.body))
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    Image(systemName: "arrow.up.right")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color(.tertiaryLabel))
-                        .accessibilityHidden(true)
-                }
             }
         }
     }
