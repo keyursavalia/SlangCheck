@@ -25,7 +25,7 @@ struct NameSettingsView: View {
                         set: { vm.pendingDisplayName = $0 }
                     )
                 )
-                .font(.slang(.body))
+                .font(.system(size: 17))
                 .autocorrectionDisabled()
                 .submitLabel(.done)
                 .focused($isFocused)
@@ -33,7 +33,7 @@ struct NameSettingsView: View {
             } footer: {
                 Text(String(localized: "settings.name.footer",
                             defaultValue: "This name is visible to you across the app."))
-                    .font(.slang(.caption))
+                    .font(.system(size: 13))
             }
 
             Section {
@@ -46,7 +46,7 @@ struct NameSettingsView: View {
                             ProgressView().tint(.white)
                         } else {
                             Text(String(localized: "settings.save", defaultValue: "Save"))
-                                .font(.slang(.label))
+                                .font(.system(size: 17, weight: .semibold))
                                 .foregroundStyle(.white)
                         }
                         Spacer()
@@ -86,7 +86,7 @@ struct GenderSettingsView: View {
                     } label: {
                         HStack {
                             Text(option)
-                                .font(.slang(.body))
+                                .font(.system(size: 17))
                                 .foregroundStyle(.primary)
                             Spacer()
                             if selectedGender == option {
@@ -126,7 +126,7 @@ struct AgeSettingsView: View {
                     } label: {
                         HStack {
                             Text(option)
-                                .font(.slang(.body))
+                                .font(.system(size: 17))
                                 .foregroundStyle(.primary)
                             Spacer()
                             if selectedAge == option {
@@ -166,7 +166,7 @@ struct SlangLevelSettingsView: View {
                     } label: {
                         HStack {
                             Text(level.rawValue)
-                                .font(.slang(.body))
+                                .font(.system(size: 17))
                                 .foregroundStyle(.primary)
                             Spacer()
                             if selectedSegment == segmentValue(for: level) {
@@ -181,7 +181,7 @@ struct SlangLevelSettingsView: View {
             } footer: {
                 Text(String(localized: "settings.level.footer",
                             defaultValue: "Your level helps personalize your learning experience."))
-                    .font(.slang(.caption))
+                    .font(.system(size: 13))
             }
         }
         .listStyle(.insetGrouped)
@@ -222,7 +222,7 @@ struct NotificationSettingsView: View {
                     isOn: $notificationsEnabled
                 )
                 .tint(SlangColor.onboardingTeal)
-                .font(.slang(.body))
+                .font(.system(size: 17))
             }
 
             if notificationsEnabled {
@@ -231,7 +231,7 @@ struct NotificationSettingsView: View {
                     HStack {
                         Text(String(localized: "settings.notifications.howMany",
                                     defaultValue: "Daily reminders"))
-                            .font(.slang(.body))
+                            .font(.system(size: 17))
                             .foregroundStyle(.primary)
                         Spacer()
                         HStack(spacing: SlangSpacing.md) {
@@ -244,7 +244,7 @@ struct NotificationSettingsView: View {
                             }
                             .buttonStyle(.plain)
                             Text("\(count)")
-                                .font(.slang(.label))
+                                .font(.system(size: 17, weight: .semibold))
                                 .frame(minWidth: 28, alignment: .center)
                             Button {
                                 if count < 20 { count += 1 }
@@ -263,7 +263,7 @@ struct NotificationSettingsView: View {
                         selection: $startTime,
                         displayedComponents: .hourAndMinute
                     )
-                    .font(.slang(.body))
+                    .font(.system(size: 17))
 
                     DatePicker(
                         String(localized: "settings.notifications.endAt",
@@ -271,7 +271,7 @@ struct NotificationSettingsView: View {
                         selection: $endTime,
                         displayedComponents: .hourAndMinute
                     )
-                    .font(.slang(.body))
+                    .font(.system(size: 17))
                 }
             }
 
@@ -283,7 +283,7 @@ struct NotificationSettingsView: View {
                             HStack {
                                 Text(String(localized: "settings.notifications.openSettings",
                                             defaultValue: "Enable in iOS Settings"))
-                                    .font(.slang(.body))
+                                    .font(.system(size: 17))
                                     .foregroundStyle(SlangColor.primary)
                                 Spacer()
                                 Image(systemName: "arrow.up.right")
@@ -295,7 +295,7 @@ struct NotificationSettingsView: View {
                 } footer: {
                     Text(String(localized: "settings.notifications.deniedFooter",
                                 defaultValue: "Notifications are blocked. Open iOS Settings to allow them."))
-                        .font(.slang(.caption))
+                        .font(.system(size: 13))
                 }
             }
         }
@@ -324,7 +324,7 @@ struct LanguageSettingsView: View {
                 ForEach(languages, id: \.self) { lang in
                     HStack {
                         Text(lang)
-                            .font(.slang(.body))
+                            .font(.system(size: 17))
                             .foregroundStyle(.primary)
                         Spacer()
                         Image(systemName: "checkmark")
@@ -335,7 +335,7 @@ struct LanguageSettingsView: View {
             } footer: {
                 Text(String(localized: "settings.language.footer",
                             defaultValue: "More languages coming soon."))
-                    .font(.slang(.caption))
+                    .font(.system(size: 13))
             }
         }
         .listStyle(.insetGrouped)

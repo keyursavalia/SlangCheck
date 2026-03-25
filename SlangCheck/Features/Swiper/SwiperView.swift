@@ -16,8 +16,8 @@ struct SwiperView: View {
     @Environment(AuthState.self) private var authState
     @State private var viewModel: SwiperViewModel?
     @State private var showProfile  = false
-    @State private var showPractice = false
-    @State private var showGlossary = false
+    // @State private var showPractice = false  // practice removed for now
+    // @State private var showGlossary = false  // glossary grid removed — accessible via Profile
 
     var body: some View {
         ZStack {
@@ -33,7 +33,7 @@ struct SwiperView: View {
         }
         // safeAreaInset pushes the swiper content inward so cards never hide behind chrome.
         .safeAreaInset(edge: .top, spacing: 0) { topChrome }
-        .safeAreaInset(edge: .bottom, spacing: 0) { bottomChrome }
+        // .safeAreaInset(edge: .bottom, spacing: 0) { bottomChrome }  // bottom chrome removed
         .task {
             guard viewModel == nil else { return }
             let vm = SwiperViewModel(
@@ -46,12 +46,8 @@ struct SwiperView: View {
         .fullScreenCover(isPresented: $showProfile) {
             ProfileView()
         }
-        .sheet(isPresented: $showPractice) {
-            QuizzesView()
-        }
-        .fullScreenCover(isPresented: $showGlossary) {
-            NavigationStack { GlossaryView() }
-        }
+        // .sheet(isPresented: $showPractice) { QuizzesView() }  // practice removed for now
+        // .fullScreenCover(isPresented: $showGlossary) { NavigationStack { GlossaryView() } }  // removed
     }
 
     // MARK: - Top Chrome
@@ -73,79 +69,43 @@ struct SwiperView: View {
 
             Spacer()
 
-            // Crown — future leaderboard / achievements entry point
-            Button { } label: {
-                Image(systemName: "crown")
-                    .font(.system(size: 24, weight: .light))
-                    .foregroundStyle(Color(.label).opacity(0.40))
-                    .frame(width: 44, height: 44)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(String(localized: "swiper.chrome.achievements",
-                                       defaultValue: "Achievements"))
+            // Crown removed for now
+            // Button { } label: {
+            //     Image(systemName: "crown")
+            //         .font(.system(size: 24, weight: .light))
+            //         .foregroundStyle(Color(.label).opacity(0.40))
+            //         .frame(width: 44, height: 44)
+            // }
+            // .buttonStyle(.plain)
+            // .accessibilityLabel(String(localized: "swiper.chrome.achievements",
+            //                            defaultValue: "Achievements"))
         }
         .padding(.horizontal, SlangSpacing.md)
         .padding(.vertical, SlangSpacing.xs)
         .background(SlangColor.background)
     }
 
-    // MARK: - Bottom Chrome
-
-    private var bottomChrome: some View {
-        HStack(spacing: 0) {
-            // Glossary
-            Button { showGlossary = true } label: {
-                Image(systemName: "square.grid.2x2")
-                    .font(.system(size: 20, weight: .light))
-                    .foregroundStyle(.primary.opacity(0.45))
-                    .frame(width: 56, height: 56)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(String(localized: "swiper.chrome.glossary",
-                                       defaultValue: "Glossary"))
-
-            Spacer()
-
-            // Practice — opens QuizzesView
-            Button { showPractice = true } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "graduationcap.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                    Text(String(localized: "swiper.chrome.practice",
-                                defaultValue: "Practice"))
-                        .font(.system(size: 14, weight: .semibold))
-                }
-                .foregroundStyle(.primary)
-                .padding(.horizontal, SlangSpacing.lg)
-                .padding(.vertical, 10)
-                .background(
-                    Capsule()
-                        .fill(SlangColor.surface)
-                        .shadow(color: .black.opacity(0.07), radius: 8, x: 0, y: 2)
-                )
-                .overlay(Capsule().strokeBorder(SlangColor.separator, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(String(localized: "swiper.chrome.practice.accessibility",
-                                       defaultValue: "Open practice games"))
-
-            Spacer()
-
-            // Stats — future entry point
-            Button { } label: {
-                Image(systemName: "chart.bar")
-                    .font(.system(size: 20, weight: .light))
-                    .foregroundStyle(.primary.opacity(0.45))
-                    .frame(width: 56, height: 56)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(String(localized: "swiper.chrome.stats",
-                                       defaultValue: "Stats"))
-        }
-        .padding(.horizontal, SlangSpacing.md)
-        .padding(.bottom, SlangSpacing.sm)
-        .background(SlangColor.background)
-    }
+    // MARK: - Bottom Chrome (removed — all navigation now via Profile sheet)
+    //
+    // private var bottomChrome: some View {
+    //     HStack(spacing: 0) {
+    //         // Glossary grid button removed
+    //         // Button { showGlossary = true } label: { Image(systemName: "square.grid.2x2") ... }
+    //
+    //         Spacer()
+    //
+    //         // Practice button removed
+    //         // Button { showPractice = true } label: { ... "Practice" ... }
+    //
+    //         Spacer()
+    //
+    //         // Stats button removed
+    //         // Button { } label: { Image(systemName: "chart.bar") ... }
+    //     }
+    //     .padding(.horizontal, SlangSpacing.md)
+    //     .padding(.bottom, SlangSpacing.sm)
+    //     .background(SlangColor.background)
+    // }
 
     // MARK: - Profile Avatar
 

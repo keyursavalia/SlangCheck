@@ -230,16 +230,10 @@ struct OnboardingOptionRow: View {
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .background {
-                // Shadow scoped to shape only — avoids the radius:0 double-text artifact.
+                // Shadow scoped to shape only — no strokeBorder, matches the CTA button spec.
                 RoundedRectangle(cornerRadius: 28)
                     .fill(isSelected ? SlangColor.onboardingTeal : Color(.systemBackground))
-                    .overlay {
-                        if !isSelected {
-                            RoundedRectangle(cornerRadius: 28)
-                                .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1.5)
-                        }
-                    }
-                    .shadow(color: .black.opacity(0.55), radius: 0, x: 0, y: 3)
+                    .shadow(color: .black.opacity(0.65), radius: 0, x: 0, y: 4)
             }
         }
         .buttonStyle(.plain)

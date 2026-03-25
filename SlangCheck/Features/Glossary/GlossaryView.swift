@@ -16,6 +16,10 @@ struct GlossaryView: View {
     @Environment(\.appEnvironment) private var env
     @State private var viewModel: GlossaryViewModel?
 
+    /// When set, pre-selects this category filter on first load.
+    /// Nil means show all terms (the default).
+    var initialCategory: SlangCategory? = nil
+
     var body: some View {
         Group {
             if let viewModel {
@@ -29,6 +33,10 @@ struct GlossaryView: View {
         .task {
             guard viewModel == nil else { return }
             let vm = GlossaryViewModel(repository: env.slangTermRepository)
+            // Set initialCategory before onAppear so the first fetch uses the correct filter.
+            if let category = initialCategory {
+                vm.selectedCategory = category
+            }
             viewModel = vm
             vm.onAppear()
         }
@@ -158,7 +166,7 @@ private struct GlossaryContentView: View {
         .padding(SlangSpacing.sm + 4)
         .background(
             RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
-                .fill(SlangColor.surface)
+                .fill(Color(.systemBackground))
         )
         .padding(.horizontal, SlangSpacing.md)
         .padding(.top, SlangSpacing.sm)
@@ -198,7 +206,7 @@ private struct GlossaryContentView: View {
                             .padding(.leading, SlangSpacing.md)
                     }
                 }
-                .background(SlangColor.surface)
+                .background(Color(.systemBackground))
                 .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.cell))
                 .padding(.horizontal, SlangSpacing.md)
                 .padding(.bottom, SlangSpacing.sm)

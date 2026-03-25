@@ -134,6 +134,33 @@ struct ShakeEffect: GeometryEffect {
     }
 }
 
+// MARK: - Profile Card Modifier
+
+/// Solid-white card with a subtle border and hard drop shadow.
+/// Matches the onboarding option-row aesthetic: systemBackground fill,
+/// 1.5pt primary-tinted border, and a crisp 4pt hard shadow (radius 0).
+/// Shadow is scoped to the background shape to avoid the double-text artifact
+/// that appears when shadow(radius:0) is applied to a view containing text.
+///
+/// Spec:
+/// - Background: `Color(.systemBackground)` (adapts to light/dark)
+/// - Border: 1.5pt, `Color.primary` at 12% opacity
+/// - Shadow: y 4pt, radius 0, black at 45% opacity — scoped to background shape
+/// - Corner: `SlangCornerRadius.card` (20pt)
+struct ProfileCardModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background {
+                // Shadow scoped to the shape only — no strokeBorder so there is no
+                // double-line artifact. Soft radius (6pt) gives card elevation without
+                // a harsh edge. No clipShape on the outer view so shadow isn't cut off.
+                RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: .black.opacity(0.65), radius: 0, x: 0, y: 4)
+            }
+    }
+}
+
 // MARK: - View Extension Convenience API
 
 public extension View {
@@ -141,6 +168,13 @@ public extension View {
     /// Applies the Glassmorphism surface treatment defined in DESIGN_SYSTEM.md §6.1.
     func glassCard() -> some View {
         modifier(GlassCardModifier())
+    }
+
+    /// Applies a solid-white card with hard drop shadow, matching the onboarding aesthetic.
+    /// Use on Profile cards, quick-access rows, and any surface that needs the
+    /// systemBackground + hard-shadow look instead of frosted glassmorphism.
+    func profileCard() -> some View {
+        modifier(ProfileCardModifier())
     }
 
     /// Applies the Neumorphism surface treatment defined in DESIGN_SYSTEM.md §6.2.
