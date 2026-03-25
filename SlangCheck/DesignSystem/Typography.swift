@@ -33,22 +33,23 @@ public enum SlangType {
     case label
 
     /// Resolves the token to a SwiftUI `Font` with Dynamic Type scaling.
+    /// All tokens use Noticia Text so the app has a consistent editorial voice.
     var font: Font {
         switch self {
         case .display:
-            return .system(size: 34, weight: .black, design: .default)
+            return .custom("NoticiaText-Bold", size: 34, relativeTo: .largeTitle)
         case .title:
-            return .system(size: 28, weight: .bold, design: .default)
+            return .custom("NoticiaText-Bold", size: 28, relativeTo: .title)
         case .heading:
-            return .system(size: 22, weight: .semibold, design: .default)
+            return .custom("NoticiaText-Bold", size: 22, relativeTo: .title2)
         case .subheading:
-            return .system(size: 17, weight: .medium, design: .default)
+            return .custom("NoticiaText-Regular", size: 17, relativeTo: .headline)
         case .body:
-            return .system(size: 15, weight: .regular, design: .default)
+            return .custom("NoticiaText-Regular", size: 15, relativeTo: .body)
         case .caption:
-            return .system(size: 12, weight: .regular, design: .default)
+            return .custom("NoticiaText-Regular", size: 12, relativeTo: .caption)
         case .label:
-            return .system(size: 15, weight: .semibold, design: .default)
+            return .custom("NoticiaText-Bold", size: 15, relativeTo: .callout)
         }
     }
 

@@ -85,3 +85,5 @@ fastlane/test_output/
 *.trace
 SCREENS/
 noticia-text/
+# Internal planning docs — not for version control
+MVP.md

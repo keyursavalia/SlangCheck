@@ -51,8 +51,6 @@ private struct FilterPill: View {
     let isSelected: Bool
     let action: () -> Void
 
-    @State private var isPressed = false
-
     var body: some View {
         Button(action: action) {
             Text(title)
@@ -65,15 +63,23 @@ private struct FilterPill: View {
                         .fill(isSelected ? SlangColor.primary : SlangColor.primary.opacity(0.12))
                 )
         }
-        .buttonStyle(.plain)
-        .pressedState(isPressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded   { _ in isPressed = false }
-        )
+        // FilterPillButtonStyle handles pressed scale via ButtonStyle — not DragGesture —
+        // so the parent horizontal ScrollView can steal the gesture for panning freely.
+        .buttonStyle(FilterPillButtonStyle())
         .accessibilityLabel(title)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+}
+
+// MARK: - FilterPillButtonStyle
+
+/// Scales the pill on press. Using ButtonStyle (not simultaneousGesture) so
+/// the enclosing horizontal ScrollView receives drag gestures without conflict.
+private struct FilterPillButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
