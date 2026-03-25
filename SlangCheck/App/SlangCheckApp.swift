@@ -35,6 +35,7 @@ struct SlangCheckApp: App {
             profileRepository: env.userProfileRepository
         ))
         SlangCheckApp.registerBundledFonts()
+        SlangCheckApp.configureNavigationBarAppearance()
         Logger.app.info("SlangCheckApp initialized. Environment: production.")
     }
 
@@ -51,6 +52,33 @@ struct SlangCheckApp: App {
                     await authState.reload()
                 }
         }
+    }
+
+    // MARK: - Navigation Bar Appearance
+
+    /// Configures UINavigationBarAppearance app-wide so all NavigationStacks use
+    /// NoticiaText-Bold for titles and the correct blurry-vs-transparent background.
+    ///   • scrollEdgeAppearance (large title at top)  → transparent background
+    ///   • standardAppearance   (scrolled, inline)    → system default material (blur)
+    private static func configureNavigationBarAppearance() {
+        let bold17 = UIFont(name: "NoticiaText-Bold", size: 17) ?? UIFont.boldSystemFont(ofSize: 17)
+        let bold34 = UIFont(name: "NoticiaText-Bold", size: 34) ?? UIFont.boldSystemFont(ofSize: 34)
+
+        // Scrolled state — blurry material background, centered inline title
+        let standard = UINavigationBarAppearance()
+        standard.configureWithDefaultBackground()
+        standard.titleTextAttributes     = [.font: bold17]
+        standard.largeTitleTextAttributes = [.font: bold34]
+
+        // Top-of-scroll state — transparent, large title visible
+        let scrollEdge = UINavigationBarAppearance()
+        scrollEdge.configureWithTransparentBackground()
+        scrollEdge.largeTitleTextAttributes = [.font: bold34]
+        scrollEdge.titleTextAttributes      = [.font: bold17]
+
+        UINavigationBar.appearance().standardAppearance   = standard
+        UINavigationBar.appearance().compactAppearance    = standard
+        UINavigationBar.appearance().scrollEdgeAppearance = scrollEdge
     }
 
     // MARK: - Font Registration

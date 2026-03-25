@@ -54,36 +54,20 @@ struct GlossaryView: View {
 private struct GlossaryContentView: View {
 
     @Bindable var viewModel: GlossaryViewModel
+    @Environment(\.dismiss) private var dismiss
     @State private var scrollProxy: ScrollViewProxy?
 
     var body: some View {
-        // No NavigationStack here — GlossaryView is always pushed inside MoreMenuView's
-        // NavigationStack via NavigationLink. A nested stack would intercept the
-        // .navigationDestination registration and pop back to the outer root on term tap.
         ZStack(alignment: .trailing) {
             ScrollViewReader { proxy in
                 ScrollView {
-                    // pinnedViews: .sectionHeaders keeps the alphabetical letter
-                    // headers (A, B, C…) stuck to the top as the user scrolls.
-                    // The search + category bar is placed via .safeAreaInset below
-                    // so it lives OUTSIDE the vertical ScrollView — this eliminates
-                    // the horizontal-vs-vertical gesture conflict that prevented
-                    // the CategoryFilterBar from scrolling.
+                    // pinnedViews: .sectionHeaders keeps letter headers (A, B, C…) sticky.
                     LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
                         contentSection
                     }
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .onAppear { scrollProxy = proxy }
-                // Place search + category header outside the ScrollView's scroll area
-                // so its own horizontal ScrollView receives gestures without conflict.
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    VStack(spacing: 0) {
-                        searchBar
-                        CategoryFilterBar(selectedCategory: $viewModel.selectedCategory)
-                    }
-                    .background(SlangColor.background)
-                }
             }
             .padding(.trailing, 28)
 
@@ -96,16 +80,41 @@ private struct GlossaryContentView: View {
                     }
                 }
                 .padding(.trailing, SlangSpacing.xs)
-                // Fill the ZStack height so GeometryReader spans the full screen —
-                // letters are then distributed top-to-bottom (like iOS Contacts).
+                // maxHeight: .infinity so the GeometryReader spans the available height
+                // BELOW the search+filter safeAreaInset — scrubber aligns with list content.
                 .frame(maxHeight: .infinity)
             }
         }
-        .navigationTitle(String(localized: "glossary.title", defaultValue: "Glossary"))
-        // .inline keeps the title in the navigation bar at all times.
-        // .large would render the title as scroll content, causing it to scroll
-        // behind the fixed .safeAreaInset search+category header.
+        // safeAreaInset on the outer ZStack — pushes BOTH the ScrollView AND the
+        // AlphabetScrubberView below the search+filter header. If the inset were only
+        // on the inner ScrollViewReader, the scrubber would start at y=0 (behind the
+        // search bar). Moving it here fixes both the scrubber position and the
+        // horizontal gesture conflict with CategoryFilterBar.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            VStack(spacing: 0) {
+                searchBar
+                CategoryFilterBar(selectedCategory: $viewModel.selectedCategory)
+            }
+            .background(SlangColor.background)
+        }
+        .navigationTitle(String(localized: "glossary.title", defaultValue: "Explore"))
+        // .inline keeps the title fixed in the nav bar. .large would render it as
+        // scroll content BELOW the safeAreaInset header, which makes it scroll away
+        // with the list instead of staying fixed — the broken behavior shown in
+        // glossary_broken_title_scroll.png.
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.primary)
+                }
+                .accessibilityLabel(String(localized: "glossary.close", defaultValue: "Close"))
+            }
+        }
         .background(SlangColor.background.ignoresSafeArea())
         // navigationDestination(for: SlangTerm.self) is on GlossaryView (the parent),
         // not here — keeping it at one level prevents duplicate-destination warnings.
@@ -147,7 +156,10 @@ private struct GlossaryContentView: View {
             }
         }
         .padding(SlangSpacing.sm + 4)
-        .neumorphicSurface()
+        .background(
+            RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
+                .fill(SlangColor.surface)
+        )
         .padding(.horizontal, SlangSpacing.md)
         .padding(.top, SlangSpacing.sm)
         .padding(.bottom, SlangSpacing.xs)

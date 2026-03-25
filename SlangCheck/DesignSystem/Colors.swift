@@ -70,7 +70,7 @@ public enum SlangColor {
     /// Page/screen background canvas.
     /// Light: #E1C7B7 Warm Clay | Dark: #1F1F1F Warm Charcoal
     public static var background: Color {
-        Color(lightHex: "E7D2C5", darkHex: "1F1F1F")
+        Color(lightHex: "FAF3DD", darkHex: "1F1F1F")
 //          Color(lightHex: "E4C3AD", darkHex: "1F1F1F")
     }
 
@@ -115,6 +115,14 @@ public enum SlangColor {
     /// Light: #B05A52 Warm Terracotta | Dark: #C87870 Dusty Rose Red
     public static var errorRed: Color {
         Color(lightHex: "B05A52", darkHex: "C87870")
+    }
+
+    // MARK: - Onboarding Token
+
+    /// Onboarding teal — selected option rows and CTA buttons in the onboarding flow.
+    /// Light: #4D938C | Dark: #5CAF9F
+    public static var onboardingTeal: Color {
+        Color(lightHex: "4D938C", darkHex: "5CAF9F")
     }
 
     // MARK: - Neumorphism Shadow Tokens
