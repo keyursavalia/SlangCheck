@@ -92,8 +92,8 @@ struct DisplayNameStep: View {
                         RoundedRectangle(cornerRadius: 28)
                             .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1.5)
                     }
+                    .shadow(color: .black.opacity(0.45), radius: 0, x: 0, y: 3)
             }
-            .shadow(color: .black.opacity(0.45), radius: 0, x: 0, y: 3)
             .padding(.horizontal, SlangSpacing.md)
 
             Spacer()

@@ -230,6 +230,7 @@ struct OnboardingOptionRow: View {
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .background {
+                // Shadow scoped to shape only — avoids the radius:0 double-text artifact.
                 RoundedRectangle(cornerRadius: 28)
                     .fill(isSelected ? SlangColor.onboardingTeal : Color(.systemBackground))
                     .overlay {
@@ -238,9 +239,8 @@ struct OnboardingOptionRow: View {
                                 .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1.5)
                         }
                     }
+                    .shadow(color: .black.opacity(0.55), radius: 0, x: 0, y: 3)
             }
-            // Hard (radius: 0) shadow gives the raised-sticker look matching the MVP designs.
-            .shadow(color: .black.opacity(0.55), radius: 0, x: 0, y: 3)
         }
         .buttonStyle(.plain)
         .animation(.easeOut(duration: 0.15), value: isSelected)
@@ -264,12 +264,15 @@ struct OnboardingCTAButton: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
                 .background {
+                    // Shadow is scoped to the shape only — applying it to the full
+                    // view would also shadow the text, rendering it twice (radius: 0
+                    // produces a pixel-perfect opaque copy at the y offset).
                     RoundedRectangle(cornerRadius: 28)
                         .fill(isEnabled
                               ? SlangColor.onboardingTeal
                               : SlangColor.onboardingTeal.opacity(0.4))
+                        .shadow(color: .black.opacity(0.65), radius: 0, x: 0, y: 4)
                 }
-                .shadow(color: .black.opacity(0.65), radius: 0, x: 0, y: 4)
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
