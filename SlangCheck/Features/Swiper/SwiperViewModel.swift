@@ -32,6 +32,9 @@ final class SwiperViewModel {
     /// The user's lexicon, observed reactively to keep `isTopCardSaved` in sync.
     private(set) var lexicon: UserLexicon = UserLexicon()
 
+    /// The user's liked terms, persisted to UserDefaults.
+    private(set) var favorites: UserFavorites = UserFavorites()
+
     /// True while the initial queue is being loaded.
     private(set) var isLoading = true
 
@@ -60,6 +63,7 @@ final class SwiperViewModel {
         self.hapticService        = hapticService
         self.fetchTermsUseCase    = FetchSlangTermsUseCase(repository: repository)
         self.saveToLexiconUseCase = SaveTermToLexiconUseCase(repository: repository)
+        self.favorites            = Self.loadFavorites()
     }
 
     // MARK: - Lifecycle
@@ -113,16 +117,21 @@ final class SwiperViewModel {
     }
 
     /// Saves the current top card to the Lexicon — triggered by the Save button.
-    /// No-ops silently if the card is already saved.
+    /// Applies an optimistic in-memory update immediately so the bookmark icon fills
+    /// without waiting for the async persist. Reverts on failure.
     func saveCurrentCard() {
         guard let top = cardQueue.first,
               !lexicon.savedTermIDs.contains(top.id) else { return }
         hapticService.swipeCompleted()
+        // Optimistic update — bookmark fills instantly on tap.
+        lexicon = lexicon.saving(termID: top.id)
         Task {
             do {
                 try await saveToLexiconUseCase.execute(termID: top.id)
             } catch {
                 Logger.swiper.error("Save to lexicon failed: \(error.localizedDescription)")
+                // Revert on failure so the UI stays consistent with persisted state.
+                lexicon = lexicon.removing(termID: top.id)
             }
         }
     }
@@ -139,6 +148,37 @@ final class SwiperViewModel {
     var isTopCardSaved: Bool {
         guard let top = cardQueue.first else { return false }
         return lexicon.savedTermIDs.contains(top.id)
+    }
+
+    /// Whether the current top card is liked/favorited.
+    var isTopCardLiked: Bool {
+        guard let top = cardQueue.first else { return false }
+        return favorites.contains(termID: top.id)
+    }
+
+    /// Toggles the liked state of the current top card. Persists to UserDefaults.
+    func toggleFavoriteCurrentCard() {
+        guard let top = cardQueue.first else { return }
+        hapticService.swipeCompleted()
+        favorites = favorites.contains(termID: top.id)
+            ? favorites.removing(termID: top.id)
+            : favorites.adding(termID: top.id)
+        Self.saveFavorites(favorites)
+    }
+
+    // MARK: - Favorites Persistence
+
+    private static func loadFavorites() -> UserFavorites {
+        guard let data = UserDefaults.standard.data(forKey: AppConstants.userFavoritesKey),
+              let decoded = try? JSONDecoder().decode(UserFavorites.self, from: data) else {
+            return UserFavorites()
+        }
+        return decoded
+    }
+
+    private static func saveFavorites(_ favorites: UserFavorites) {
+        guard let data = try? JSONEncoder().encode(favorites) else { return }
+        UserDefaults.standard.set(data, forKey: AppConstants.userFavoritesKey)
     }
 
     // MARK: - Lexicon Observer
