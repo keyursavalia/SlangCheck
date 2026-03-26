@@ -16,10 +16,9 @@ struct ProfileView: View {
 
     @State private var lexiconCount: Int = 0
     @State private var favoritesCount: Int = 0
-    @State private var showingLexicon = false
-    @State private var showingFavorites = false
     @State private var showingGlossary = false
-    @State private var glossaryCategory: SlangCategory? = nil
+    @State private var navigateToFavorites = false
+    @State private var navigateToCollections = false
 
     private let columns = [
         GridItem(.flexible(), spacing: SlangSpacing.md),
@@ -31,7 +30,6 @@ struct ProfileView: View {
             ScrollView {
                 VStack(spacing: SlangSpacing.lg) {
                     profileHeader
-                    categoryGrid
                     quickAccessSection
                 }
                 .padding(.horizontal, SlangSpacing.lg)
@@ -59,18 +57,16 @@ struct ProfileView: View {
                     .accessibilityLabel(String(localized: "profile.settings", defaultValue: "Settings"))
                 }
             }
-        }
-        .fullScreenCover(isPresented: $showingFavorites) {
-            FavoritesView()
-        }
-        .sheet(isPresented: $showingLexicon, onDismiss: {
-            Task { await refreshCounts() }
-        }) {
-            LexiconView()
+            .navigationDestination(isPresented: $navigateToFavorites) {
+                FavoritesView().environment(\.appEnvironment, env)
+            }
+            .navigationDestination(isPresented: $navigateToCollections) {
+                LexiconView().environment(\.appEnvironment, env)
+            }
         }
         .fullScreenCover(isPresented: $showingGlossary) {
             NavigationStack {
-                GlossaryView(initialCategory: glossaryCategory)
+                GlossaryView(initialCategory: nil)
             }
             .environment(\.appEnvironment, env)
         }
@@ -124,67 +120,41 @@ struct ProfileView: View {
             .foregroundStyle(SlangColor.primary.opacity(0.6))
     }
 
-    // MARK: - Category Grid
-
-    /// 2-column grid of slang categories. Tapping each opens the Glossary filtered to that category.
-    private var categoryGrid: some View {
-        VStack(alignment: .leading, spacing: SlangSpacing.sm) {
-            Text(String(localized: "profile.section.browse", defaultValue: "BROWSE BY VIBE"))
-                .font(.system(size: 10, weight: .black, design: .monospaced))
-                .tracking(2)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 2)
-
-            LazyVGrid(columns: columns, spacing: SlangSpacing.md) {
-                ForEach(featuredCategories, id: \.self) { category in
-                    CategoryCard(category: category) {
-                        glossaryCategory = category
-                        showingGlossary = true
-                    }
-                }
-            }
-        }
-    }
-
-    private let featuredCategories: [SlangCategory] = [
-        .foundationalDescriptor,
-        .brainrot,
-        .socialArchetype,
-        .reaction,
-        .gamingInternet,
-        .aesthetic,
-        .relationship,
-        .emerging2026
-    ]
-
     // MARK: - Quick Access Section
 
     private var quickAccessSection: some View {
-        VStack(spacing: SlangSpacing.sm) {
-            QuickAccessRow(
-                symbolName: "heart.fill",
-                title: String(localized: "profile.nav.favorites", defaultValue: "Favorites"),
-                badge: favoritesCount > 0 ? "\(favoritesCount)" : nil,
-                color: .red.opacity(0.75),
-                action: { showingFavorites = true }
-            )
-            QuickAccessRow(
-                symbolName: "bookmark.fill",
-                title: String(localized: "profile.nav.lexicon", defaultValue: "My Lexicon"),
-                badge: lexiconCount > 0 ? "\(lexiconCount)" : nil,
-                color: SlangColor.primary,
-                action: { showingLexicon = true }
-            )
-            QuickAccessRow(
-                symbolName: "books.vertical.fill",
-                title: String(localized: "profile.nav.glossary", defaultValue: "All Slang"),
-                badge: nil,
-                color: SlangColor.secondary,
-                action: {
-                    glossaryCategory = nil
-                    showingGlossary = true
+        VStack(spacing: SlangSpacing.md) {
+            HStack(spacing: SlangSpacing.md) {
+                Button { navigateToFavorites = true } label: {
+                    CategoryCardContent(
+                        symbolName: "heart.fill",
+                        title: String(localized: "profile.nav.favorites", defaultValue: "Favorites"),
+                        subtitle: String(localized: "profile.nav.favorites.sub",
+                                        defaultValue: "Your liked terms")
+                    )
                 }
-            )
+                .buttonStyle(.plain)
+
+                Button { navigateToCollections = true } label: {
+                    CategoryCardContent(
+                        symbolName: "bookmark.fill",
+                        title: String(localized: "profile.nav.lexicon", defaultValue: "Collections"),
+                        subtitle: String(localized: "profile.nav.lexicon.sub",
+                                        defaultValue: "Saved words")
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button { showingGlossary = true } label: {
+                CategoryCardContent(
+                    symbolName: "books.vertical.fill",
+                    title: String(localized: "profile.nav.glossary", defaultValue: "All Slang"),
+                    subtitle: String(localized: "profile.nav.glossary.sub",
+                                    defaultValue: "Full dictionary")
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -198,127 +168,6 @@ struct ProfileView: View {
            let fav = try? JSONDecoder().decode(UserFavorites.self, from: data) {
             favoritesCount = fav.count
         }
-    }
-}
-
-// MARK: - CategoryCard
-
-private struct CategoryCard: View {
-    let category: SlangCategory
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: SlangSpacing.xs) {
-                Image(systemName: categoryIcon(category))
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(SlangColor.primary)
-                    .accessibilityHidden(true)
-
-                Spacer()
-
-                Text(category.displayName)
-                    .font(.slang(.label))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-
-                Text(categoryTagline(category))
-                    .font(.slang(.caption))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            .padding(SlangSpacing.md)
-            .frame(maxWidth: .infinity, minHeight: 100, alignment: .topLeading)
-            .profileCard()
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(category.displayName)
-    }
-
-    private func categoryIcon(_ cat: SlangCategory) -> String {
-        switch cat {
-        case .foundationalDescriptor: return "book.fill"
-        case .brainrot:               return "brain.fill"
-        case .socialArchetype:        return "person.2.fill"
-        case .reaction:               return "bubble.left.fill"
-        case .gamingInternet:         return "gamecontroller.fill"
-        case .aesthetic:              return "paintbrush.fill"
-        case .relationship:           return "heart.fill"
-        case .emerging2026:           return "arrow.up.right.circle.fill"
-        case .emojiDescriptor:        return "face.smiling.fill"
-        case .emojiReaction:          return "ellipsis.bubble.fill"
-        case .emojiTone:              return "theatermasks.fill"
-        case .regionalNorCal:         return "map.fill"
-        case .regionalSoCal:          return "sun.max.fill"
-        case .techSiliconValley:      return "laptopcomputer"
-        }
-    }
-
-    private func categoryTagline(_ cat: SlangCategory) -> String {
-        switch cat {
-        case .foundationalDescriptor: return "Core slang"
-        case .brainrot:               return "Gen Alpha coded"
-        case .socialArchetype:        return "Who are you?"
-        case .reaction:               return "Express yourself"
-        case .gamingInternet:         return "For the gamers"
-        case .aesthetic:              return "Vibes only"
-        case .relationship:           return "Ship or skip"
-        case .emerging2026:           return "Just dropped"
-        case .emojiDescriptor:        return "Say it in emoji"
-        case .emojiReaction:          return "React differently"
-        case .emojiTone:              return "Tone check"
-        case .regionalNorCal:         return "Bay Area speak"
-        case .regionalSoCal:          return "SoCal vibes"
-        case .techSiliconValley:      return "Tech bro lingo"
-        }
-    }
-}
-
-// MARK: - QuickAccessRow
-
-private struct QuickAccessRow: View {
-    let symbolName: String
-    let title: String
-    var badge: String? = nil
-    let color: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: SlangSpacing.md) {
-                Image(systemName: symbolName)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(color)
-                    .frame(width: 24)
-                    .accessibilityHidden(true)
-
-                Text(title)
-                    .font(.slang(.subheading))
-                    .foregroundStyle(.primary)
-
-                Spacer()
-
-                if let badge {
-                    Text(badge)
-                        .font(.slang(.caption))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, SlangSpacing.sm)
-                        .padding(.vertical, 2)
-                        .background(Capsule().fill(color.opacity(0.85)))
-                        .accessibilityLabel("\(badge) items")
-                }
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color(.tertiaryLabel))
-                    .accessibilityHidden(true)
-            }
-            .padding(.horizontal, SlangSpacing.md)
-            .padding(.vertical, SlangSpacing.md)
-            .profileCard()
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
     }
 }
 
