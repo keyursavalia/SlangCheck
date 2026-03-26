@@ -33,9 +33,7 @@ struct TermInfoSheet: View {
                     exampleSection
                     standardEnglishSection
                     originSection
-                    categorySection
-                    usageSection
-                    generationSection
+                    metaInfoRow
                 }
                 .padding(.horizontal, SlangSpacing.lg)
                 .padding(.top, SlangSpacing.md)
@@ -125,32 +123,40 @@ struct TermInfoSheet: View {
         }
     }
 
-    /// Category — single-column, above usage.
-    private var categorySection: some View {
-        infoSection(label: String(localized: "info.sheet.category", defaultValue: "category")) {
-            tagChip(term.category.displayName)
-        }
-        .padding(.bottom, SlangSpacing.xl)
-    }
+    /// Category, usage, and generation on a single horizontal row.
+    private var metaInfoRow: some View {
+        HStack(alignment: .top, spacing: SlangSpacing.xl) {
+            VStack(alignment: .leading, spacing: SlangSpacing.xs) {
+                Text(String(localized: "info.sheet.category", defaultValue: "category").uppercased())
+                    .font(.system(size: 11, weight: .black, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(.secondary)
+                tagChip(term.category.displayName)
+            }
 
-    /// Usage — single-column, below category and above generation.
-    private var usageSection: some View {
-        infoSection(label: String(localized: "info.sheet.usage", defaultValue: "usage")) {
-            tagChip(term.usageFrequency.rawValue)
-        }
-        .padding(.bottom, SlangSpacing.xl)
-    }
+            VStack(alignment: .leading, spacing: SlangSpacing.xs) {
+                Text(String(localized: "info.sheet.usage", defaultValue: "usage").uppercased())
+                    .font(.system(size: 11, weight: .black, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(.secondary)
+                tagChip(term.usageFrequency.rawValue)
+            }
 
-    @ViewBuilder
-    private var generationSection: some View {
-        if !term.generationTags.isEmpty {
-            infoSection(label: String(localized: "info.sheet.generation", defaultValue: "generation")) {
-                HStack(spacing: SlangSpacing.sm) {
-                    ForEach(term.generationTags, id: \.rawValue) { tag in
-                        tagChip(tag.rawValue)
+            if !term.generationTags.isEmpty {
+                VStack(alignment: .leading, spacing: SlangSpacing.xs) {
+                    Text(String(localized: "info.sheet.generation", defaultValue: "generation").uppercased())
+                        .font(.system(size: 11, weight: .black, design: .monospaced))
+                        .tracking(2)
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: SlangSpacing.xs) {
+                        ForEach(term.generationTags, id: \.rawValue) { tag in
+                            tagChip(tag.rawValue)
+                        }
                     }
                 }
             }
+
+            Spacer()
         }
     }
 

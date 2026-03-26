@@ -1,8 +1,9 @@
 // Features/Profile/LexiconView.swift
 // SlangCheck
 //
-// Personal Lexicon screen. Shows saved terms, supports sort toggle
-// and swipe-to-delete with confirmation (FR-L-001 through FR-L-006).
+// Collections screen — shows all collections with word counts.
+// Tapping a collection navigates to CollectionDetailView.
+// Pushed as a NavigationLink destination within ProfileView's NavigationStack.
 
 import SwiftUI
 
@@ -11,146 +12,105 @@ import SwiftUI
 struct LexiconView: View {
 
     @Environment(\.appEnvironment) private var env
-    @State private var viewModel: LexiconViewModel?
-    @State private var termToDelete: SlangTerm? = nil
+
+    @State private var collections: [SlangCollection] = []
+    @State private var showingNewCollection = false
+    @State private var newCollectionName = ""
 
     var body: some View {
         Group {
-            if let viewModel {
-                LexiconContentView(
-                    viewModel: viewModel,
-                    termToDelete: $termToDelete
-                )
+            if collections.isEmpty {
+                emptyState
             } else {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(SlangColor.background.ignoresSafeArea())
+                collectionList
             }
         }
-        .task {
-            guard viewModel == nil else { return }
-            let vm = LexiconViewModel(repository: env.slangTermRepository)
-            viewModel = vm
-            vm.onAppear()
+        .background(SlangColor.background.ignoresSafeArea())
+        .navigationTitle(String(localized: "lexicon.title", defaultValue: "Collections"))
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    newCollectionName = ""
+                    showingNewCollection = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(SlangColor.primary)
+                }
+                .accessibilityLabel(String(localized: "lexicon.addNew", defaultValue: "Add new collection"))
+            }
         }
-        // Confirmation alert for destructive removal (NF-UX-003).
         .alert(
-            String(localized: "lexicon.delete.title", defaultValue: "Remove from Lexicon?"),
-            isPresented: Binding(
-                get: { termToDelete != nil },
-                set: { if !$0 { termToDelete = nil } }
-            )
+            String(localized: "lexicon.new.title", defaultValue: "New Collection"),
+            isPresented: $showingNewCollection
         ) {
-            Button(
-                String(localized: "lexicon.delete.confirm", defaultValue: "Remove"),
-                role: .destructive
-            ) {
-                if let term = termToDelete {
-                    viewModel?.remove(term: term)
-                }
-                termToDelete = nil
-            }
-            Button(
-                String(localized: "lexicon.delete.cancel", defaultValue: "Cancel"),
-                role: .cancel
-            ) {
-                termToDelete = nil
-            }
-        } message: {
-            if let term = termToDelete {
-                Text("Remove \"\(term.term)\" from your Lexicon?")
-            }
-        }
-    }
-}
-
-// MARK: - LexiconContentView
-
-private struct LexiconContentView: View {
-
-    @Bindable var viewModel: LexiconViewModel
-    @Binding var termToDelete: SlangTerm?
-    @State private var navigationPath = NavigationPath()
-
-    var body: some View {
-        NavigationStack(path: $navigationPath) {
-            Group {
-                if viewModel.isLoading {
-                    loadingView
-                } else if viewModel.savedTerms.isEmpty {
-                    emptyState
-                } else {
-                    termList
-                }
-            }
-            .background(SlangColor.background.ignoresSafeArea())
-            .navigationTitle(
-                String(localized: "lexicon.title", defaultValue: "My Lexicon")
+            TextField(
+                String(localized: "collections.new.placeholder", defaultValue: "Collection name"),
+                text: $newCollectionName
             )
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    sortMenu
-                }
+            .autocorrectionDisabled()
+            Button(String(localized: "collections.new.save", defaultValue: "Create")) {
+                createCollection()
             }
-            .navigationDestination(for: SlangTerm.self) { term in
-                LexiconTermDetailView(term: term, onRemove: {
-                    termToDelete = term
-                    navigationPath.removeLast()
-                })
-            }
+            .disabled(newCollectionName.trimmingCharacters(in: .whitespaces).isEmpty)
+            Button(String(localized: "lexicon.delete.cancel", defaultValue: "Cancel"), role: .cancel) {}
         }
-        .onDisappear { viewModel.onDisappear() }
+        .onAppear { collections = SwiperViewModel.loadCollections() }
+        .navigationDestination(for: SlangCollection.self) { collection in
+            CollectionDetailView(collection: collection)
+                .environment(\.appEnvironment, env)
+        }
     }
 
-    // MARK: - Term List
+    // MARK: - Collection List
 
-    private var termList: some View {
+    private var collectionList: some View {
         ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(viewModel.savedTerms) { term in
-                    SwipeToDeleteRow(onDelete: { termToDelete = term }) {
-                        NavigationLink(value: term) {
-                            SlangTermRow(term: term, isSaved: true)
-                        }
-                        .buttonStyle(.plain)
+            LazyVStack(spacing: SlangSpacing.sm) {
+                ForEach(collections) { collection in
+                    NavigationLink(value: collection) {
+                        collectionRow(collection)
                     }
-                    Divider()
-                        .padding(.leading, SlangSpacing.md)
+                    .buttonStyle(.plain)
                 }
             }
-            .background(SlangColor.surface)
-            .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.cell))
             .padding(.horizontal, SlangSpacing.md)
             .padding(.top, SlangSpacing.sm)
+            .padding(.bottom, SlangSpacing.xxl)
         }
     }
 
-    // MARK: - Sort Menu
+    // MARK: - Collection Row
 
-    private var sortMenu: some View {
-        Menu {
-            ForEach(LexiconSortOrder.allCases, id: \.rawValue) { order in
-                Button {
-                    viewModel.sortOrder = order
-                } label: {
-                    Label {
-                        Text(order.displayName)
-                    } icon: {
-                        if viewModel.sortOrder == order {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
+    private func collectionRow(_ collection: SlangCollection) -> some View {
+        HStack(spacing: SlangSpacing.md) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(collection.name)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                Text(String(format: NSLocalizedString(
+                    "lexicon.wordCount",
+                    value: "%d words",
+                    comment: "Word count in a collection"
+                ), collection.termIDs.count))
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
             }
-        } label: {
-            Image(systemName: "arrow.up.arrow.down")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(SlangColor.primary)
-                .accessibilityLabel(
-                    String(localized: "lexicon.sort.accessibilityLabel", defaultValue: "Sort options")
-                )
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color(.tertiaryLabel))
+                .accessibilityHidden(true)
         }
+        .padding(.horizontal, SlangSpacing.md)
+        .padding(.vertical, SlangSpacing.md)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.cell))
+        .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
     }
 
     // MARK: - Empty State
@@ -158,156 +118,238 @@ private struct LexiconContentView: View {
     private var emptyState: some View {
         EmptyStateView(
             symbolName: "bookmark",
-            title: String(localized: "lexicon.empty.title", defaultValue: "Your Lexicon is Empty"),
+            title: String(localized: "lexicon.empty.title", defaultValue: "No Collections Yet"),
             message: String(localized: "lexicon.empty.message",
-                            defaultValue: "Swipe right on a card or tap 'Save to Lexicon' on any term to build your collection.")
+                            defaultValue: "Save a term from the swiper to start building your collection.")
         )
     }
 
-    // MARK: - Loading
+    // MARK: - Actions
 
-    private var loadingView: some View {
-        ProgressView()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    private func createCollection() {
+        let trimmed = newCollectionName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        let new = SlangCollection(name: trimmed)
+        collections.append(new)
+        SwiperViewModel.saveCollections(collections)
     }
 }
 
-// MARK: - SwipeToDeleteRow
+// MARK: - CollectionDetailView
 
-/// Wraps a row with a left-drag gesture that reveals a red delete zone.
-private struct SwipeToDeleteRow<Content: View>: View {
+/// Detail view for a single collection — shows its terms with action buttons.
+struct CollectionDetailView: View {
 
-    let onDelete: () -> Void
-    @ViewBuilder let content: () -> Content
+    @Environment(\.appEnvironment) private var env
 
-    @State private var offset: CGFloat = 0
-    private let deleteThreshold: CGFloat = -80
+    let collection: SlangCollection
 
-    var body: some View {
-        ZStack(alignment: .trailing) {
-            // Delete background
-            Rectangle()
-                .fill(SlangColor.errorRed)
-                .overlay(
-                    Image(systemName: "trash")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .padding(.trailing, SlangSpacing.lg)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .accessibilityHidden(true)
-                )
-
-            content()
-                .background(SlangColor.surface)
-                .offset(x: offset)
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            if value.translation.width < 0 {
-                                offset = max(value.translation.width, deleteThreshold)
-                            }
-                        }
-                        .onEnded { value in
-                            if value.translation.width < deleteThreshold {
-                                onDelete()
-                            }
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                offset = 0
-                            }
-                        }
-                )
-        }
-        .clipped()
-    }
-}
-
-// MARK: - LexiconTermDetailView
-
-/// Read-only detail view for a saved term, with a Remove from Lexicon option.
-private struct LexiconTermDetailView: View {
-
-    let term: SlangTerm
-    let onRemove: () -> Void
+    @State private var terms: [SlangTerm] = []
+    @State private var lexicon: UserLexicon = UserLexicon()
+    @State private var favorites: UserFavorites = UserFavorites()
+    @State private var isLoading = true
+    @State private var showingFeed = false
+    @State private var feedStartTermID: UUID? = nil
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: SlangSpacing.lg) {
-                // Term info card
-                VStack(alignment: .leading, spacing: SlangSpacing.sm) {
-                    Text(term.term)
-                        .font(.slang(.title))
-                    Text(term.category.displayName.uppercased())
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(SlangColor.primary)
-                        .tracking(1.2)
-                }
-                .padding(SlangSpacing.md)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .glassCard()
-
-                // Definition
-                VStack(alignment: .leading, spacing: SlangSpacing.sm) {
-                    Text(String(localized: "termDetail.definition", defaultValue: "Definition"))
-                        .font(.slang(.label))
-                        .foregroundStyle(SlangColor.primary)
-                    Text(term.definition)
-                        .font(.slang(.body))
-                        .slangBodySpacing()
-                }
-                .padding(SlangSpacing.md)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(SlangColor.surface)
-                .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.cell))
-
-                // Example
-                VStack(alignment: .leading, spacing: SlangSpacing.sm) {
-                    Text(String(localized: "termDetail.example", defaultValue: "Example"))
-                        .font(.slang(.label))
-                        .foregroundStyle(SlangColor.primary)
-                    Text("\u{201C}\(term.exampleSentence)\u{201D}")
-                        .font(.slang(.body))
-                        .foregroundStyle(.secondary)
-                        .italic()
-                        .slangBodySpacing()
-                }
-                .padding(SlangSpacing.md)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(SlangColor.surface)
-                .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.cell))
-
-                // Remove button
-                Button(action: onRemove) {
-                    HStack(spacing: SlangSpacing.sm) {
-                        Image(systemName: "bookmark.slash")
-                        Text(String(localized: "termDetail.removeFromLexicon",
-                                    defaultValue: "Remove from Lexicon"))
-                            .font(.slang(.label))
-                    }
-                    .foregroundStyle(SlangColor.errorRed)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, SlangSpacing.md)
-                    .background(
-                        RoundedRectangle(cornerRadius: SlangCornerRadius.button)
-                            .fill(SlangColor.errorRed.opacity(0.10))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: SlangCornerRadius.button)
-                                    .strokeBorder(SlangColor.errorRed, lineWidth: 1)
-                            )
-                    )
-                }
-                .buttonStyle(.plain)
+        Group {
+            if isLoading {
+                ProgressView().tint(SlangColor.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if terms.isEmpty {
+                emptyState
+            } else {
+                termListWithCTA
             }
-            .padding(SlangSpacing.md)
         }
         .background(SlangColor.background.ignoresSafeArea())
-        .navigationTitle(term.term)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(collection.name)
+        .navigationBarTitleDisplayMode(.large)
+        .navigationDestination(isPresented: $showingFeed) {
+            SwiperView(
+                filterTermIDs: collection.termIDs,
+                presentedTitle: collection.name,
+                startAtTermID: feedStartTermID
+            )
+            .environment(\.appEnvironment, env)
+        }
+        .task { await loadData() }
+    }
+
+    // MARK: - Term List + CTA
+
+    private var termListWithCTA: some View {
+        ScrollView {
+            VStack(spacing: SlangSpacing.md) {
+                showInFeedButton
+                    .padding(.horizontal, SlangSpacing.md)
+
+                LazyVStack(spacing: SlangSpacing.sm) {
+                    ForEach(terms) { term in
+                        termCard(term: term)
+                            .padding(.horizontal, SlangSpacing.md)
+                    }
+                }
+                .padding(.bottom, SlangSpacing.xxl)
+            }
+            .padding(.top, SlangSpacing.sm)
+        }
+    }
+
+    // MARK: - Show in Feed Button
+
+    private var showInFeedButton: some View {
+        Button { feedStartTermID = nil; showingFeed = true } label: {
+            Text(String(localized: "favorites.showInFeed", defaultValue: "Show all in feed"))
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(Color(.label))
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background {
+                    RoundedRectangle(cornerRadius: 26)
+                        .fill(SlangColor.onboardingTeal)
+                        .shadow(color: .black.opacity(0.55), radius: 0, x: 0, y: 4)
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Term Card
+
+    private func termCard(term: SlangTerm) -> some View {
+        let isLiked = favorites.contains(termID: term.id)
+        let isSaved = lexicon.contains(termID: term.id)
+
+        return VStack(alignment: .leading, spacing: SlangSpacing.xs) {
+            Button {
+                feedStartTermID = term.id
+                showingFeed = true
+            } label: {
+                VStack(alignment: .leading, spacing: SlangSpacing.xs) {
+                    Text(term.term.lowercased())
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.primary)
+
+                    Text(term.definition)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if !term.exampleSentence.isEmpty {
+                        Text("\u{201C}\(term.exampleSentence)\u{201D}")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color(.tertiaryLabel))
+                            .italic()
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 2)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+
+            HStack(spacing: SlangSpacing.lg) {
+                Spacer()
+
+                Button { toggleLike(term: term) } label: {
+                    Image(systemName: isLiked ? "heart.fill" : "heart")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundStyle(isLiked ? Color.red.opacity(0.75) : Color(.tertiaryLabel))
+                }
+                .buttonStyle(.plain)
+
+                Button { toggleSave(term: term) } label: {
+                    Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundStyle(isSaved ? SlangColor.primary : Color(.tertiaryLabel))
+                }
+                .buttonStyle(.plain)
+
+                Button { SlangShareCard.share(term: term) } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundStyle(Color(.tertiaryLabel))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "swiper.share.accessibility", defaultValue: "Share term"))
+            }
+            .padding(.top, SlangSpacing.xs)
+        }
+        .padding(SlangSpacing.md)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.cell))
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+    }
+
+    // MARK: - Empty State
+
+    private var emptyState: some View {
+        EmptyStateView(
+            symbolName: "bookmark",
+            title: String(localized: "collectionDetail.empty.title", defaultValue: "No Terms Yet"),
+            message: String(localized: "collectionDetail.empty.message",
+                            defaultValue: "Save terms from the swiper to add them to this collection.")
+        )
+    }
+
+    // MARK: - Actions
+
+    private func loadData() async {
+        isLoading = true
+        if let all = try? await env.slangTermRepository.fetchAllTerms() {
+            let map = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
+            // Preserve collection order
+            terms = collection.termIDs.compactMap { map[$0] }
+        }
+        if let fetchedLexicon = try? await env.slangTermRepository.fetchLexicon() {
+            lexicon = fetchedLexicon
+        }
+        if let data = UserDefaults.standard.data(forKey: AppConstants.userFavoritesKey),
+           let decoded = try? JSONDecoder().decode(UserFavorites.self, from: data) {
+            favorites = decoded
+        }
+        isLoading = false
+    }
+
+    private func toggleLike(term: SlangTerm) {
+        if favorites.contains(termID: term.id) {
+            favorites = favorites.removing(termID: term.id)
+        } else {
+            favorites = favorites.adding(termID: term.id)
+        }
+        guard let data = try? JSONEncoder().encode(favorites) else { return }
+        UserDefaults.standard.set(data, forKey: AppConstants.userFavoritesKey)
+    }
+
+    private func toggleSave(term: SlangTerm) {
+        if lexicon.contains(termID: term.id) {
+            lexicon = lexicon.removing(termID: term.id)
+            var collections = SwiperViewModel.loadCollections()
+            for i in collections.indices {
+                collections[i].termIDs.removeAll { $0 == term.id }
+            }
+            SwiperViewModel.saveCollections(collections)
+            Task { try? await env.slangTermRepository.removeFromLexicon(termID: term.id) }
+        } else {
+            lexicon = lexicon.saving(termID: term.id)
+            var collections = SwiperViewModel.loadCollections()
+            if let idx = collections.firstIndex(where: { $0.isDefault }),
+               !collections[idx].termIDs.contains(term.id) {
+                collections[idx].termIDs.append(term.id)
+                SwiperViewModel.saveCollections(collections)
+            }
+            Task { try? await env.slangTermRepository.addToLexicon(termID: term.id) }
+        }
     }
 }
 
 // MARK: - Preview
 
 #Preview("LexiconView") {
-    LexiconView()
-        .environment(\.appEnvironment, .preview())
+    NavigationStack {
+        LexiconView()
+            .environment(\.appEnvironment, .preview())
+    }
 }

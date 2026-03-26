@@ -1,69 +1,162 @@
 // Features/Swiper/FavoritesView.swift
 // SlangCheck
 //
-// Full-screen paged viewer of liked/favorited slang terms.
-// Each page shows the term, its definition, a category chip, heart (unlike) and share actions.
+// List view of liked/favorited slang terms — term card style with actions.
+// Pushed as a NavigationLink destination within ProfileView's NavigationStack.
 
 import SwiftUI
 
 // MARK: - FavoritesView
 
-/// Paged viewer for liked terms. Accessed from ProfileView → YOUR VOCABULARY → Favorites.
+/// List viewer for liked terms. Accessed from ProfileView → Favorites.
+/// No own NavigationStack — relies on ProfileView's NavigationStack.
 struct FavoritesView: View {
 
     @Environment(\.appEnvironment) private var env
-    @Environment(\.dismiss) private var dismiss
 
     @State private var terms: [SlangTerm] = []
     @State private var favorites: UserFavorites = UserFavorites()
+    @State private var lexicon: UserLexicon = UserLexicon()
     @State private var isLoading = true
-    @State private var currentPage = 0
+    @State private var showingFeed = false
+    @State private var feedStartTermID: UUID? = nil
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                SlangColor.background.ignoresSafeArea()
-
-                if isLoading {
-                    ProgressView().tint(SlangColor.secondary)
-                } else if terms.isEmpty {
-                    emptyState
-                } else {
-                    pagedContent
-                }
-            }
-            .navigationTitle(String(localized: "favorites.title", defaultValue: "Favorites"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.primary)
-                    }
-                    .accessibilityLabel(String(localized: "favorites.close", defaultValue: "Close"))
-                }
+        Group {
+            if isLoading {
+                ProgressView().tint(SlangColor.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if terms.isEmpty {
+                emptyState
+            } else {
+                termListWithCTA
             }
         }
-        .task { await loadFavorites() }
+        .background(SlangColor.background.ignoresSafeArea())
+        .navigationTitle(String(localized: "favorites.title", defaultValue: "Favorites"))
+        .navigationBarTitleDisplayMode(.large)
+        .navigationDestination(isPresented: $showingFeed) {
+            SwiperView(
+                filterTermIDs: Array(favorites.likedTermIDs),
+                presentedTitle: String(localized: "favorites.title", defaultValue: "Favorites"),
+                startAtTermID: feedStartTermID
+            )
+            .environment(\.appEnvironment, env)
+        }
+        .task { await loadData() }
     }
 
-    // MARK: - Paged Content
+    // MARK: - Term List + CTA
 
-    private var pagedContent: some View {
-        TabView(selection: $currentPage) {
-            ForEach(Array(terms.enumerated()), id: \.element.id) { index, term in
-                FavoritePageView(
-                    term: term,
-                    isLiked: favorites.contains(termID: term.id),
-                    onUnlike: { unlike(term: term) },
-                    onShare: { SlangShareCard.share(term: term) }
-                )
-                .tag(index)
+    private var termListWithCTA: some View {
+        ScrollView {
+            VStack(spacing: SlangSpacing.md) {
+                showInFeedButton
+                    .padding(.horizontal, SlangSpacing.md)
+
+                LazyVStack(spacing: SlangSpacing.sm) {
+                    ForEach(terms) { term in
+                        termCard(term: term)
+                            .padding(.horizontal, SlangSpacing.md)
+                    }
+                }
+                .padding(.bottom, SlangSpacing.xxl)
             }
+            .padding(.top, SlangSpacing.sm)
         }
-        .tabViewStyle(.page(indexDisplayMode: .always))
-        .indexViewStyle(.page(backgroundDisplayMode: .always))
+    }
+
+    // MARK: - Show in Feed Button
+
+    private var showInFeedButton: some View {
+        Button { feedStartTermID = nil; showingFeed = true } label: {
+            Text(String(localized: "favorites.showInFeed", defaultValue: "Show all in feed"))
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(Color(.label))
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background {
+                    RoundedRectangle(cornerRadius: 26)
+                        .fill(SlangColor.onboardingTeal)
+                        .shadow(color: .black.opacity(0.55), radius: 0, x: 0, y: 4)
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Term Card
+
+    private func termCard(term: SlangTerm) -> some View {
+        let isLiked = favorites.contains(termID: term.id)
+        let isSaved = lexicon.contains(termID: term.id)
+
+        return VStack(alignment: .leading, spacing: SlangSpacing.xs) {
+            Button {
+                feedStartTermID = term.id
+                showingFeed = true
+            } label: {
+                VStack(alignment: .leading, spacing: SlangSpacing.xs) {
+                    Text(term.term.lowercased())
+                        .font(.system(size: 18))
+                        .foregroundStyle(.primary)
+
+                    Text(term.definition)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if !term.exampleSentence.isEmpty {
+                        Text("\u{201C}\(term.exampleSentence)\u{201D}")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color(.tertiaryLabel))
+                            .italic()
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 2)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+
+            HStack(spacing: SlangSpacing.lg) {
+                Spacer()
+
+                Button { toggleLike(term: term) } label: {
+                    Image(systemName: isLiked ? "heart.fill" : "heart")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundStyle(isLiked ? Color.red.opacity(0.75) : Color(.tertiaryLabel))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isLiked
+                    ? String(localized: "favorites.unlike", defaultValue: "Remove from favorites")
+                    : String(localized: "favorites.like", defaultValue: "Add to favorites"))
+
+                Button { toggleSave(term: term) } label: {
+                    Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundStyle(isSaved ? SlangColor.primary : Color(.tertiaryLabel))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isSaved
+                    ? String(localized: "favorites.unsave", defaultValue: "Remove from collections")
+                    : String(localized: "favorites.save", defaultValue: "Save to collections"))
+
+                Button { SlangShareCard.share(term: term) } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundStyle(Color(.tertiaryLabel))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "swiper.share.accessibility", defaultValue: "Share term"))
+            }
+            .padding(.top, SlangSpacing.xs)
+        }
+        .padding(SlangSpacing.md)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: SlangCornerRadius.cell))
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 
     // MARK: - Empty State
@@ -92,21 +185,49 @@ struct FavoritesView: View {
 
     // MARK: - Actions
 
-    private func loadFavorites() async {
+    private func loadData() async {
         isLoading = true
         favorites = loadPersistedFavorites()
-        if let allTerms = try? await env.slangTermRepository.fetchAllTerms() {
-            terms = allTerms.filter { favorites.contains(termID: $0.id) }
+        if let fetched = try? await env.slangTermRepository.fetchAllTerms() {
+            terms = fetched.filter { favorites.contains(termID: $0.id) }
+        }
+        if let fetchedLexicon = try? await env.slangTermRepository.fetchLexicon() {
+            lexicon = fetchedLexicon
         }
         isLoading = false
     }
 
-    private func unlike(term: SlangTerm) {
-        favorites = favorites.removing(termID: term.id)
-        persistFavorites(favorites)
-        withAnimation {
-            terms.removeAll { $0.id == term.id }
-            currentPage = min(currentPage, max(0, terms.count - 1))
+    private func toggleLike(term: SlangTerm) {
+        if favorites.contains(termID: term.id) {
+            favorites = favorites.removing(termID: term.id)
+            persistFavorites(favorites)
+            withAnimation {
+                terms.removeAll { $0.id == term.id }
+            }
+        } else {
+            favorites = favorites.adding(termID: term.id)
+            persistFavorites(favorites)
+        }
+    }
+
+    private func toggleSave(term: SlangTerm) {
+        if lexicon.contains(termID: term.id) {
+            lexicon = lexicon.removing(termID: term.id)
+            var collections = SwiperViewModel.loadCollections()
+            for i in collections.indices {
+                collections[i].termIDs.removeAll { $0 == term.id }
+            }
+            SwiperViewModel.saveCollections(collections)
+            Task { try? await env.slangTermRepository.removeFromLexicon(termID: term.id) }
+        } else {
+            lexicon = lexicon.saving(termID: term.id)
+            var collections = SwiperViewModel.loadCollections()
+            if let idx = collections.firstIndex(where: { $0.isDefault }),
+               !collections[idx].termIDs.contains(term.id) {
+                collections[idx].termIDs.append(term.id)
+                SwiperViewModel.saveCollections(collections)
+            }
+            Task { try? await env.slangTermRepository.addToLexicon(termID: term.id) }
         }
     }
 
@@ -124,75 +245,11 @@ struct FavoritesView: View {
     }
 }
 
-// MARK: - FavoritePageView
-
-/// A single page in the favorites pager: term, definition, category chip, heart + share actions.
-private struct FavoritePageView: View {
-
-    let term: SlangTerm
-    let isLiked: Bool
-    let onUnlike: () -> Void
-    let onShare: () -> Void
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
-
-            // Category chip
-            Text(term.category.displayName)
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .tracking(1.5)
-                .foregroundStyle(SlangColor.primary)
-                .padding(.horizontal, SlangSpacing.md)
-                .padding(.vertical, SlangSpacing.xs)
-                .background(Capsule().fill(SlangColor.primary.opacity(0.12)))
-                .padding(.bottom, SlangSpacing.lg)
-
-            // Term
-            Text(term.term)
-                .font(.custom("NoticiaText-Bold", size: 42))
-                .foregroundStyle(.primary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, SlangSpacing.xl)
-                .padding(.bottom, SlangSpacing.md)
-
-            // Definition
-            Text(term.definition)
-                .font(.custom("NoticiaText-Regular", size: 17))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(4)
-                .padding(.horizontal, SlangSpacing.xl)
-
-            Spacer()
-
-            // Action bar: heart + share
-            HStack(spacing: SlangSpacing.xxl) {
-                Button(action: onUnlike) {
-                    Image(systemName: isLiked ? "heart.fill" : "heart")
-                        .font(.system(size: 28, weight: .light))
-                        .foregroundStyle(isLiked ? Color.red.opacity(0.75) : Color(.label).opacity(0.35))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(String(localized: "favorites.unlike", defaultValue: "Remove from favorites"))
-
-                Button(action: onShare) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 28, weight: .light))
-                        .foregroundStyle(Color(.label).opacity(0.35))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(String(localized: "favorites.share", defaultValue: "Share term"))
-            }
-            .padding(.bottom, SlangSpacing.xxl)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
 // MARK: - Preview
 
 #Preview("FavoritesView") {
-    FavoritesView()
-        .environment(\.appEnvironment, .preview())
+    NavigationStack {
+        FavoritesView()
+            .environment(\.appEnvironment, .preview())
+    }
 }

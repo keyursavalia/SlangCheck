@@ -53,4 +53,14 @@ public struct FetchSlangTermsUseCase {
 
         return byFrequency.flatMap(\.1)
     }
+
+    // MARK: Filter by ID (Favorites Feed)
+
+    /// Fetches terms matching the given IDs, preserving the order of `ids`.
+    /// Used by the favorites-filtered swiper view.
+    public func fetchTermsByIDs(_ ids: [UUID]) async throws(SlangRepositoryError) -> [SlangTerm] {
+        let allTerms = try await repository.fetchAllTerms()
+        let termMap = Dictionary(uniqueKeysWithValues: allTerms.map { ($0.id, $0) })
+        return ids.compactMap { termMap[$0] }
+    }
 }

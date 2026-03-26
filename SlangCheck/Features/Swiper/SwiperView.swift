@@ -1,9 +1,8 @@
 // Features/Swiper/SwiperView.swift
 // SlangCheck
 //
-// Main learning view. No tab bar — navigation is provided by the inline chrome:
-//   Top:    profile avatar (left) · session progress (center) · crown (right)
-//   Bottom: glossary grid (left) · Practice capsule (center) · stats chart (right)
+// Main learning view. When filterTermIDs/presentedTitle are set, operates as a
+// filtered feed (pushed in a NavigationStack by FavoritesView or CollectionDetailView).
 
 import SwiftUI
 import UIKit
@@ -14,31 +13,63 @@ struct SwiperView: View {
 
     @Environment(\.appEnvironment) private var env
     @Environment(AuthState.self) private var authState
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
     @State private var viewModel: SwiperViewModel?
-    @State private var showProfile  = false
-    // @State private var showPractice = false  // practice removed for now
-    // @State private var showGlossary = false  // glossary grid removed — accessible via Profile
+    @State private var showProfile = false
+    @State private var showCollectionPicker = false
+    @State private var keyboardHeight: CGFloat = 0
+
+    /// When non-nil, filters the swiper to these term IDs.
+    var filterTermIDs: [UUID]? = nil
+
+    /// When set, shows as a navigation-pushed filtered feed with this nav-bar title.
+    var presentedTitle: String? = nil
+
+    /// When set, the queue is rotated so this term is shown first.
+    var startAtTermID: UUID? = nil
 
     var body: some View {
         ZStack {
             SlangColor.background.ignoresSafeArea()
 
             if let vm = viewModel {
-                SwiperContentView(viewModel: vm)
+                SwiperContentView(viewModel: vm, showsBrowseButton: filterTermIDs == nil)
             } else {
                 ProgressView()
                     .tint(SlangColor.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+
+            // Collection picker — centered floating card overlay
+            if showCollectionPicker, let vm = viewModel {
+                collectionPickerOverlay(vm: vm)
+            }
         }
-        // safeAreaInset pushes the swiper content inward so cards never hide behind chrome.
-        .safeAreaInset(edge: .top, spacing: 0) { topChrome }
-        // .safeAreaInset(edge: .bottom, spacing: 0) { bottomChrome }  // bottom chrome removed
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if presentedTitle == nil {
+                // Normal mode: full top chrome with embedded toast overlay
+                topChrome
+            } else {
+                // Filtered/pushed mode: toast only (navigation bar provides title + back)
+                if let vm = viewModel, let name = vm.saveToastCollectionName {
+                    toastPill(collectionName: name)
+                        .padding(.horizontal, SlangSpacing.md)
+                        .padding(.vertical, SlangSpacing.xs)
+                        .background(SlangColor.background)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+        }
+        .navigationTitle(presentedTitle ?? "")
+        .navigationBarTitleDisplayMode(presentedTitle != nil ? .inline : .automatic)
         .task {
             guard viewModel == nil else { return }
             let vm = SwiperViewModel(
                 repository: env.slangTermRepository,
-                hapticService: env.hapticService
+                hapticService: env.hapticService,
+                filterTermIDs: filterTermIDs,
+                startAtTermID: startAtTermID
             )
             viewModel = vm
             vm.onAppear()
@@ -46,66 +77,117 @@ struct SwiperView: View {
         .fullScreenCover(isPresented: $showProfile) {
             ProfileView()
         }
-        // .sheet(isPresented: $showPractice) { QuizzesView() }  // practice removed for now
-        // .fullScreenCover(isPresented: $showGlossary) { NavigationStack { GlossaryView() } }  // removed
     }
 
-    // MARK: - Top Chrome
+    // MARK: - Top Chrome (normal mode only)
 
     private var topChrome: some View {
-        HStack(spacing: 0) {
-            // Profile avatar — taps open ProfileView sheet
-            Button { showProfile = true } label: {
-                profileAvatar
-                    .frame(width: 44, height: 44)
+        ZStack {
+            // Background chrome row
+            HStack(spacing: 0) {
+                if presentedTitle == nil {
+                    Button { showProfile = true } label: {
+                        profileAvatar.frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "swiper.chrome.profile",
+                                               defaultValue: "Open profile"))
+
+                    Spacer()
+                    sessionProgress
+                    Spacer()
+                    // Placeholder for symmetry (crown removed)
+                    Color.clear.frame(width: 44, height: 44)
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(String(localized: "swiper.chrome.profile",
-                                       defaultValue: "Open profile"))
 
-            Spacer()
-
-            sessionProgress
-
-            Spacer()
-
-            // Crown removed for now
-            // Button { } label: {
-            //     Image(systemName: "crown")
-            //         .font(.system(size: 24, weight: .light))
-            //         .foregroundStyle(Color(.label).opacity(0.40))
-            //         .frame(width: 44, height: 44)
-            // }
-            // .buttonStyle(.plain)
-            // .accessibilityLabel(String(localized: "swiper.chrome.achievements",
-            //                            defaultValue: "Achievements"))
+            // Toast pill — overlays the center of the chrome
+            if let vm = viewModel, let name = vm.saveToastCollectionName {
+                toastPill(collectionName: name)
+                    // On iPad: constrain to the space between the 44pt left and right icons
+                    .padding(.horizontal, horizontalSizeClass == .regular ? 74 : 0)
+                    .transition(.scale(scale: 0.92).combined(with: .opacity))
+            }
         }
+        .animation(.spring(response: 0.3, dampingFraction: 0.85),
+                   value: viewModel?.saveToastCollectionName)
         .padding(.horizontal, SlangSpacing.md)
         .padding(.vertical, SlangSpacing.xs)
         .background(SlangColor.background)
     }
 
-    // MARK: - Bottom Chrome (removed — all navigation now via Profile sheet)
-    //
-    // private var bottomChrome: some View {
-    //     HStack(spacing: 0) {
-    //         // Glossary grid button removed
-    //         // Button { showGlossary = true } label: { Image(systemName: "square.grid.2x2") ... }
-    //
-    //         Spacer()
-    //
-    //         // Practice button removed
-    //         // Button { showPractice = true } label: { ... "Practice" ... }
-    //
-    //         Spacer()
-    //
-    //         // Stats button removed
-    //         // Button { } label: { Image(systemName: "chart.bar") ... }
-    //     }
-    //     .padding(.horizontal, SlangSpacing.md)
-    //     .padding(.bottom, SlangSpacing.sm)
-    //     .background(SlangColor.background)
-    // }
+    // MARK: - Toast Pill (image #1 style)
+
+    private func toastPill(collectionName: String) -> some View {
+        HStack(spacing: 12) {
+            (Text("Saved to ") + Text(collectionName).bold())
+                .font(.system(size: 14))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+
+            if horizontalSizeClass == .regular {
+                Spacer(minLength: 0)
+            }
+
+            Button {
+                showCollectionPicker = true
+                viewModel?.dismissSaveToast()
+            } label: {
+                Text(String(localized: "swiper.toast.change", defaultValue: "Change"))
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color(.label))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .background {
+                        Capsule()
+                            .fill(SlangColor.onboardingTeal)
+                            .shadow(color: .black.opacity(0.55), radius: 0, x: 0, y: 3)
+                    }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 3)
+        )
+    }
+
+    // MARK: - Collection Picker Overlay (image #2 style)
+
+    private func collectionPickerOverlay(vm: SwiperViewModel) -> some View {
+        ZStack {
+            // Invisible tap target to dismiss on outside tap
+            Color.clear
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    showCollectionPicker = false
+                    keyboardHeight = 0
+                }
+
+            // Floating card — shifts up when keyboard is active
+            CollectionPickerCard(viewModel: vm, isPresented: $showCollectionPicker)
+                .padding(.horizontal, 28)
+                .offset(y: -keyboardHeight / 2)
+        }
+        .ignoresSafeArea(.keyboard)
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.2), value: showCollectionPicker)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { note in
+            guard let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                keyboardHeight = frame.height
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                keyboardHeight = 0
+            }
+        }
+    }
 
     // MARK: - Profile Avatar
 
@@ -170,16 +252,12 @@ struct SwiperView: View {
 private struct SwiperContentView: View {
 
     @Bindable var viewModel: SwiperViewModel
-    /// Live vertical drag offset from the gesture. Using @State (not @GestureState) so we
-    /// can control exactly when and how it resets — preventing the flicker caused by
-    /// @GestureState's implicit reset racing against the withAnimation model update.
+    let showsBrowseButton: Bool
     @State private var dragY: CGFloat = 0
-    /// Persisted swipe count — swipe hint hides permanently after 3 swipes.
     @AppStorage("swiperSwipeCount") private var swiperSwipeCount: Int = 0
-    /// Term whose info sheet is currently open; nil when the sheet is dismissed.
     @State private var infoTerm: SlangTerm? = nil
+    @State private var showBrowseByVibe = false
 
-    /// True until the user has swiped 3 times — then permanently false.
     private var showSwipeHint: Bool { swiperSwipeCount < 3 }
 
     var body: some View {
@@ -198,46 +276,39 @@ private struct SwiperContentView: View {
         .sheet(item: $infoTerm) { term in
             TermInfoSheet(term: term)
         }
+        .sheet(isPresented: $showBrowseByVibe) {
+            BrowseByVibeView()
+        }
     }
 
     // MARK: - Term Stack
 
-    /// Pure offset-based vertical card stack — no opacity changes, no fading.
-    ///
-    /// Cards behave like a physical vertical scroll:
-    ///   • The previous card parks exactly one viewport-height above the current card.
-    ///   • The next card parks exactly one viewport-height below the current card.
-    ///   • Dragging translates all cards together so adjacent cards slide in/out in sync.
-    ///   • No opacity is altered — the transition is purely positional.
-    ///
-    /// GeometryReader measures the available height so the exit/entry distance is always
-    /// exactly one screen's worth, making the animation feel physically grounded.
     private var termStack: some View {
         GeometryReader { geo in
             let height = geo.size.height
 
             ZStack {
-                // Previous card — parked one full height above; slides down with drag.
                 if viewModel.canGoBack, let previous = viewModel.historyStack.last {
                     termView(previous)
                         .offset(y: dragY > 0 ? -height + dragY : -height)
                         .allowsHitTesting(false)
                 }
 
-                // Next card — parked one full height below; slides up with drag.
                 if viewModel.cardQueue.count > 1 {
                     termView(viewModel.cardQueue[1])
                         .offset(y: dragY < 0 ? height + dragY : height)
                         .allowsHitTesting(false)
                 }
 
-                // Current card — tracks the drag directly.
-                // Slight resistance (×0.15) when dragging down and there's no history.
-                termView(viewModel.cardQueue[0])
-                    .offset(y: dragY > 0 && !viewModel.canGoBack
-                            ? dragY * 0.15
-                            : dragY)
+                // SAFE: only rendered when !isQueueEmpty, guard ensures non-nil
+                if let currentTerm = viewModel.cardQueue.first {
+                    termView(currentTerm)
+                        .offset(y: dragY > 0 && !viewModel.canGoBack
+                                ? dragY * 0.15
+                                : dragY)
+                }
             }
+            .clipped()
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 20)
@@ -277,31 +348,25 @@ private struct SwiperContentView: View {
         let (posTag, cleanDefinition) = extractPOS(term.definition)
 
         return VStack(spacing: 0) {
-
-            // Equal top spacer — centers the content block vertically
             Spacer()
 
-            // ── Term ──────────────────────────────────────
             Text(term.term.lowercased())
                 .font(.slangTerm(size: 52))
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, SlangSpacing.xl)
 
-            // ── Definition with inline bold POS tag ────────
-            // "(adj.) Some text" — the abbreviation is bold, rest is regular weight.
             definitionText(posTag: posTag, definition: cleanDefinition)
-                .font(.slangDefinition(size: 24))
+                .font(.slangDefinition(size: 20))
                 .foregroundStyle(.primary.opacity(0.82))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, SlangSpacing.xl)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, SlangSpacing.xl)
 
-            // ── Example sentence ──────────────────────────
             if !term.exampleSentence.isEmpty {
                 Text("\u{201C}\(term.exampleSentence)\u{201D}")
-                    .font(.slangDefinition(size: 20))
+                    .font(.slangDefinition(size: 18))
                     .fontWeight(.medium)
                     .foregroundStyle(.primary.opacity(0.5))
                     .multilineTextAlignment(.center)
@@ -311,14 +376,11 @@ private struct SwiperContentView: View {
                     .padding(.top, SlangSpacing.lg)
             }
 
-            // Equal bottom spacer — mirrors the top spacer to vertically center content
             Spacer()
 
-            // ── Bottom action row ─────────────────────────
             actionButtons(term: term)
                 .padding(.bottom, SlangSpacing.sm)
 
-            // ── Swipe hint — fades permanently after 3 swipes ─
             swipeHintView
                 .padding(.bottom, SlangSpacing.lg)
         }
@@ -329,16 +391,10 @@ private struct SwiperContentView: View {
                                           defaultValue: "Next card")) {
             viewModel.swipeUp()
         }
-        .accessibilityAction(named: String(localized: "swiper.accessibility.save",
-                                          defaultValue: "Save term")) {
-            viewModel.saveCurrentCard()
-        }
     }
 
     // MARK: - POS Helpers
 
-    /// Splits `"(adj.) Some definition"` into `("adj.", "Some definition")`.
-    /// Returns `(nil, original)` if no POS prefix is present.
     private func extractPOS(_ definition: String) -> (String?, String) {
         guard definition.hasPrefix("("),
               let endIdx = definition.firstIndex(of: ")") else {
@@ -350,85 +406,72 @@ private struct SwiperContentView: View {
         return (tag, rest)
     }
 
-    /// Builds an inline `Text` where the POS abbreviation is bold and the
-    /// definition body follows in regular weight: **(adj.)** Some text…
     private func definitionText(posTag: String?, definition: String) -> Text {
-        guard let tag = posTag else {
-            return Text(definition)
-        }
+        guard let tag = posTag else { return Text(definition) }
         return Text("(\(tag)) ").bold() + Text(definition)
     }
 
     // MARK: - Action Buttons
 
     private func actionButtons(term: SlangTerm) -> some View {
-        HStack(spacing: SlangSpacing.xl) {
-            // Info — opens the term detail bottom sheet
-            Button {
-                infoTerm = term
-            } label: {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 22, weight: .light))
-                    .foregroundStyle(Color(.label).opacity(0.40))
+        ZStack {
+            // Browse by Vibe — bottom-left corner (main feed only)
+            if showsBrowseButton {
+                HStack {
+                    Button { showBrowseByVibe = true } label: {
+                        Image(systemName: "square.grid.2x2")
+                            .font(.system(size: 22, weight: .light))
+                            .foregroundStyle(Color(.label).opacity(0.40))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "swiper.browse.accessibility",
+                                              defaultValue: "Browse by vibe"))
+                    Spacer()
+                }
+                .padding(.horizontal, SlangSpacing.xl)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(String(localized: "swiper.info.accessibility", defaultValue: "Term info"))
 
-            // Like — toggles the term in the user's favorites
-            Button {
-                viewModel.toggleFavoriteCurrentCard()
-            } label: {
-                Image(systemName: viewModel.isTopCardLiked ? "heart.fill" : "heart")
-                    .font(.system(size: 22, weight: .light))
-                    .foregroundStyle(
-                        viewModel.isTopCardLiked ? Color.red.opacity(0.75) : Color(.label).opacity(0.40)
-                    )
-            }
-            .buttonStyle(.plain)
-            .animation(.easeInOut(duration: 0.2), value: viewModel.isTopCardLiked)
-            .accessibilityLabel(
-                viewModel.isTopCardLiked
-                    ? String(localized: "swiper.like.liked", defaultValue: "Unlike this term")
-                    : String(localized: "swiper.like.button.accessibility",
-                             defaultValue: "Like this term")
-            )
+            // Core actions — centered
+            HStack(spacing: SlangSpacing.xl) {
+                Button { infoTerm = term } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 22, weight: .light))
+                        .foregroundStyle(Color(.label).opacity(0.40))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "swiper.info.accessibility", defaultValue: "Term info"))
 
-            // Save to Lexicon
-            Button {
-                viewModel.saveCurrentCard()
-            } label: {
-                Image(systemName: viewModel.isTopCardSaved ? "bookmark.fill" : "bookmark")
-                    .font(.system(size: 22, weight: .light))
-                    .foregroundStyle(
-                        viewModel.isTopCardSaved ? SlangColor.primary : Color(.label).opacity(0.40)
-                    )
-            }
-            .buttonStyle(.plain)
-            .disabled(viewModel.isTopCardSaved)
-            .animation(.easeInOut(duration: 0.2), value: viewModel.isTopCardSaved)
-            .accessibilityLabel(
-                viewModel.isTopCardSaved
-                    ? String(localized: "swiper.save.saved", defaultValue: "Saved")
-                    : String(localized: "swiper.save.button.accessibility",
-                             defaultValue: "Save this term to your Lexicon")
-            )
+                Button { viewModel.toggleFavoriteCurrentCard() } label: {
+                    Image(systemName: viewModel.isTopCardLiked ? "heart.fill" : "heart")
+                        .font(.system(size: 22, weight: .light))
+                        .foregroundStyle(
+                            viewModel.isTopCardLiked ? Color.red.opacity(0.75) : Color(.label).opacity(0.40)
+                        )
+                }
+                .buttonStyle(.plain)
 
-            // Share — renders a share card image and presents the iOS share sheet
-            Button {
-                SlangShareCard.share(term: term)
-            } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 22, weight: .light))
-                    .foregroundStyle(Color(.label).opacity(0.40))
+                Button { viewModel.toggleSaveCurrentCard() } label: {
+                    Image(systemName: viewModel.isTopCardSaved ? "bookmark.fill" : "bookmark")
+                        .font(.system(size: 22, weight: .light))
+                        .foregroundStyle(
+                            viewModel.isTopCardSaved ? SlangColor.primary : Color(.label).opacity(0.40)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                Button { SlangShareCard.share(term: term) } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 22, weight: .light))
+                        .foregroundStyle(Color(.label).opacity(0.40))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "swiper.share.accessibility", defaultValue: "Share term"))
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(String(localized: "swiper.share.accessibility", defaultValue: "Share term"))
         }
     }
 
     // MARK: - Swipe Hint
 
-    /// Reserves layout space even when invisible so the action bar never shifts.
     private var swipeHintView: some View {
         Text(String(localized: "swiper.hint.swipe", defaultValue: "swipe up for next"))
             .font(.system(size: 12, design: .monospaced))
@@ -457,9 +500,7 @@ private struct SwiperContentView: View {
                     .padding(.horizontal, SlangSpacing.xl)
             }
 
-            Button {
-                viewModel.reshuffleAll()
-            } label: {
+            Button { viewModel.reshuffleAll() } label: {
                 Text(String(localized: "swiper.empty.reshuffle", defaultValue: "run it back"))
                     .font(.system(size: 14, weight: .black, design: .monospaced))
                     .tracking(2)
