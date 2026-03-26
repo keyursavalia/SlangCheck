@@ -77,4 +77,7 @@ public enum AppConstants {
 
     /// UserDefaults key for the user's liked/favorited term IDs (JSON-encoded UserFavorites).
     public static let userFavoritesKey = "userFavorites"
+
+    /// UserDefaults key for the user's named collections (JSON-encoded [SlangCollection]).
+    public static let userCollectionsKey = "userCollections"
 }
