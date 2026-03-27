@@ -133,11 +133,11 @@ struct SettingsView: View {
                     .accessibilityHidden(true)
                 Text(String(localized: "settings.manageSubscription",
                             defaultValue: "Manage Subscription"))
-                    .font(.system(size: 17))
+                    .font(.montserrat(size: 17))
                     .foregroundStyle(.primary)
                 Spacer()
                 Text(String(localized: "settings.comingSoon", defaultValue: "Coming soon"))
-                    .font(.system(size: 15))
+                    .font(.montserrat(size: 15))
                     .foregroundStyle(.secondary)
             }
         }
@@ -214,11 +214,11 @@ struct SettingsView: View {
                             .frame(width: 22)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(String(localized: "settings.signIn", defaultValue: "Sign In"))
-                                .font(.system(size: 17))
+                                .font(.montserrat(size: 17))
                                 .foregroundStyle(.primary)
                             Text(String(localized: "settings.signIn.subtitle",
                                         defaultValue: "Unlock quizzes, streaks & more"))
-                                .font(.system(size: 13))
+                                .font(.montserrat(size: 13))
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -238,7 +238,7 @@ struct SettingsView: View {
                             .foregroundStyle(SlangColor.primary)
                             .frame(width: 22)
                         Text(String(localized: "settings.changePhoto", defaultValue: "Change Photo"))
-                            .font(.system(size: 17))
+                            .font(.montserrat(size: 17))
                             .foregroundStyle(.primary)
                         Spacer()
                         if vm.isLoading {
@@ -251,10 +251,10 @@ struct SettingsView: View {
                 // Email (read-only)
                 HStack {
                     Text(String(localized: "settings.email", defaultValue: "Email"))
-                        .font(.system(size: 17)).foregroundStyle(.primary)
+                        .font(.montserrat(size: 17)).foregroundStyle(.primary)
                     Spacer()
                     Text(authState.currentProfile?.email ?? "--")
-                        .font(.system(size: 17)).foregroundStyle(.secondary).lineLimit(1)
+                        .font(.montserrat(size: 17)).foregroundStyle(.secondary).lineLimit(1)
                 }
 
                 // Sign Out
@@ -263,7 +263,7 @@ struct SettingsView: View {
                         String(localized: "settings.signOut", defaultValue: "Sign Out"),
                         systemImage: "rectangle.portrait.and.arrow.right"
                     )
-                    .font(.system(size: 17))
+                    .font(.montserrat(size: 17))
                     .foregroundStyle(SlangColor.primary)
                 }
 
@@ -273,7 +273,7 @@ struct SettingsView: View {
                         String(localized: "settings.deleteAccount", defaultValue: "Delete Account"),
                         systemImage: "trash.fill"
                     )
-                    .font(.system(size: 17))
+                    .font(.montserrat(size: 17))
                 }
             }
         }
@@ -314,12 +314,12 @@ struct SettingsView: View {
                 .frame(width: 22)
                 .accessibilityHidden(true)
             Text(title)
-                .font(.system(size: 17))
+                .font(.montserrat(size: 17))
                 .foregroundStyle(.primary)
             Spacer()
             if let value {
                 Text(value)
-                    .font(.system(size: 15))
+                    .font(.montserrat(size: 15))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }

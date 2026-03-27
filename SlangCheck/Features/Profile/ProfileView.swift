@@ -6,6 +6,13 @@
 
 import SwiftUI
 
+// MARK: - ProfileDestination
+
+private enum ProfileDestination: Hashable {
+    case favorites
+    case lexicon
+}
+
 // MARK: - ProfileView
 
 struct ProfileView: View {
@@ -17,8 +24,9 @@ struct ProfileView: View {
     @State private var lexiconCount: Int = 0
     @State private var favoritesCount: Int = 0
     @State private var showingGlossary = false
-    @State private var navigateToFavorites = false
-    @State private var navigateToCollections = false
+    /// Single navigation destination — avoids the SwiftUI bug where two
+    /// `navigationDestination(isPresented:)` modifiers on the same view conflict.
+    @State private var profileDestination: ProfileDestination? = nil
 
     private let columns = [
         GridItem(.flexible(), spacing: SlangSpacing.md),
@@ -57,11 +65,13 @@ struct ProfileView: View {
                     .accessibilityLabel(String(localized: "profile.settings", defaultValue: "Settings"))
                 }
             }
-            .navigationDestination(isPresented: $navigateToFavorites) {
-                FavoritesView().environment(\.appEnvironment, env)
-            }
-            .navigationDestination(isPresented: $navigateToCollections) {
-                LexiconView().environment(\.appEnvironment, env)
+            .navigationDestination(item: $profileDestination) { dest in
+                switch dest {
+                case .favorites:
+                    FavoritesView().environment(\.appEnvironment, env)
+                case .lexicon:
+                    LexiconView().environment(\.appEnvironment, env)
+                }
             }
         }
         .fullScreenCover(isPresented: $showingGlossary) {
@@ -91,7 +101,11 @@ struct ProfileView: View {
         }
         .padding(SlangSpacing.md)
         .frame(maxWidth: .infinity)
-        .profileCard()
+        .background {
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.07), radius: 6, x: 0, y: 2)
+        }
     }
 
     @ViewBuilder
@@ -125,7 +139,7 @@ struct ProfileView: View {
     private var quickAccessSection: some View {
         VStack(spacing: SlangSpacing.md) {
             HStack(spacing: SlangSpacing.md) {
-                Button { navigateToFavorites = true } label: {
+                Button { profileDestination = .favorites } label: {
                     CategoryCardContent(
                         symbolName: "heart.fill",
                         title: String(localized: "profile.nav.favorites", defaultValue: "Favorites"),
@@ -135,7 +149,7 @@ struct ProfileView: View {
                 }
                 .buttonStyle(.plain)
 
-                Button { navigateToCollections = true } label: {
+                Button { profileDestination = .lexicon } label: {
                     CategoryCardContent(
                         symbolName: "bookmark.fill",
                         title: String(localized: "profile.nav.lexicon", defaultValue: "Collections"),
