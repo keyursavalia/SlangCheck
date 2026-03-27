@@ -80,13 +80,21 @@ public final class AuthState {
         do {
             if let existing = try await profileRepository.fetchProfile(uid: uid) {
                 currentProfile = existing
+                // Sync any locally-collected onboarding data that isn't in Firestore yet.
+                await syncLocalPreferencesToFirestore(uid: uid)
             } else {
                 let generatedName = displayName?.nilIfEmpty ?? UserProfile.generateUsername(from: uid)
+                let prefs = localPreferences()
                 let profile = UserProfile(
                     id:          uid,
                     username:    UserProfile.generateUsername(from: uid),
-                    displayName: generatedName,
-                    email:       email
+                    displayName: prefs.displayName ?? generatedName,
+                    email:       email,
+                    gender:      prefs.gender,
+                    ageRange:    prefs.ageRange,
+                    slangLevel:  prefs.slangLevel,
+                    goal:        prefs.goal,
+                    categories:  prefs.categories
                 )
                 try await profileRepository.saveProfile(profile)
                 currentProfile = profile
@@ -107,6 +115,18 @@ public final class AuthState {
         guard let uid = authService.currentUserID else { return }
         try await profileRepository.updateDisplayName(name, uid: uid)
         currentProfile?.displayName = name
+    }
+
+    /// Patches user preference fields (gender, ageRange, slangLevel, goal, categories) in Firestore.
+    public func updatePreferences(_ prefs: UserPreferences) async throws {
+        guard let uid = authService.currentUserID else { return }
+        try await profileRepository.updatePreferences(prefs, uid: uid)
+        // Mirror changes into the in-memory profile.
+        if let g = prefs.gender     { currentProfile?.gender     = g }
+        if let a = prefs.ageRange   { currentProfile?.ageRange   = a }
+        if let l = prefs.slangLevel { currentProfile?.slangLevel = l }
+        if let g = prefs.goal       { currentProfile?.goal       = g }
+        if let c = prefs.categories { currentProfile?.categories = c }
     }
 
     /// Uploads photo data, updates Firestore `photoURL`, and refreshes in-memory profile.
@@ -137,6 +157,48 @@ public final class AuthState {
         try await authService.deleteAccount()
         currentProfile = nil
         Logger.app.info("Account deleted. uid=\(uid)")
+    }
+
+    // MARK: - Local Preferences Sync
+
+    /// Reads onboarding preferences from UserDefaults for initial Firestore population.
+    private func localPreferences() -> (
+        displayName: String?, gender: String?, ageRange: String?,
+        slangLevel: String?, goal: String?, categories: [String]?
+    ) {
+        let ud = UserDefaults.standard
+        let cats: [String]? = {
+            guard let data = ud.data(forKey: AppConstants.userCategoriesKey),
+                  let decoded = try? JSONDecoder().decode([String].self, from: data)
+            else { return nil }
+            return decoded
+        }()
+        return (
+            displayName: ud.string(forKey: "userDisplayName"),
+            gender:      ud.string(forKey: "userGender"),
+            ageRange:    ud.string(forKey: "userAgeRange"),
+            slangLevel:  ud.string(forKey: AppConstants.userSegmentKey),
+            goal:        ud.string(forKey: "userGoal"),
+            categories:  cats
+        )
+    }
+
+    /// Patches Firestore with any local preferences that are missing from the remote profile.
+    private func syncLocalPreferencesToFirestore(uid: String) async {
+        let local = localPreferences()
+        var prefs = UserPreferences()
+        if currentProfile?.gender == nil, let g = local.gender       { prefs.gender = g }
+        if currentProfile?.ageRange == nil, let a = local.ageRange   { prefs.ageRange = a }
+        if currentProfile?.slangLevel == nil, let l = local.slangLevel { prefs.slangLevel = l }
+        if currentProfile?.goal == nil, let g = local.goal           { prefs.goal = g }
+        if currentProfile?.categories == nil, let c = local.categories { prefs.categories = c }
+        guard !prefs.firestoreData.isEmpty else { return }
+        do {
+            try await updatePreferences(prefs)
+            Logger.app.info("Synced local preferences to Firestore for uid=\(uid)")
+        } catch {
+            Logger.app.error("syncLocalPreferences failed: \(error.localizedDescription)")
+        }
     }
 }
 

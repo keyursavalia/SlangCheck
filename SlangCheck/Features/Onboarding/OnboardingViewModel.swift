@@ -14,28 +14,32 @@ import UserNotifications
 
 /// Each step in the onboarding flow (FR-O-001).
 enum OnboardingStep: Int, CaseIterable {
-    case splash               = 0
-    case displayName          = 1
-    case gender               = 2
-    case learningGoal         = 3
-    case slangLevel           = 4
-    case wordFrequency        = 5
-    case vocabDescription     = 6
-    case weeklyGoal           = 7
-    case testIntro            = 8
-    case testBeginner         = 9
-    case testIntermediate     = 10
-    case testAdvanced         = 11
-    case notificationSchedule = 12
-    case notificationPermission = 13
-    case welcomeSplash        = 14
+    case splash                 = 0
+    case displayName            = 1
+    case gender                 = 2
+    case learningGoal           = 3
+    case slangLevel             = 4
+    case wordFrequency          = 5
+    case vocabDescription       = 6
+    case weeklyGoal             = 7
+    case categorySelection      = 8
+    case testIntro              = 9
+    case testBeginner           = 10
+    case testIntermediate       = 11
+    case testAdvanced           = 12
+    case notificationConsent    = 13
+    case notificationSchedule   = 14
+    case notificationPermission = 15
+    case welcomeSplash          = 16
 
     /// Whether a Skip button appears on this step.
     var isSkippable: Bool {
         switch self {
         case .splash, .testIntro, .welcomeSplash,
-             .notificationSchedule, .notificationPermission:
+             .notificationConsent, .notificationSchedule, .notificationPermission:
             return false
+        case .categorySelection:
+            return true
         default:
             return true
         }
@@ -60,9 +64,9 @@ enum OnboardingGoal: String, CaseIterable {
 }
 
 enum OnboardingSlangLevel: String, CaseIterable {
-    case newbie     = "Total newbie"
-    case someBasics = "I know some basics"
-    case fluent     = "Pretty fluent in slang"
+    case newbie     = "Unc - Total Newbie"
+    case someBasics = "Mid - I know some basics"
+    case fluent     = "Rizzler - Pretty fluent in GenZ slangs"
 }
 
 enum OnboardingWordFrequency: String, CaseIterable {
@@ -120,6 +124,7 @@ final class OnboardingViewModel {
     var knownBeginnerTerms: Set<String>     = []
     var knownIntermediateTerms: Set<String> = []
     var knownAdvancedTerms: Set<String>     = []
+    var selectedCategories: Set<String>     = []
     var notificationCount: Int = 10
     // SAFE: Calendar.current.date always returns a valid date for these components.
     var notificationStartTime: Date = Calendar.current
@@ -160,6 +165,22 @@ final class OnboardingViewModel {
     /// Skips the current step without saving a selection and advances.
     func skip() { advance() }
 
+    /// Called from the notification consent step when the user is ready.
+    /// Advances to the notification schedule step.
+    func proceedToNotificationSchedule() {
+        withAnimation(.easeInOut(duration: 0.28)) {
+            currentStep = .notificationSchedule
+        }
+    }
+
+    /// Called from the notification consent step when the user is not ready.
+    /// Skips directly to the welcome splash.
+    func skipToWelcome() {
+        withAnimation(.easeInOut(duration: 0.28)) {
+            currentStep = .welcomeSplash
+        }
+    }
+
     /// Requests iOS notification permission, then jumps to welcomeSplash (granted)
     /// or notificationPermission (denied/error).
     func requestNotifications() {
@@ -178,12 +199,29 @@ final class OnboardingViewModel {
         // Map slang level → UserSegment for backward compatibility with existing persistence.
         let segment: UserSegment
         switch selectedSlangLevel {
-        case .newbie:      segment = .unc
         case .someBasics:  segment = .trendSeeker
-        case .fluent, nil: segment = .languageEnthusiast
+        case .fluent:      segment = .languageEnthusiast
+        case .newbie, nil: segment = .unc
         }
         UserDefaults.standard.set(true, forKey: AppConstants.hasCompletedOnboardingKey)
         UserDefaults.standard.set(segment.rawValue, forKey: AppConstants.userSegmentKey)
+        // Persist display name for settings display (also sent to Firestore on sign-in).
+        if !displayName.trimmingCharacters(in: .whitespaces).isEmpty {
+            UserDefaults.standard.set(displayName, forKey: "userDisplayName")
+        }
+        // Persist gender for settings.
+        if let gender = selectedGender {
+            UserDefaults.standard.set(gender.rawValue, forKey: "userGender")
+        }
+        // Persist learning goal for settings.
+        if let goal = selectedGoal {
+            UserDefaults.standard.set(goal.rawValue, forKey: "userGoal")
+        }
+        // Persist selected categories so the swiper can filter on them.
+        if !selectedCategories.isEmpty {
+            let encoded = try? JSONEncoder().encode(Array(selectedCategories))
+            UserDefaults.standard.set(encoded, forKey: AppConstants.userCategoriesKey)
+        }
         Logger.onboarding.info("Onboarding complete. Segment: \(segment.rawValue)")
         isComplete = true
     }

@@ -97,6 +97,17 @@ public struct FirebaseUserProfileRepository: UserProfileRepository {
         }
     }
 
+    public func updatePreferences(_ prefs: UserPreferences, uid: String) async throws {
+        let data = prefs.firestoreData
+        guard !data.isEmpty else { return }
+        do {
+            try await ref(uid: uid).updateData(data)
+        } catch {
+            Logger.app.error("updatePreferences failed: \(error.localizedDescription)")
+            throw UserProfileError.saveFailed(error.localizedDescription)
+        }
+    }
+
     public func uploadProfilePhoto(data: Data, uid: String) async throws -> URL {
         let storageRef = Storage.storage().reference().child("profile_photos/\(uid)")
         let metadata   = StorageMetadata()
@@ -133,7 +144,12 @@ public struct FirebaseUserProfileRepository: UserProfileRepository {
             "auraPoints":  p.auraPoints,
             "createdAt":   Timestamp(date: p.createdAt)
         ]
-        if let url = p.photoURL { data["photoURL"] = url.absoluteString }
+        if let url = p.photoURL       { data["photoURL"]   = url.absoluteString }
+        if let gender = p.gender      { data["gender"]     = gender }
+        if let age = p.ageRange       { data["ageRange"]   = age }
+        if let level = p.slangLevel   { data["slangLevel"] = level }
+        if let goal = p.goal          { data["goal"]       = goal }
+        if let cats = p.categories    { data["categories"] = cats }
         return data
     }
 
@@ -155,7 +171,12 @@ public struct FirebaseUserProfileRepository: UserProfileRepository {
             email:       email,
             photoURL:    photoURL,
             auraPoints:  auraPoints,
-            createdAt:   createdAt
+            createdAt:   createdAt,
+            gender:      data["gender"]     as? String,
+            ageRange:    data["ageRange"]   as? String,
+            slangLevel:  data["slangLevel"] as? String,
+            goal:        data["goal"]       as? String,
+            categories:  data["categories"] as? [String]
         )
     }
 }
