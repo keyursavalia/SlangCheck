@@ -73,7 +73,7 @@ public struct ScoringInput: Equatable, Sendable {
 ///
 /// Category bonus per correct answer (applied before hint division):
 /// - `brainrot`, `emerging2026` → +20 pts  (rarest / hardest vocab)
-/// - `gamingInternet`, `emojiDescriptor`, `emojiReaction`, `emojiTone` → +10 pts  (niche but learnable)
+/// - `gamingInternet`, `emoji` → +10 pts  (niche but learnable)
 /// - all other categories → +0 pts
 ///
 /// The result is floored at `minimumScore` (0) — a session can never subtract points.
@@ -112,7 +112,7 @@ public struct AuraScoringEngine: Sendable {
     public static func categoryBonus(for category: SlangCategory) -> Int {
         switch category {
         case .brainrot, .emerging2026:     return categoryBonusHigh
-        case .gamingInternet, .emojiDescriptor, .emojiReaction, .emojiTone: return categoryBonusMedium
+        case .gamingInternet, .emoji: return categoryBonusMedium
         default:                           return 0
         }
     }

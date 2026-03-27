@@ -117,12 +117,9 @@
 "category.reaction" = "Reactions";
 "category.aesthetic" = "Aesthetics";
 "category.emerging2026" = "Emerging";
-"category.emojiDescriptor" = "Emoji";
-"category.emojiReaction" = "Emoji Reactions";
-"category.emojiTone" = "Emoji Tone";
-"category.regionalNorCal" = "NorCal";
-"category.regionalSoCal" = "SoCal";
-"category.techSiliconValley" = "Tech / SV";
+"category.emoji" = "Emoji";
+"category.regionalBayArea" = "Bay Area";
+"category.regionalSouthernCalifornia" = "SoCal";
 
 // MARK: - Filter Bar
 "filter.all" = "All";

@@ -6,6 +6,15 @@
 
 import SwiftUI
 
+// MARK: - VibeFeedSelection
+
+/// Lightweight value passed from BrowseByVibeView to SwiperView to launch a full-screen filtered feed.
+struct VibeFeedSelection: Identifiable {
+    let id = UUID()
+    let title: String
+    let termIDs: [UUID]
+}
+
 // MARK: - BrowseByVibeView
 
 struct BrowseByVibeView: View {
@@ -13,10 +22,11 @@ struct BrowseByVibeView: View {
     @Environment(\.appEnvironment) private var env
     @Environment(\.dismiss) private var dismiss
 
+    /// Callback invoked when a category is tapped — parent dismisses the sheet and opens a full-screen feed.
+    var onCategorySelected: ((VibeFeedSelection) -> Void)? = nil
+
     /// Term IDs grouped by category — populated once on appear.
     @State private var termIDsByCategory: [SlangCategory: [UUID]] = [:]
-    /// Non-nil when a category card is tapped; drives navigationDestination.
-    @State private var feedCategory: SlangCategory? = nil
 
     private let columns = [
         GridItem(.flexible(), spacing: SlangSpacing.md),
@@ -46,7 +56,13 @@ struct BrowseByVibeView: View {
                         LazyVGrid(columns: columns, spacing: SlangSpacing.md) {
                             ForEach(featuredCategories, id: \.self) { category in
                                 CategoryCard(category: category) {
-                                    feedCategory = category
+                                    let ids = termIDsByCategory[category] ?? []
+                                    if let callback = onCategorySelected {
+                                        callback(VibeFeedSelection(
+                                            title: category.displayName,
+                                            termIDs: ids
+                                        ))
+                                    }
                                 }
                             }
                         }
@@ -63,13 +79,6 @@ struct BrowseByVibeView: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(SlangColor.primary)
                 }
-            }
-            .navigationDestination(item: $feedCategory) { category in
-                SwiperView(
-                    filterTermIDs: termIDsByCategory[category] ?? [],
-                    presentedTitle: category.displayName
-                )
-                .environment(\.appEnvironment, env)
             }
         }
         .task {
@@ -137,39 +146,33 @@ struct CategoryCard: View {
 
     private func categoryIcon(_ cat: SlangCategory) -> String {
         switch cat {
-        case .foundationalDescriptor: return "book.fill"
-        case .brainrot:               return "brain.fill"
-        case .socialArchetype:        return "person.2.fill"
-        case .reaction:               return "bubble.left.fill"
-        case .gamingInternet:         return "gamecontroller.fill"
-        case .aesthetic:              return "paintbrush.fill"
-        case .relationship:           return "heart.fill"
-        case .emerging2026:           return "arrow.up.right.circle.fill"
-        case .emojiDescriptor:        return "face.smiling.fill"
-        case .emojiReaction:          return "ellipsis.bubble.fill"
-        case .emojiTone:              return "theatermasks.fill"
-        case .regionalNorCal:         return "map.fill"
-        case .regionalSoCal:          return "sun.max.fill"
-        case .techSiliconValley:      return "laptopcomputer"
+        case .foundationalDescriptor:     return "book.fill"
+        case .brainrot:                   return "brain.fill"
+        case .socialArchetype:            return "person.2.fill"
+        case .reaction:                   return "bubble.left.fill"
+        case .gamingInternet:             return "gamecontroller.fill"
+        case .aesthetic:                  return "paintbrush.fill"
+        case .relationship:               return "heart.fill"
+        case .emerging2026:               return "arrow.up.right.circle.fill"
+        case .emoji:                      return "face.smiling.fill"
+        case .regionalBayArea:            return "map.fill"
+        case .regionalSouthernCalifornia: return "sun.max.fill"
         }
     }
 
     private func categoryTagline(_ cat: SlangCategory) -> String {
         switch cat {
-        case .foundationalDescriptor: return "Core slang"
-        case .brainrot:               return "Gen Alpha coded"
-        case .socialArchetype:        return "Who are you?"
-        case .reaction:               return "Express yourself"
-        case .gamingInternet:         return "For the gamers"
-        case .aesthetic:              return "Vibes only"
-        case .relationship:           return "Ship or skip"
-        case .emerging2026:           return "Just dropped"
-        case .emojiDescriptor:        return "Say it in emoji"
-        case .emojiReaction:          return "React differently"
-        case .emojiTone:              return "Tone check"
-        case .regionalNorCal:         return "Bay Area speak"
-        case .regionalSoCal:          return "SoCal vibes"
-        case .techSiliconValley:      return "Tech bro lingo"
+        case .foundationalDescriptor:     return "Core slang"
+        case .brainrot:                   return "Gen Alpha coded"
+        case .socialArchetype:            return "Who are you?"
+        case .reaction:                   return "Express yourself"
+        case .gamingInternet:             return "For the gamers"
+        case .aesthetic:                  return "Vibes only"
+        case .relationship:               return "Ship or skip"
+        case .emerging2026:               return "Just dropped"
+        case .emoji:                      return "Say it in emoji"
+        case .regionalBayArea:            return "Bay Area speak"
+        case .regionalSouthernCalifornia: return "SoCal vibes"
         }
     }
 }

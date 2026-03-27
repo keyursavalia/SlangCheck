@@ -19,7 +19,11 @@ struct SwiperView: View {
     @State private var showProfile = false
     @State private var showCollectionPicker = false
     @State private var showBrowseByVibe = false
+    @State private var showGames = false
     @State private var keyboardHeight: CGFloat = 0
+
+    /// Drives the full-screen filtered feed launched from Browse by Vibe.
+    @State private var vibeFeed: VibeFeedSelection? = nil
 
     /// When non-nil, filters the swiper to these term IDs.
     var filterTermIDs: [UUID]? = nil
@@ -78,9 +82,39 @@ struct SwiperView: View {
         .fullScreenCover(isPresented: $showProfile) {
             ProfileView()
         }
-        .sheet(isPresented: $showBrowseByVibe) {
-            BrowseByVibeView()
+        .fullScreenCover(isPresented: $showGames) {
+            QuizzesView()
                 .environment(\.appEnvironment, env)
+                .environment(authState)
+        }
+        .sheet(isPresented: $showBrowseByVibe) {
+            BrowseByVibeView { selection in
+                showBrowseByVibe = false
+                vibeFeed = selection
+            }
+            .environment(\.appEnvironment, env)
+        }
+        .fullScreenCover(item: $vibeFeed) { feed in
+            NavigationStack {
+                SwiperView(
+                    filterTermIDs: feed.termIDs,
+                    presentedTitle: feed.title
+                )
+                .environment(\.appEnvironment, env)
+                .environment(authState)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button {
+                            vibeFeed = nil
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(Color(.label).opacity(0.55))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
         }
     }
 
@@ -101,6 +135,16 @@ struct SwiperView: View {
                     Spacer()
                     sessionProgress
                     Spacer()
+                    Button { showGames = true } label: {
+                        Image(systemName: "gamecontroller")
+                            .font(.system(size: 22, weight: .light))
+                            .foregroundStyle(Color(.label).opacity(0.40))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "swiper.games.accessibility",
+                                              defaultValue: "Games"))
+                    .frame(width: 44, height: 44)
+
                     Button { showBrowseByVibe = true } label: {
                         Image(systemName: "square.grid.2x2")
                             .font(.system(size: 22, weight: .light))
@@ -147,6 +191,7 @@ struct SwiperView: View {
             } label: {
                 Text(String(localized: "swiper.toast.change", defaultValue: "Change"))
                     .font(.montserrat(size: 14))
+                    .fontWeight(.bold)
                     .foregroundStyle(Color(.label))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
@@ -354,9 +399,7 @@ private struct SwiperContentView: View {
     // MARK: - Term View
 
     private func termView(_ term: SlangTerm) -> some View {
-        let (posTag, cleanDefinition) = extractPOS(term.definition)
-
-        return VStack(spacing: 0) {
+        VStack(spacing: 0) {
             Spacer()
 
             Text(term.term.lowercased())
@@ -365,7 +408,7 @@ private struct SwiperContentView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, SlangSpacing.xl)
 
-            definitionText(posTag: posTag, definition: cleanDefinition)
+            definitionText(term: term)
                 .font(.slangDefinition(size: 20))
                 .foregroundStyle(.primary.opacity(0.82))
                 .multilineTextAlignment(.center)
@@ -395,29 +438,20 @@ private struct SwiperContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(term.term). \(cleanDefinition)")
+        .accessibilityLabel("\(term.term). \(term.definition)")
         .accessibilityAction(named: String(localized: "swiper.accessibility.next",
                                           defaultValue: "Next card")) {
             viewModel.swipeUp()
         }
     }
 
-    // MARK: - POS Helpers
+    // MARK: - Definition Helpers
 
-    private func extractPOS(_ definition: String) -> (String?, String) {
-        guard definition.hasPrefix("("),
-              let endIdx = definition.firstIndex(of: ")") else {
-            return (nil, definition)
+    private func definitionText(term: SlangTerm) -> Text {
+        if term.partOfSpeechShort.isEmpty {
+            return Text(term.definition)
         }
-        let tag = String(definition[definition.index(after: definition.startIndex)..<endIdx])
-        let rest = String(definition[definition.index(after: endIdx)...])
-            .trimmingCharacters(in: .whitespaces)
-        return (tag, rest)
-    }
-
-    private func definitionText(posTag: String?, definition: String) -> Text {
-        guard let tag = posTag else { return Text(definition) }
-        return Text("(\(tag)) ").bold() + Text(definition)
+        return Text("(\(term.partOfSpeechShort)) ").bold() + Text(term.definition)
     }
 
     // MARK: - Action Buttons

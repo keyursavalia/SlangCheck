@@ -23,6 +23,12 @@ extension CDSlangTerm {
     /// The slang term string (e.g., "No Cap"). Non-optional in the data model.
     @NSManaged public var term: String?
 
+    /// Abbreviated part of speech (e.g., "v.", "adj."). Optional.
+    @NSManaged public var partOfSpeechShort: String?
+
+    /// Full part of speech (e.g., "verb", "adjective"). Optional.
+    @NSManaged public var partOfSpeechFull: String?
+
     /// Full definition text. Non-optional in the data model.
     @NSManaged public var definition: String?
 
@@ -80,18 +86,20 @@ extension CDSlangTerm {
         }
 
         return SlangTerm(
-            id:              id,
-            term:            term,
-            definition:      definition,
-            standardEnglish: standardEnglish ?? "",
-            exampleSentence: exampleSentence ?? "",
-            category:        category,
-            origin:          origin ?? "",
-            usageFrequency:  frequency,
-            generationTags:  generationTags,
-            addedDate:       addedDate,
-            isBrainrot:      isBrainrot,
-            isEmojiTerm:     isEmojiTerm
+            id:                id,
+            term:              term,
+            partOfSpeechShort: partOfSpeechShort ?? "",
+            partOfSpeechFull:  partOfSpeechFull ?? "",
+            definition:        definition,
+            standardEnglish:   standardEnglish ?? "",
+            exampleSentence:   exampleSentence ?? "",
+            category:          category,
+            origin:            origin ?? "",
+            usageFrequency:    frequency,
+            generationTags:    generationTags,
+            addedDate:         addedDate,
+            isBrainrot:        isBrainrot,
+            isEmojiTerm:       isEmojiTerm
         )
     }
 
@@ -99,17 +107,19 @@ extension CDSlangTerm {
 
     /// Populates this managed object's fields from a `SlangTerm` domain model.
     func populate(from term: SlangTerm) {
-        self.id              = term.id
-        self.term            = term.term
-        self.definition      = term.definition
-        self.standardEnglish = term.standardEnglish
-        self.exampleSentence = term.exampleSentence
-        self.category        = term.category.rawValue
-        self.origin          = term.origin
-        self.usageFrequency  = term.usageFrequency.rawValue
-        self.addedDate       = term.addedDate
-        self.isBrainrot      = term.isBrainrot
-        self.isEmojiTerm     = term.isEmojiTerm
+        self.id                = term.id
+        self.term              = term.term
+        self.partOfSpeechShort = term.partOfSpeechShort
+        self.partOfSpeechFull  = term.partOfSpeechFull
+        self.definition        = term.definition
+        self.standardEnglish   = term.standardEnglish
+        self.exampleSentence   = term.exampleSentence
+        self.category          = term.category.rawValue
+        self.origin            = term.origin
+        self.usageFrequency    = term.usageFrequency.rawValue
+        self.addedDate         = term.addedDate
+        self.isBrainrot        = term.isBrainrot
+        self.isEmojiTerm       = term.isEmojiTerm
 
         let tagStrings = term.generationTags.map(\.rawValue)
         self.generationTagsData = try? JSONEncoder().encode(tagStrings)
