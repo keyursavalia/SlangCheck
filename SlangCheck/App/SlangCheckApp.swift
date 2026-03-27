@@ -57,12 +57,12 @@ struct SlangCheckApp: App {
     // MARK: - Navigation Bar Appearance
 
     /// Configures UINavigationBarAppearance app-wide so all NavigationStacks use
-    /// NoticiaText-Bold for titles and the correct blurry-vs-transparent background.
+    /// Montserrat-Bold for titles and the correct blurry-vs-transparent background.
     ///   • scrollEdgeAppearance (large title at top)  → transparent background
     ///   • standardAppearance   (scrolled, inline)    → system default material (blur)
     private static func configureNavigationBarAppearance() {
-        let bold17 = UIFont(name: "NoticiaText-Bold", size: 17) ?? UIFont.boldSystemFont(ofSize: 17)
-        let bold34 = UIFont(name: "NoticiaText-Bold", size: 34) ?? UIFont.boldSystemFont(ofSize: 34)
+        let bold17 = UIFont(name: "Montserrat-Bold", size: 17) ?? UIFont.boldSystemFont(ofSize: 17)
+        let bold34 = UIFont(name: "Montserrat-Bold", size: 34) ?? UIFont.boldSystemFont(ofSize: 34)
 
         // Scrolled state — blurry material background, centered inline title
         let standard = UINavigationBarAppearance()
@@ -91,7 +91,19 @@ struct SlangCheckApp: App {
             "NoticiaText-Regular",
             "NoticiaText-Bold",
             "NoticiaText-Italic",
-            "NoticiaText-BoldItalic"
+            "NoticiaText-BoldItalic",
+            "Montserrat-Regular",
+            "Montserrat-Bold",
+            "Montserrat-BoldItalic",
+            "Montserrat-Italic",
+            "Montserrat-Medium",
+            "Montserrat-MediumItalic",
+            "Montserrat-SemiBold",
+            "Montserrat-SemiBoldItalic",
+            "Montserrat-Light",
+            "Montserrat-LightItalic",
+            "Montserrat-Black",
+            "Montserrat-ExtraBold"
         ]
         for name in fontFiles {
             guard let url = Bundle.main.url(forResource: name, withExtension: "ttf") else {
