@@ -208,7 +208,7 @@ struct OnboardingOptionRow: View {
         Button(action: action) {
             HStack {
                 Text(label)
-                    .font(.custom("NoticiaText-Regular", size: 17))
+                    .font(.custom("Montserrat-Regular", size: 17))
                     .foregroundStyle(isSelected ? Color.white : Color.primary)
                 Spacer()
                 // Radio / check indicator
@@ -253,7 +253,7 @@ struct OnboardingCTAButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.custom("NoticiaText-Bold", size: 18))
+                .font(.custom("Montserrat-Bold", size: 18))
                 .foregroundStyle(Color(.label))
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)

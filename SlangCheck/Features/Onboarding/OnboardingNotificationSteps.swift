@@ -20,14 +20,14 @@ struct NotificationScheduleStep: View {
         VStack(alignment: .leading, spacing: 0) {
             Text(String(localized: "onboarding.notif.title",
                         defaultValue: "Get slang throughout\nthe day"))
-                .font(.custom("NoticiaText-Bold", size: 30))
+                .font(.custom("Montserrat-Bold", size: 30))
                 .foregroundStyle(.primary)
                 .padding(.horizontal, SlangSpacing.md)
                 .padding(.top, SlangSpacing.xl)
 
             Text(String(localized: "onboarding.notif.subtitle",
                         defaultValue: "Allow notifications to get daily slang"))
-                .font(.custom("NoticiaText-Regular", size: 15))
+                .font(.custom("Montserrat-Regular", size: 15))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, SlangSpacing.md)
                 .padding(.top, SlangSpacing.xs)
@@ -43,7 +43,7 @@ struct NotificationScheduleStep: View {
                 // How many stepper row
                 settingsRow {
                     Text(String(localized: "onboarding.notif.howMany", defaultValue: "How many"))
-                        .font(.custom("NoticiaText-Regular", size: 16))
+                        .font(.custom("Montserrat-Regular", size: 16))
                         .foregroundStyle(.primary)
                     Spacer()
                     HStack(spacing: SlangSpacing.md) {
@@ -54,7 +54,7 @@ struct NotificationScheduleStep: View {
                                 .frame(width: 28, height: 28)
                         }
                         Text("\(count)x")
-                            .font(.custom("NoticiaText-Bold", size: 16))
+                            .font(.custom("Montserrat-Bold", size: 16))
                             .frame(minWidth: 36, alignment: .center)
                         Button {
                             if count < 20 { count += 1 }
@@ -70,7 +70,7 @@ struct NotificationScheduleStep: View {
                 // Start at time picker row
                 settingsRow {
                     Text(String(localized: "onboarding.notif.startAt", defaultValue: "Start at"))
-                        .font(.custom("NoticiaText-Regular", size: 16))
+                        .font(.custom("Montserrat-Regular", size: 16))
                         .foregroundStyle(.primary)
                     Spacer()
                     DatePicker("", selection: $startTime, displayedComponents: .hourAndMinute)
@@ -80,7 +80,7 @@ struct NotificationScheduleStep: View {
                 // End at time picker row
                 settingsRow {
                     Text(String(localized: "onboarding.notif.endAt", defaultValue: "End at"))
-                        .font(.custom("NoticiaText-Regular", size: 16))
+                        .font(.custom("Montserrat-Regular", size: 16))
                         .foregroundStyle(.primary)
                     Spacer()
                     DatePicker("", selection: $endTime, displayedComponents: .hourAndMinute)
@@ -172,14 +172,14 @@ struct NotificationPermissionStep: View {
 
             Text(String(localized: "onboarding.permission.title",
                         defaultValue: "SlangCheck works better\nwith reminders"))
-                .font(.custom("NoticiaText-Bold", size: 28))
+                .font(.custom("Montserrat-Bold", size: 28))
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, SlangSpacing.lg)
 
             Text(String(localized: "onboarding.permission.subtitle",
                         defaultValue: "Enable notifications to receive daily slang drops."))
-                .font(.custom("NoticiaText-Regular", size: 16))
+                .font(.custom("Montserrat-Regular", size: 16))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
@@ -198,7 +198,7 @@ struct NotificationPermissionStep: View {
                 Button(action: onSkip) {
                     Text(String(localized: "onboarding.permission.skip",
                                 defaultValue: "I'm not ready yet"))
-                        .font(.custom("NoticiaText-Regular", size: 16))
+                        .font(.custom("Montserrat-Regular", size: 16))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
@@ -211,35 +211,43 @@ struct NotificationPermissionStep: View {
 
 // MARK: - WelcomeSplashStep
 
-/// Final onboarding screen. Tapping anywhere — or the chevron hint — completes the flow.
+/// Final onboarding screen. Swiping up (≥ 60 pt) completes the flow.
+/// The chevron bounces on a repeating loop once the hint appears.
 struct WelcomeSplashStep: View {
 
     let onContinue: () -> Void
+
     @State private var showHint = false
+    @State private var chevronBounce: CGFloat = 0
+    /// Tracks how far the user has dragged up — used to give live feedback.
+    @State private var dragOffset: CGFloat = 0
+
+    /// Minimum upward drag (pt) required to trigger completion.
+    private let swipeThreshold: CGFloat = 60
 
     var body: some View {
         ZStack {
-            // Centered welcome text
+            // Centered welcome text shifts slightly with the drag for a responsive feel.
             Text(String(localized: "onboarding.welcome.title",
-                        defaultValue: "Welcome to\nSlangCheck"))
-                .font(.custom("NoticiaText-Bold", size: 36))
+                        defaultValue: "Welcome to SlangCheck"))
+                .font(.custom("Montserrat-Bold", size: 36))
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
+                .offset(y: dragOffset * 0.25)
 
-            // Swipe-up hint fades in after a short delay
+            // Swipe-up hint — fades in after a short delay, then chevron bounces.
             VStack {
                 Spacer()
-                Button(action: onContinue) {
-                    VStack(spacing: SlangSpacing.xs) {
-                        Image(systemName: "chevron.up")
-                            .font(.system(size: 20, weight: .medium))
-                        Text(String(localized: "onboarding.welcome.swipeUp",
-                                    defaultValue: "Swipe up"))
-                            .font(.custom("NoticiaText-Regular", size: 15))
-                    }
-                    .foregroundStyle(.secondary)
+                VStack(spacing: SlangSpacing.xs) {
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 20, weight: .medium))
+                        .offset(y: chevronBounce + dragOffset * 0.5)
+                    Text(String(localized: "onboarding.welcome.swipeUp",
+                                defaultValue: "Swipe up"))
+                        .font(.custom("Montserrat-Regular", size: 15))
+                        .offset(y: dragOffset * 0.5)
                 }
-                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
                 .opacity(showHint ? 1 : 0)
                 .animation(.easeIn(duration: 0.6).delay(0.8), value: showHint)
                 .padding(.bottom, SlangSpacing.xxl)
@@ -247,7 +255,53 @@ struct WelcomeSplashStep: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
-        .onTapGesture { onContinue() }
-        .onAppear { showHint = true }
+        .gesture(
+            DragGesture(minimumDistance: 10)
+                .onChanged { value in
+                    // Only track upward movement (negative translation = up).
+                    let upwardDelta = -value.translation.height
+                    dragOffset = upwardDelta > 0 ? -upwardDelta : 0
+                }
+                .onEnded { value in
+                    let upwardDelta = -value.translation.height
+                    if upwardDelta >= swipeThreshold {
+                        onContinue()
+                    } else {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                            dragOffset = 0
+                        }
+                    }
+                }
+        )
+        .onAppear {
+            showHint = true
+            startChevronBounce()
+        }
+    }
+
+    /// Repeating bounce: moves the chevron up 8 pt then springs back, forever.
+    private func startChevronBounce() {
+        let upDuration = 0.45
+        let downDuration = 0.55
+        let pause = 0.9
+
+        func cycle() {
+            withAnimation(.easeOut(duration: upDuration)) {
+                chevronBounce = -8
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + upDuration) {
+                withAnimation(.spring(response: downDuration, dampingFraction: 0.5)) {
+                    chevronBounce = 0
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + downDuration + pause) {
+                    cycle()
+                }
+            }
+        }
+
+        // Start after the hint has faded in.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+            cycle()
+        }
     }
 }

@@ -32,13 +32,13 @@ struct SplashStep: View {
             VStack(spacing: SlangSpacing.md) {
                 Text(String(localized: "onboarding.splash.title",
                             defaultValue: "Level up your slang\nin minutes a day"))
-                    .font(.custom("NoticiaText-Bold", size: 32))
+                    .font(.custom("Montserrat-Bold", size: 32))
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.center)
 
                 Text(String(localized: "onboarding.splash.subtitle",
                             defaultValue: "Master Gen Z slang, internet culture, and modern expressions with daily flashcards."))
-                    .font(.custom("NoticiaText-Regular", size: 16))
+                    .font(.custom("Montserrat-Regular", size: 16))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
@@ -70,7 +70,7 @@ struct DisplayNameStep: View {
         VStack(alignment: .leading, spacing: 0) {
             Text(String(localized: "onboarding.name.question",
                         defaultValue: "What do you want to\nbe called?"))
-                .font(.custom("NoticiaText-Bold", size: 30))
+                .font(.custom("Montserrat-Bold", size: 30))
                 .foregroundStyle(.primary)
                 .padding(.horizontal, SlangSpacing.md)
                 .padding(.top, SlangSpacing.xl)
@@ -81,7 +81,7 @@ struct DisplayNameStep: View {
                 String(localized: "onboarding.name.placeholder", defaultValue: "Your name"),
                 text: $name
             )
-            .font(.custom("NoticiaText-Regular", size: 17))
+            .font(.custom("Montserrat-Regular", size: 17))
             .focused($isFocused)
             .padding(.horizontal, SlangSpacing.md)
             .frame(height: 56)
@@ -123,7 +123,7 @@ struct SingleSelectStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(question)
-                .font(.custom("NoticiaText-Bold", size: 30))
+                .font(.custom("Montserrat-Bold", size: 30))
                 .foregroundStyle(.primary)
                 .padding(.horizontal, SlangSpacing.md)
                 .padding(.top, SlangSpacing.xl)
@@ -166,7 +166,7 @@ struct TestIntroStep: View {
             Spacer()
             Text(String(localized: "onboarding.testintro.message",
                         defaultValue: "Amazing!\nLet's test how many\nslang terms you know..."))
-                .font(.custom("NoticiaText-Bold", size: 34))
+                .font(.custom("Montserrat-Bold", size: 34))
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, SlangSpacing.xl)
@@ -195,14 +195,14 @@ struct WordTestStep: View {
     var body: some View {
         VStack(spacing: 0) {
             Text(level)
-                .font(.custom("NoticiaText-Bold", size: 30))
+                .font(.custom("Montserrat-Bold", size: 30))
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, SlangSpacing.xl)
 
             Text(String(localized: "onboarding.test.subtitle",
                         defaultValue: "Select all the ones you know"))
-                .font(.custom("NoticiaText-Regular", size: 15))
+                .font(.custom("Montserrat-Regular", size: 15))
                 .foregroundStyle(.secondary)
                 .padding(.top, SlangSpacing.xs)
 
