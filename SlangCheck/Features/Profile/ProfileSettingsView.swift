@@ -2,7 +2,7 @@
 // SlangCheck
 //
 // Settings screen pushed from ProfileView.
-// Each ABOUT YOU and MAKE IT YOURS item navigates to its own dedicated sub-page.
+// Each About You and Make It Yours item navigates to its own dedicated sub-page.
 
 import PhotosUI
 import SwiftUI
@@ -46,7 +46,6 @@ struct SettingsView: View {
     @ViewBuilder
     private func settingsList(vm: ProfileSettingsViewModel) -> some View {
         List {
-            premiumSection
             aboutYouSection(vm: vm)
             makeItYoursSection
             accountSection(vm: vm)
@@ -121,38 +120,17 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - PREMIUM Section
-
-    private var premiumSection: some View {
-        Section(String(localized: "settings.section.premium", defaultValue: "PREMIUM")) {
-            HStack(spacing: SlangSpacing.md) {
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(SlangColor.primary)
-                    .frame(width: 22)
-                    .accessibilityHidden(true)
-                Text(String(localized: "settings.manageSubscription",
-                            defaultValue: "Manage Subscription"))
-                    .font(.montserrat(size: 17))
-                    .foregroundStyle(.primary)
-                Spacer()
-                Text(String(localized: "settings.comingSoon", defaultValue: "Coming soon"))
-                    .font(.montserrat(size: 15))
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    // MARK: - ABOUT YOU Section
+    // MARK: - About You Section
 
     @ViewBuilder
     private func aboutYouSection(vm: ProfileSettingsViewModel) -> some View {
-        Section(String(localized: "settings.section.aboutYou", defaultValue: "ABOUT YOU")) {
+        Section(String(localized: "settings.section.aboutYou", defaultValue: "About you")) {
             NavigationLink(destination: NameSettingsView(vm: vm)) {
                 settingsRowContent(
                     icon: "person.fill",
                     title: String(localized: "settings.name", defaultValue: "Name"),
                     value: authState.currentProfile?.displayName
+                        ?? UserDefaults.standard.string(forKey: "userDisplayName")
                 )
             }
             NavigationLink(destination: GenderSettingsView()) {
@@ -173,16 +151,36 @@ struct SettingsView: View {
                 settingsRowContent(
                     icon: "chart.line.uptrend.xyaxis",
                     title: String(localized: "settings.level", defaultValue: "Slang Level"),
-                    value: UserDefaults.standard.string(forKey: AppConstants.userSegmentKey)
+                    value: slangLevelDisplayValue
+                )
+            }
+            NavigationLink(destination: GoalSettingsView()) {
+                settingsRowContent(
+                    icon: "target",
+                    title: String(localized: "settings.goal", defaultValue: "Goal"),
+                    value: UserDefaults.standard.string(forKey: "userGoal")
                 )
             }
         }
     }
 
-    // MARK: - MAKE IT YOURS Section
+    /// Maps the stored UserSegment rawValue to the OnboardingSlangLevel display text.
+    private var slangLevelDisplayValue: String? {
+        guard let raw = UserDefaults.standard.string(forKey: AppConstants.userSegmentKey) else {
+            return nil
+        }
+        switch raw {
+        case UserSegment.unc.rawValue:              return OnboardingSlangLevel.newbie.rawValue
+        case UserSegment.trendSeeker.rawValue:       return OnboardingSlangLevel.someBasics.rawValue
+        case UserSegment.languageEnthusiast.rawValue: return OnboardingSlangLevel.fluent.rawValue
+        default: return raw
+        }
+    }
+
+    // MARK: - Make It Yours Section
 
     private var makeItYoursSection: some View {
-        Section(String(localized: "settings.section.makeItYours", defaultValue: "MAKE IT YOURS")) {
+        Section(String(localized: "settings.section.makeItYours", defaultValue: "Make it yours")) {
             NavigationLink(destination: NotificationSettingsView()) {
                 settingsRowContent(
                     icon: "bell.fill",
@@ -200,11 +198,11 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - ACCOUNT Section
+    // MARK: - Account Section
 
     @ViewBuilder
     private func accountSection(vm: ProfileSettingsViewModel) -> some View {
-        Section(String(localized: "settings.section.account", defaultValue: "ACCOUNT")) {
+        Section(String(localized: "settings.section.account", defaultValue: "Account")) {
             if !authState.isAuthenticated {
                 Button { showingSignIn = true } label: {
                     HStack(spacing: SlangSpacing.md) {
@@ -230,22 +228,29 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                // Change Photo
+                // Change Photo — redesigned as a teal pill
                 PhotosPicker(selection: $photoPicker, matching: .images) {
-                    HStack(spacing: SlangSpacing.md) {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(SlangColor.primary)
-                            .frame(width: 22)
-                        Text(String(localized: "settings.changePhoto", defaultValue: "Change Photo"))
-                            .font(.montserrat(size: 17))
-                            .foregroundStyle(.primary)
+                    HStack {
                         Spacer()
                         if vm.isLoading {
-                            ProgressView().tint(SlangColor.primary)
+                            ProgressView().tint(.white)
+                        } else {
+                            Label(
+                                String(localized: "settings.changePhoto",
+                                       defaultValue: "Change Photo"),
+                                systemImage: "camera.fill"
+                            )
+                            .font(.montserrat(size: 16, weight: .semibold))
+                            .foregroundStyle(Color(.label))
                         }
+                        Spacer()
                     }
+                    .frame(height: 48)
                 }
+                .listRowBackground(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(SlangColor.onboardingTeal)
+                )
                 .disabled(vm.isLoading)
 
                 // Email (read-only)
@@ -257,24 +262,38 @@ struct SettingsView: View {
                         .font(.montserrat(size: 17)).foregroundStyle(.secondary).lineLimit(1)
                 }
 
-                // Sign Out
+                // Sign Out — teal pill button
                 Button { showingSignOut = true } label: {
-                    Label(
-                        String(localized: "settings.signOut", defaultValue: "Sign Out"),
-                        systemImage: "rectangle.portrait.and.arrow.right"
-                    )
-                    .font(.montserrat(size: 17))
-                    .foregroundStyle(SlangColor.primary)
+                    HStack {
+                        Spacer()
+                        Text(String(localized: "settings.signOut", defaultValue: "Sign Out"))
+                            .font(.montserrat(size: 16, weight: .semibold))
+                            .foregroundStyle(Color(.label))
+                        Spacer()
+                    }
+                    .frame(height: 48)
                 }
+                .listRowBackground(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(SlangColor.onboardingTeal)
+                )
 
-                // Delete Account
-                Button(role: .destructive) { showingDeleteConfirm = true } label: {
-                    Label(
-                        String(localized: "settings.deleteAccount", defaultValue: "Delete Account"),
-                        systemImage: "trash.fill"
-                    )
-                    .font(.montserrat(size: 17))
+                // Delete Account — red pill button
+                Button { showingDeleteConfirm = true } label: {
+                    HStack {
+                        Spacer()
+                        Text(String(localized: "settings.deleteAccount",
+                                    defaultValue: "Delete Account"))
+                            .font(.montserrat(size: 16, weight: .semibold))
+                            .foregroundStyle(.white)
+                        Spacer()
+                    }
+                    .frame(height: 48)
                 }
+                .listRowBackground(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(SlangColor.errorRed)
+                )
             }
         }
     }
@@ -324,25 +343,6 @@ struct SettingsView: View {
                     .lineLimit(1)
             }
         }
-    }
-
-    // MARK: - Actions
-
-    @MainActor
-    private func shareApp() {
-        let text = String(
-            localized: "settings.share.message",
-            defaultValue: "Check out SlangCheck — learn Gen Z slang and level up your rizz. slangcheck.app"
-        )
-        let vc = UIActivityViewController(activityItems: [text], applicationActivities: nil)
-        let rootVC = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first?.windows
-            .first(where: \.isKeyWindow)?
-            .rootViewController
-        var presenter = rootVC
-        while let presented = presenter?.presentedViewController { presenter = presented }
-        presenter?.present(vc, animated: true)
     }
 }
 
