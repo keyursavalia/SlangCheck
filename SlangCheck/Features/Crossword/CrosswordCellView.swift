@@ -103,7 +103,7 @@ struct CrosswordCellView: View {
             } else if isHighlighted {
                 SlangColor.primary.opacity(0.12)
             } else {
-                SlangColor.surface
+                Color(.systemBackground)
             }
         }
     }

@@ -55,10 +55,10 @@ struct CrosswordCountdownView: View {
                        defaultValue: "New puzzle drops at 7:00 AM")
             )
             .font(.slang(.caption))
-            .foregroundStyle(SlangColor.labelSecondary)
+            .foregroundStyle(.primary.opacity(0.6))
         }
         .padding(SlangSpacing.md)
-        .glassCard()
+        .profileCard()
     }
 
     // MARK: - Private Views
@@ -82,18 +82,18 @@ struct CrosswordCountdownView: View {
         VStack(spacing: 2) {
             Text(String(format: "%02d", value))
                 .font(.system(size: 30, weight: .bold, design: .monospaced))
-                .foregroundStyle(SlangColor.labelPrimary)
+                .foregroundStyle(.primary)
                 .contentTransition(.numericText())
             Text(label)
                 .font(.slang(.caption))
-                .foregroundStyle(SlangColor.labelSecondary)
+                .foregroundStyle(.primary.opacity(0.6))
         }
         .frame(minWidth: 52)
         .padding(.vertical, SlangSpacing.sm)
         .padding(.horizontal, SlangSpacing.xs)
         .background(
             RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
-                .fill(SlangColor.background)
+                .fill(Color(.secondarySystemBackground))
         )
     }
 

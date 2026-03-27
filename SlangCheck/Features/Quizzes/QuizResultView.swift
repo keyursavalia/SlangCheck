@@ -59,7 +59,7 @@ struct QuizResultView: View {
 
             Text("\(result.correctCount)/\(result.totalCount) Correct")
                 .font(.slang(.subheading))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary.opacity(0.6))
         }
     }
 
@@ -75,11 +75,11 @@ struct QuizResultView: View {
 
             Text("\(Int(result.accuracy * 100))% Accuracy")
                 .font(.slang(.caption))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.primary.opacity(0.6))
         }
         .padding(SlangSpacing.xl)
         .frame(maxWidth: .infinity)
-        .glassCard()
+        .profileCard()
     }
 
     // MARK: - Score Breakdown
@@ -145,14 +145,14 @@ struct QuizResultView: View {
         }
         .padding(SlangSpacing.md)
         .frame(maxWidth: .infinity)
-        .neumorphicSurface()
+        .profileCard()
     }
 
     private func breakdownRow(label: String, value: String, color: Color) -> some View {
         HStack {
             Text(label)
                 .font(.slang(.body))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary.opacity(0.6))
             Spacer()
             Text(value)
                 .font(.slang(.label))
@@ -185,12 +185,12 @@ struct QuizResultView: View {
             if let pts = profile.pointsToNextTier {
                 Text("\(pts) pts to next tier")
                     .font(.slang(.caption))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary.opacity(0.6))
             }
         }
         .padding(SlangSpacing.md)
         .frame(maxWidth: .infinity)
-        .glassCard()
+        .profileCard()
     }
 
     // MARK: - Share
@@ -224,25 +224,41 @@ struct QuizResultView: View {
                 Task { await onPlayAgain() }
             } label: {
                 Text(String(localized: "quizResult.playAgain", defaultValue: "Play Again"))
-                    .font(.slang(.label))
-                    .foregroundStyle(.white)
+                    .font(.custom("Montserrat-Bold", size: 18))
+                    .foregroundStyle(Color(.label))
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, SlangSpacing.md)
-                    .background(
-                        RoundedRectangle(cornerRadius: SlangCornerRadius.button)
-                            .fill(SlangColor.primary)
-                    )
+                    .frame(height: 56)
+                    .background {
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(SlangColor.onboardingTeal)
+                    }
+                    .background {
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(.black)
+                            .offset(y: 4)
+                    }
             }
+            .buttonStyle(.plain)
 
             Button {
                 onDone()
             } label: {
                 Text(String(localized: "quizResult.done", defaultValue: "Done"))
-                    .font(.slang(.label))
-                    .foregroundStyle(SlangColor.primary)
+                    .font(.custom("Montserrat-SemiBold", size: 16))
+                    .foregroundStyle(Color(.label))
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, SlangSpacing.md)
+                    .frame(height: 56)
+                    .background {
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(Color(.systemBackground))
+                    }
+                    .background {
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(.black)
+                            .offset(y: 4)
+                    }
             }
+            .buttonStyle(.plain)
         }
     }
 

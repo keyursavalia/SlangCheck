@@ -151,12 +151,13 @@ struct ProfileCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background {
-                // Shadow scoped to the shape only — no strokeBorder so there is no
-                // double-line artifact. Soft radius (6pt) gives card elevation without
-                // a harsh edge. No clipShape on the outer view so shadow isn't cut off.
                 RoundedRectangle(cornerRadius: SlangCornerRadius.card)
                     .fill(Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.65), radius: 0, x: 0, y: 4)
+            }
+            .background {
+                RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                    .fill(.black)
+                    .offset(y: 4)
             }
     }
 }
