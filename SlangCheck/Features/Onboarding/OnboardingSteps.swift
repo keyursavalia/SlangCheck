@@ -69,9 +69,11 @@ struct DisplayNameStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(String(localized: "onboarding.name.question",
-                        defaultValue: "What do you want to\nbe called?"))
+                        defaultValue: "What do you want to be called?"))
                 .font(.custom("Montserrat-Bold", size: 30))
                 .foregroundStyle(.primary)
+                .minimumScaleFactor(0.75)
+                .lineLimit(2)
                 .padding(.horizontal, SlangSpacing.md)
                 .padding(.top, SlangSpacing.xl)
 
@@ -82,17 +84,18 @@ struct DisplayNameStep: View {
                 text: $name
             )
             .font(.custom("Montserrat-Regular", size: 17))
+            .textFieldStyle(.plain)
             .focused($isFocused)
             .padding(.horizontal, SlangSpacing.md)
             .frame(height: 56)
             .background {
                 RoundedRectangle(cornerRadius: 28)
                     .fill(Color(.systemBackground))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 28)
-                            .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1.5)
-                    }
-                    .shadow(color: .black.opacity(0.45), radius: 0, x: 0, y: 3)
+            }
+            .background {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(.black)
+                    .offset(y: 4)
             }
             .padding(.horizontal, SlangSpacing.md)
 
@@ -125,6 +128,8 @@ struct SingleSelectStep: View {
             Text(question)
                 .font(.custom("Montserrat-Bold", size: 30))
                 .foregroundStyle(.primary)
+                .minimumScaleFactor(0.75)
+                .lineLimit(2)
                 .padding(.horizontal, SlangSpacing.md)
                 .padding(.top, SlangSpacing.xl)
 
@@ -233,6 +238,141 @@ struct WordTestStep: View {
             )
             .padding(.horizontal, SlangSpacing.md)
             .padding(.bottom, SlangSpacing.xl)
+        }
+    }
+}
+
+// MARK: - CategorySelectionStep
+
+/// Chip-based category selection step. The user taps categories they're interested in.
+/// Selected chips fill with teal; unselected chips are outlined.
+struct CategorySelectionStep: View {
+
+    @Binding var selectedCategories: Set<String>
+    let onContinue: () -> Void
+
+    private let categories: [String] = SlangCategory.allCases.map(\.displayName)
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(String(localized: "onboarding.categories.question",
+                        defaultValue: "Which categories are you interested in?"))
+                .font(.custom("Montserrat-Bold", size: 28))
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.75)
+                .lineLimit(2)
+                .padding(.horizontal, SlangSpacing.md)
+                .padding(.top, SlangSpacing.xl)
+
+            Spacer().frame(height: SlangSpacing.xl)
+
+            ScrollView {
+                FlowLayout(spacing: SlangSpacing.sm) {
+                    ForEach(categories, id: \.self) { category in
+                        categoryChip(category)
+                    }
+                }
+                .padding(.horizontal, SlangSpacing.md)
+            }
+
+            Spacer()
+
+            OnboardingCTAButton(
+                title: String(localized: "onboarding.continue", defaultValue: "Continue"),
+                action: onContinue
+            )
+            .padding(.horizontal, SlangSpacing.md)
+            .padding(.bottom, SlangSpacing.xl)
+        }
+    }
+
+    private func categoryChip(_ category: String) -> some View {
+        let isSelected = selectedCategories.contains(category)
+        return Button {
+            if isSelected {
+                selectedCategories.remove(category)
+            } else {
+                selectedCategories.insert(category)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: isSelected ? "checkmark" : "plus")
+                    .font(.system(size: 12, weight: .semibold))
+                Text(category)
+                    .font(.custom("Montserrat-Medium", size: 15))
+            }
+            .foregroundStyle(isSelected ? Color.white : Color.primary)
+            .padding(.horizontal, SlangSpacing.md)
+            .padding(.vertical, 12)
+            .background {
+                Capsule()
+                    .fill(isSelected
+                          ? SlangColor.onboardingTeal
+                          : Color(.systemBackground))
+            }
+            .background {
+                Capsule()
+                    .fill(.black)
+                    .offset(y: 3)
+            }
+        }
+        .buttonStyle(.plain)
+        .animation(.easeOut(duration: 0.15), value: isSelected)
+    }
+}
+
+// MARK: - FlowLayout
+
+/// A wrapping layout: arranges children left-to-right, wrapping to the next row.
+struct FlowLayout: Layout {
+
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth, x > 0 {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        return CGSize(width: maxWidth, height: y + rowHeight)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        var x: CGFloat = bounds.minX
+        var y: CGFloat = bounds.minY
+        var rowHeight: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > bounds.maxX, x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            subview.place(
+                at: CGPoint(x: x, y: y),
+                proposal: ProposedViewSize(size)
+            )
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
         }
     }
 }

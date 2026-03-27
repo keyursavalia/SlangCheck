@@ -19,9 +19,11 @@ struct NotificationScheduleStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(String(localized: "onboarding.notif.title",
-                        defaultValue: "Get slang throughout\nthe day"))
+                        defaultValue: "Get slang throughout the day"))
                 .font(.custom("Montserrat-Bold", size: 30))
                 .foregroundStyle(.primary)
+                .minimumScaleFactor(0.75)
+                .lineLimit(2)
                 .padding(.horizontal, SlangSpacing.md)
                 .padding(.top, SlangSpacing.xl)
 
@@ -100,9 +102,28 @@ struct NotificationScheduleStep: View {
         }
     }
 
-    // MARK: - Notification Preview Card
+    // MARK: - Notification Preview Card (stacked)
 
     private var notificationPreview: some View {
+        ZStack {
+            // Background card (second notification, partially visible)
+            notificationCard(
+                body: String(localized: "onboarding.notif.preview.body2",
+                             defaultValue: "slay (v.) — to do something exceptionally well")
+            )
+            .offset(y: 10)
+            .opacity(0.5)
+            .scaleEffect(0.97)
+
+            // Foreground card (primary notification)
+            notificationCard(
+                body: String(localized: "onboarding.notif.preview.body",
+                             defaultValue: "bussin (adj.) — really good, excellent")
+            )
+        }
+    }
+
+    private func notificationCard(body: String) -> some View {
         HStack(spacing: SlangSpacing.sm) {
             RoundedRectangle(cornerRadius: 8)
                 .fill(SlangColor.onboardingTeal)
@@ -116,17 +137,16 @@ struct NotificationScheduleStep: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(String(localized: "onboarding.notif.preview.app", defaultValue: "SlangCheck"))
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.montserrat(size: 13, weight: .semibold))
                     .foregroundStyle(.primary)
-                Text(String(localized: "onboarding.notif.preview.body",
-                            defaultValue: "bussin (adj.) — really good, excellent"))
-                    .font(.system(size: 13))
+                Text(body)
+                    .font(.montserrat(size: 13))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             Spacer()
             Text(String(localized: "onboarding.notif.preview.time", defaultValue: "Now"))
-                .font(.system(size: 12))
+                .font(.montserrat(size: 12))
                 .foregroundStyle(.secondary)
         }
         .padding(SlangSpacing.md)
@@ -147,8 +167,78 @@ struct NotificationScheduleStep: View {
             .background {
                 RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
                     .fill(Color(.systemBackground))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
+                            .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                    }
             }
-            .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+    }
+}
+
+// MARK: - NotificationConsentStep
+
+/// Asks the user if they want to set up notifications before showing the schedule step.
+/// Tapping "Go to settings" proceeds to the schedule page.
+/// Tapping "I'm not ready yet" skips to the welcome splash.
+struct NotificationConsentStep: View {
+
+    let onAllow: () -> Void
+    let onSkip: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            // Illustration — bell with a phone mockup feel
+            ZStack {
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(SlangColor.onboardingTeal.opacity(0.08))
+                    .frame(width: 200, height: 200)
+                Image(systemName: "bell.badge.fill")
+                    .font(.system(size: 72, weight: .light))
+                    .foregroundStyle(SlangColor.onboardingTeal)
+            }
+            .accessibilityHidden(true)
+            .padding(.bottom, SlangSpacing.xl)
+
+            Text(String(localized: "onboarding.consent.title",
+                        defaultValue: "SlangCheck works better with reminders"))
+                .font(.custom("Montserrat-Bold", size: 28))
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.75)
+                .lineLimit(2)
+                .padding(.horizontal, SlangSpacing.lg)
+
+            Text(String(localized: "onboarding.consent.subtitle",
+                        defaultValue: "Allow notifications to get daily words"))
+                .font(.custom("Montserrat-Regular", size: 16))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+                .padding(.top, SlangSpacing.sm)
+                .padding(.horizontal, SlangSpacing.lg)
+
+            Spacer()
+
+            VStack(spacing: SlangSpacing.md) {
+                OnboardingCTAButton(
+                    title: String(localized: "onboarding.consent.allow",
+                                  defaultValue: "Go to settings"),
+                    action: onAllow
+                )
+
+                Button(action: onSkip) {
+                    Text(String(localized: "onboarding.consent.skip",
+                                defaultValue: "I'm not ready yet"))
+                        .font(.custom("Montserrat-Regular", size: 16))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, SlangSpacing.md)
+            .padding(.bottom, SlangSpacing.xl)
+        }
     }
 }
 
@@ -171,7 +261,7 @@ struct NotificationPermissionStep: View {
                 .padding(.bottom, SlangSpacing.xl)
 
             Text(String(localized: "onboarding.permission.title",
-                        defaultValue: "SlangCheck works better\nwith reminders"))
+                        defaultValue: "SlangCheck works better with reminders"))
                 .font(.custom("Montserrat-Bold", size: 28))
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
