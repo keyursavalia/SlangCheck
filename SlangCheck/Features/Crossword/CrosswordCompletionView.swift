@@ -46,7 +46,7 @@ private struct CrosswordCompletionCardView: View {
             VStack(spacing: 20) {
                 // App wordmark
                 Text("SlangCheck")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.montserrat(size: 14, weight: .semibold))
                     .foregroundStyle(Color(red: 0.753, green: 0.518, blue: 0.988))
 
                 // Trophy
@@ -60,12 +60,12 @@ private struct CrosswordCompletionCardView: View {
 
                 // "Daily Crossword" label
                 Text("Daily Crossword")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.montserrat(size: 22, weight: .bold))
                     .foregroundStyle(.white)
 
                 // Date
                 Text(result.puzzleDate.formatted(date: .abbreviated, time: .omitted))
-                    .font(.system(size: 13, weight: .regular))
+                    .font(.montserrat(size: 13))
                     .foregroundStyle(Color.white.opacity(0.6))
 
                 // Stats row
@@ -80,7 +80,7 @@ private struct CrosswordCompletionCardView: View {
 
                 if result.isPerfect {
                     Text("Perfect Solve ⚡")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.montserrat(size: 13, weight: .semibold))
                         .foregroundStyle(Color(red: 0.984, green: 0.749, blue: 0.141))
                         .padding(.horizontal, 14)
                         .padding(.vertical, 4)
@@ -99,10 +99,10 @@ private struct CrosswordCompletionCardView: View {
     private func stat(label: String, value: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(.system(size: 20, weight: .bold))
+                .font(.montserrat(size: 20, weight: .bold))
                 .foregroundStyle(.white)
             Text(label)
-                .font(.system(size: 11, weight: .regular))
+                .font(.montserrat(size: 11))
                 .foregroundStyle(Color.white.opacity(0.6))
         }
     }

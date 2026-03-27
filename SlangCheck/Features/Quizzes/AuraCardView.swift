@@ -167,12 +167,12 @@ struct AuraCardView: View {
             }
 
             Text(profile.currentTier.displayName.uppercased())
-                .font(.system(size: 22, weight: .black, design: .default))
+                .font(.montserrat(size: 22, weight: .black))
                 .foregroundStyle(.white)
                 .tracking(3)
 
             Text(profile.currentTier.subtitle)
-                .font(.system(size: 12, weight: .regular, design: .default))
+                .font(.montserrat(size: 12))
                 .foregroundStyle(Color.white.opacity(0.55))
                 .tracking(0.5)
         }
@@ -183,7 +183,7 @@ struct AuraCardView: View {
     private var userInfo: some View {
         VStack(spacing: SlangSpacing.xs) {
             Text(profile.displayName)
-                .font(.system(size: 20, weight: .bold, design: .default))
+                .font(.montserrat(size: 20, weight: .bold))
                 .foregroundStyle(.white)
 
             Text("\(profile.totalPoints) pts")
@@ -211,7 +211,7 @@ struct AuraCardView: View {
                         .foregroundStyle(SlangColor.accent)
                         .accessibilityHidden(true)
                     Text("\(profile.streak)d streak")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.montserrat(size: 11, weight: .medium))
                         .foregroundStyle(Color.white.opacity(0.55))
                 }
             }

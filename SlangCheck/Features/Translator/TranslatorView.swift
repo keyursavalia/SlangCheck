@@ -107,14 +107,14 @@ struct TranslatorContentView: View {
             ZStack(alignment: .topLeading) {
                 if viewModel.inputText.isEmpty {
                     Text(viewModel.direction.inputPlaceholder)
-                        .font(.system(size: 16))
+                        .font(.montserrat(size: 16))
                         .foregroundStyle(.primary.opacity(0.35))
                         .padding(.horizontal, 4)
                         .padding(.vertical, 9)
                         .allowsHitTesting(false)
                 }
                 TextEditor(text: $viewModel.inputText)
-                    .font(.system(size: 16))
+                    .font(.montserrat(size: 16))
                     .foregroundStyle(.primary)
                     .frame(minHeight: 90)
                     .scrollContentBackground(.hidden)
@@ -219,13 +219,13 @@ struct TranslatorContentView: View {
             }
         } else if let result = viewModel.result {
             Text(result.translatedText)
-                .font(.system(size: 16))
+                .font(.montserrat(size: 16))
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .textSelection(.enabled)
         } else {
             Text(String(localized: "translator.output.placeholder", defaultValue: "Translation will appear here…"))
-                .font(.system(size: 16))
+                .font(.montserrat(size: 16))
                 .foregroundStyle(.primary.opacity(0.30))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -320,7 +320,7 @@ struct TranslatorContentView: View {
                         )
 
                     highlightedExample(sentence: sub.term.exampleSentence, slangTerm: sub.term.term)
-                        .font(.system(size: 15))
+                        .font(.montserrat(size: 15))
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
