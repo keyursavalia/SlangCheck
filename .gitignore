@@ -34,6 +34,10 @@ SlangCheck/GoogleService-Info.plist
 service-account*.json
 firebase-adminsdk*.json
 
+# Secrets plist — contains Gemini API key. Never commit.
+Secrets.plist
+**/Secrets.plist
+
 # Xcconfig files that may contain injected secrets (API keys, bundle IDs, etc.)
 Secrets.xcconfig
 *.xcconfig.local
