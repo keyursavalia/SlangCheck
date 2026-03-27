@@ -331,9 +331,9 @@ final class SwiperViewModel {
 
     static func loadCollections() -> [SlangCollection] {
         guard let data = UserDefaults.standard.data(forKey: AppConstants.userCollectionsKey),
-              let decoded = try? JSONDecoder().decode([SlangCollection].self, from: data),
-              !decoded.isEmpty else {
-            return [SlangCollection(name: "Want to Learn", isDefault: true)]
+              let decoded = try? JSONDecoder().decode([SlangCollection].self, from: data) else {
+            // Return empty — "Want to Learn" is created on first save, not upfront.
+            return []
         }
         return decoded
     }

@@ -3,6 +3,7 @@
 //
 // Dedicated sub-page views for each settings category.
 // Pushed from SettingsView via NavigationLink inside ProfileView's NavigationStack.
+// UI matches onboarding style (pill rows with drop shadows, Save/back button).
 
 import SwiftUI
 import UserNotifications
@@ -16,51 +17,49 @@ struct NameSettingsView: View {
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        List {
-            Section {
-                TextField(
-                    String(localized: "settings.name.placeholder", defaultValue: "Your name"),
-                    text: Binding(
-                        get: { vm.pendingDisplayName },
-                        set: { vm.pendingDisplayName = $0 }
-                    )
-                )
-                .font(.system(size: 17))
-                .autocorrectionDisabled()
-                .submitLabel(.done)
-                .focused($isFocused)
-                .onSubmit { Task { await vm.saveDisplayName() } }
-            } footer: {
-                Text(String(localized: "settings.name.footer",
-                            defaultValue: "This name is visible to you across the app."))
-                    .font(.system(size: 13))
-            }
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer().frame(height: SlangSpacing.xl)
 
-            Section {
-                Button {
-                    Task { await vm.saveDisplayName() }
-                } label: {
-                    HStack {
-                        Spacer()
-                        if vm.isLoading {
-                            ProgressView().tint(.white)
-                        } else {
-                            Text(String(localized: "settings.save", defaultValue: "Save"))
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundStyle(.white)
-                        }
-                        Spacer()
-                    }
-                }
-                .listRowBackground(
-                    RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
-                        .fill(SlangColor.primary)
+            TextField(
+                String(localized: "settings.name.placeholder", defaultValue: "Your name"),
+                text: Binding(
+                    get: { vm.pendingDisplayName },
+                    set: { vm.pendingDisplayName = $0 }
                 )
-                .disabled(vm.isLoading || vm.pendingDisplayName.trimmingCharacters(in: .whitespaces).isEmpty)
+            )
+            .font(.custom("Montserrat-Regular", size: 17))
+            .textFieldStyle(.plain)
+            .autocorrectionDisabled()
+            .submitLabel(.done)
+            .focused($isFocused)
+            .onSubmit { Task { await vm.saveDisplayName() } }
+            .padding(.horizontal, SlangSpacing.md)
+            .frame(height: 56)
+            .background {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(Color(.systemBackground))
             }
+            .background {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(.black)
+                    .offset(y: 4)
+            }
+            .padding(.horizontal, SlangSpacing.md)
+
+            Text(String(localized: "settings.name.footer",
+                        defaultValue: "This name is visible to you across the app."))
+                .font(.montserrat(size: 13))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, SlangSpacing.lg)
+                .padding(.top, SlangSpacing.sm)
+
+            Spacer()
+
+            settingsSaveButton {
+                Task { await vm.saveDisplayName() }
+            }
+            .disabled(vm.isLoading || vm.pendingDisplayName.trimmingCharacters(in: .whitespaces).isEmpty)
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
         .background(SlangColor.background.ignoresSafeArea())
         .navigationTitle(String(localized: "settings.name", defaultValue: "Name"))
         .navigationBarTitleDisplayMode(.large)
@@ -73,38 +72,39 @@ struct NameSettingsView: View {
 /// Lets the user select or update their gender identity.
 struct GenderSettingsView: View {
 
+    @Environment(AuthState.self) private var authState
     @AppStorage("userGender") private var selectedGender: String = ""
 
     private let options = OnboardingGender.allCases.map(\.rawValue)
 
     var body: some View {
-        List {
-            Section {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer().frame(height: SlangSpacing.xl)
+
+            VStack(spacing: SlangSpacing.sm) {
                 ForEach(options, id: \.self) { option in
-                    Button {
-                        selectedGender = option
-                    } label: {
-                        HStack {
-                            Text(option)
-                                .font(.system(size: 17))
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            if selectedGender == option {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(SlangColor.primary)
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
+                    OnboardingOptionRow(
+                        label: option,
+                        isSelected: selectedGender == option,
+                        action: { selectedGender = option }
+                    )
                 }
             }
+            .padding(.horizontal, SlangSpacing.md)
+
+            Spacer()
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
         .background(SlangColor.background.ignoresSafeArea())
         .navigationTitle(String(localized: "settings.gender", defaultValue: "Gender Identity"))
         .navigationBarTitleDisplayMode(.large)
+        .onChange(of: selectedGender) { _, newValue in
+            syncToFirestore(UserPreferences(gender: newValue))
+        }
+    }
+
+    private func syncToFirestore(_ prefs: UserPreferences) {
+        guard authState.isAuthenticated else { return }
+        Task { try? await authState.updatePreferences(prefs) }
     }
 }
 
@@ -113,38 +113,35 @@ struct GenderSettingsView: View {
 /// Lets the user select their age range.
 struct AgeSettingsView: View {
 
+    @Environment(AuthState.self) private var authState
     @AppStorage("userAgeRange") private var selectedAge: String = ""
 
     private let options = ["Under 18", "18–24", "25–34", "35–44", "45+"]
 
     var body: some View {
-        List {
-            Section {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer().frame(height: SlangSpacing.xl)
+
+            VStack(spacing: SlangSpacing.sm) {
                 ForEach(options, id: \.self) { option in
-                    Button {
-                        selectedAge = option
-                    } label: {
-                        HStack {
-                            Text(option)
-                                .font(.system(size: 17))
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            if selectedAge == option {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(SlangColor.primary)
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
+                    OnboardingOptionRow(
+                        label: option,
+                        isSelected: selectedAge == option,
+                        action: { selectedAge = option }
+                    )
                 }
             }
+            .padding(.horizontal, SlangSpacing.md)
+
+            Spacer()
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
         .background(SlangColor.background.ignoresSafeArea())
         .navigationTitle(String(localized: "settings.age", defaultValue: "Age"))
         .navigationBarTitleDisplayMode(.large)
+        .onChange(of: selectedAge) { _, newValue in
+            guard authState.isAuthenticated else { return }
+            Task { try? await authState.updatePreferences(UserPreferences(ageRange: newValue)) }
+        }
     }
 }
 
@@ -153,42 +150,42 @@ struct AgeSettingsView: View {
 /// Lets the user update their self-reported slang level.
 struct SlangLevelSettingsView: View {
 
+    @Environment(AuthState.self) private var authState
     @AppStorage(AppConstants.userSegmentKey) private var selectedSegment: String = ""
 
     private let options = OnboardingSlangLevel.allCases
 
     var body: some View {
-        List {
-            Section {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer().frame(height: SlangSpacing.xl)
+
+            VStack(spacing: SlangSpacing.sm) {
                 ForEach(options, id: \.rawValue) { level in
-                    Button {
-                        selectedSegment = segmentValue(for: level)
-                    } label: {
-                        HStack {
-                            Text(level.rawValue)
-                                .font(.system(size: 17))
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            if selectedSegment == segmentValue(for: level) {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(SlangColor.primary)
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
+                    OnboardingOptionRow(
+                        label: level.rawValue,
+                        isSelected: selectedSegment == segmentValue(for: level),
+                        action: { selectedSegment = segmentValue(for: level) }
+                    )
                 }
-            } footer: {
-                Text(String(localized: "settings.level.footer",
-                            defaultValue: "Your level helps personalize your learning experience."))
-                    .font(.system(size: 13))
             }
+            .padding(.horizontal, SlangSpacing.md)
+
+            Text(String(localized: "settings.level.footer",
+                        defaultValue: "Your level helps personalize your learning experience."))
+                .font(.montserrat(size: 13))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, SlangSpacing.lg)
+                .padding(.top, SlangSpacing.md)
+
+            Spacer()
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
         .background(SlangColor.background.ignoresSafeArea())
         .navigationTitle(String(localized: "settings.level", defaultValue: "Slang Level"))
         .navigationBarTitleDisplayMode(.large)
+        .onChange(of: selectedSegment) { _, newValue in
+            guard authState.isAuthenticated else { return }
+            Task { try? await authState.updatePreferences(UserPreferences(slangLevel: newValue)) }
+        }
     }
 
     private func segmentValue(for level: OnboardingSlangLevel) -> String {
@@ -196,6 +193,43 @@ struct SlangLevelSettingsView: View {
         case .newbie:     return UserSegment.unc.rawValue
         case .someBasics: return UserSegment.trendSeeker.rawValue
         case .fluent:     return UserSegment.languageEnthusiast.rawValue
+        }
+    }
+}
+
+// MARK: - GoalSettingsView
+
+/// Lets the user update their learning goal.
+struct GoalSettingsView: View {
+
+    @Environment(AuthState.self) private var authState
+    @AppStorage("userGoal") private var selectedGoal: String = ""
+
+    private let options = OnboardingGoal.allCases.map(\.rawValue)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer().frame(height: SlangSpacing.xl)
+
+            VStack(spacing: SlangSpacing.sm) {
+                ForEach(options, id: \.self) { option in
+                    OnboardingOptionRow(
+                        label: option,
+                        isSelected: selectedGoal == option,
+                        action: { selectedGoal = option }
+                    )
+                }
+            }
+            .padding(.horizontal, SlangSpacing.md)
+
+            Spacer()
+        }
+        .background(SlangColor.background.ignoresSafeArea())
+        .navigationTitle(String(localized: "settings.goal", defaultValue: "Goal"))
+        .navigationBarTitleDisplayMode(.large)
+        .onChange(of: selectedGoal) { _, newValue in
+            guard authState.isAuthenticated else { return }
+            Task { try? await authState.updatePreferences(UserPreferences(goal: newValue)) }
         }
     }
 }
@@ -222,16 +256,16 @@ struct NotificationSettingsView: View {
                     isOn: $notificationsEnabled
                 )
                 .tint(SlangColor.onboardingTeal)
-                .font(.system(size: 17))
+                .font(.montserrat(size: 17))
             }
 
             if notificationsEnabled {
                 Section(String(localized: "settings.notifications.schedule",
-                               defaultValue: "SCHEDULE")) {
+                               defaultValue: "Schedule")) {
                     HStack {
                         Text(String(localized: "settings.notifications.howMany",
                                     defaultValue: "Daily reminders"))
-                            .font(.system(size: 17))
+                            .font(.montserrat(size: 17))
                             .foregroundStyle(.primary)
                         Spacer()
                         HStack(spacing: SlangSpacing.md) {
@@ -244,7 +278,7 @@ struct NotificationSettingsView: View {
                             }
                             .buttonStyle(.plain)
                             Text("\(count)")
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(.montserrat(size: 17, weight: .semibold))
                                 .frame(minWidth: 28, alignment: .center)
                             Button {
                                 if count < 20 { count += 1 }
@@ -263,7 +297,7 @@ struct NotificationSettingsView: View {
                         selection: $startTime,
                         displayedComponents: .hourAndMinute
                     )
-                    .font(.system(size: 17))
+                    .font(.montserrat(size: 17))
 
                     DatePicker(
                         String(localized: "settings.notifications.endAt",
@@ -271,7 +305,7 @@ struct NotificationSettingsView: View {
                         selection: $endTime,
                         displayedComponents: .hourAndMinute
                     )
-                    .font(.system(size: 17))
+                    .font(.montserrat(size: 17))
                 }
             }
 
@@ -283,7 +317,7 @@ struct NotificationSettingsView: View {
                             HStack {
                                 Text(String(localized: "settings.notifications.openSettings",
                                             defaultValue: "Enable in iOS Settings"))
-                                    .font(.system(size: 17))
+                                    .font(.montserrat(size: 17))
                                     .foregroundStyle(SlangColor.primary)
                                 Spacer()
                                 Image(systemName: "arrow.up.right")
@@ -295,7 +329,7 @@ struct NotificationSettingsView: View {
                 } footer: {
                     Text(String(localized: "settings.notifications.deniedFooter",
                                 defaultValue: "Notifications are blocked. Open iOS Settings to allow them."))
-                        .font(.system(size: 13))
+                        .font(.montserrat(size: 13))
                 }
             }
         }
@@ -324,7 +358,7 @@ struct LanguageSettingsView: View {
                 ForEach(languages, id: \.self) { lang in
                     HStack {
                         Text(lang)
-                            .font(.system(size: 17))
+                            .font(.montserrat(size: 17))
                             .foregroundStyle(.primary)
                         Spacer()
                         Image(systemName: "checkmark")
@@ -335,7 +369,7 @@ struct LanguageSettingsView: View {
             } footer: {
                 Text(String(localized: "settings.language.footer",
                             defaultValue: "More languages coming soon."))
-                    .font(.system(size: 13))
+                    .font(.montserrat(size: 13))
             }
         }
         .listStyle(.insetGrouped)
@@ -344,4 +378,29 @@ struct LanguageSettingsView: View {
         .navigationTitle(String(localized: "settings.language", defaultValue: "Language"))
         .navigationBarTitleDisplayMode(.large)
     }
+}
+
+// MARK: - Shared Save Button
+
+/// Onboarding-style pill save button with hard drop shadow for settings sub-pages.
+private func settingsSaveButton(action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+        Text(String(localized: "settings.save", defaultValue: "Save"))
+            .font(.custom("Montserrat-Bold", size: 18))
+            .foregroundStyle(Color(.label))
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(SlangColor.onboardingTeal)
+            }
+            .background {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(.black)
+                    .offset(y: 4)
+            }
+    }
+    .buttonStyle(.plain)
+    .padding(.horizontal, SlangSpacing.md)
+    .padding(.bottom, SlangSpacing.xl)
 }

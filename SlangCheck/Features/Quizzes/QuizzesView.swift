@@ -1,25 +1,29 @@
 // Features/Quizzes/QuizzesView.swift
 // SlangCheck
 //
-// Root view for the Games tab. Shows the user's compact Aura summary
+// Root view for the Games screen. Shows the user's compact Aura summary
 // and two large game-mode cards — Quiz and Daily Crossword.
+// Presented as a fullScreenCover from SwiperView.
 
 import SwiftUI
 
 // MARK: - QuizzesView
 
-/// Entry point for the Games tab.
+/// Entry point for the Games screen.
 /// Owns the `QuizViewModel` and surfaces both game modes in a premium card layout.
 struct QuizzesView: View {
 
     @Environment(\.appEnvironment) private var env
+    @Environment(\.dismiss) private var dismiss
     @Environment(AuthState.self) private var authState
     @State private var viewModel: QuizViewModel? = nil
     @State private var showingQuiz       = false
     @State private var showingCrossword  = false
     @State private var showingAuthGate   = false
+    @State private var showingAIPrompt   = false
     @State private var pendingGame: PendingGame? = nil
     @State private var auraCardImage: AuraCardImage? = nil
+    @AppStorage("hasSeenAIPrompt") private var hasSeenAIPrompt = false
 
     /// Which game the user tried to launch before auth was required.
     private enum PendingGame { case quiz, crossword }
@@ -38,10 +42,15 @@ struct QuizzesView: View {
             .background(SlangColor.background.ignoresSafeArea())
             .navigationTitle(String(localized: "quizzes.title", defaultValue: "Games"))
             .navigationBarTitleDisplayMode(.large)
-            // Push CrosswordView onto this stack so the swipe-back gesture works.
-            // CrosswordView does NOT own its own NavigationStack.
-            .navigationDestination(isPresented: $showingCrossword) {
-                CrosswordView()
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color(.label).opacity(0.55))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
         .task {
@@ -55,10 +64,38 @@ struct QuizzesView: View {
                 QuizView(viewModel: vm)
             }
         }
+        .fullScreenCover(isPresented: $showingCrossword) {
+            NavigationStack {
+                CrosswordView()
+                    .environment(\.appEnvironment, env)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button { showingCrossword = false } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(Color(.label).opacity(0.55))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+            }
+        }
         .sheet(isPresented: $showingAuthGate) {
             AuthGateView {
                 // Auth succeeded — now launch whatever game was requested.
                 launchPendingGame()
+            }
+        }
+        .sheet(isPresented: $showingAIPrompt) {
+            AIActivationPromptView {
+                showingAIPrompt = false
+            }
+            .presentationDetents([.medium])
+        }
+        .onAppear {
+            // Show the AI activation prompt once for iOS 26+ users.
+            if !hasSeenAIPrompt, AIAvailabilityChecker.canPromptForAppleIntelligence() {
+                showingAIPrompt = true
             }
         }
     }
@@ -107,17 +144,26 @@ struct QuizzesView: View {
             Text(String(localized: "aura.profile.noHistory",
                         defaultValue: "Complete a quiz to earn Aura Points!"))
                 .font(.slang(.body))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
             Spacer()
         }
         .padding(SlangSpacing.md)
-        .glassCard()
+        .background {
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                .fill(Color(.systemBackground))
+        }
+        .background {
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                .fill(.black)
+                .offset(y: 4)
+        }
     }
 
     // MARK: - Game Mode Section
 
     private var gameModeSection: some View {
         VStack(spacing: SlangSpacing.md) {
+            aiProviderBadge
             GameModeCard(
                 icon: "trophy.fill",
                 iconColor: SlangColor.primary,
@@ -131,7 +177,7 @@ struct QuizzesView: View {
 
             GameModeCard(
                 icon: "squareshape.split.3x3",
-                iconColor: SlangColor.secondary,
+                iconColor: SlangColor.primary,
                 title: String(localized: "games.crossword.title", defaultValue: "Daily Crossword"),
                 subtitle: String(localized: "games.crossword.subtitle",
                                  defaultValue: "A new puzzle every morning at 7 AM"),
@@ -140,6 +186,28 @@ struct QuizzesView: View {
                 requireAuth(for: .crossword)
             }
         }
+    }
+
+    // MARK: - AI Provider Badge
+
+    @ViewBuilder
+    private var aiProviderBadge: some View {
+        let provider = AIAvailabilityChecker.currentProvider()
+        HStack(spacing: SlangSpacing.xs) {
+            Image(systemName: provider == .appleIntelligence ? "cpu" : "cloud")
+                .font(.system(size: 11, weight: .semibold))
+            Text(provider == .appleIntelligence
+                 ? String(localized: "games.ai.apple", defaultValue: "Apple Intelligence")
+                 : provider == .gemini
+                    ? String(localized: "games.ai.gemini", defaultValue: "Gemini AI")
+                    : String(localized: "games.ai.static", defaultValue: "Classic Mode"))
+                .font(.slang(.caption))
+        }
+        .foregroundStyle(SlangColor.primary.opacity(0.7))
+        .padding(.horizontal, SlangSpacing.md)
+        .padding(.vertical, SlangSpacing.xs)
+        .background(Capsule().fill(SlangColor.primary.opacity(0.08)))
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
     // MARK: - Auth-Gated Launch
@@ -208,8 +276,7 @@ struct QuizzesView: View {
 
 // MARK: - CompactAuraBannerView
 
-/// A compact horizontal Aura summary shown at the top of the Games tab.
-/// Shows the user's profile photo (if available) in the leading circle; falls back to the tier icon.
+/// A compact horizontal Aura summary shown at the top of the Games screen.
 private struct CompactAuraBannerView: View {
 
     let profile: AuraProfile
@@ -217,7 +284,6 @@ private struct CompactAuraBannerView: View {
 
     var body: some View {
         HStack(spacing: SlangSpacing.md) {
-            // Avatar / tier badge circle
             ZStack {
                 Circle()
                     .fill(tierColor.opacity(0.15))
@@ -246,7 +312,7 @@ private struct CompactAuraBannerView: View {
                     .foregroundStyle(.primary)
                 Text(profile.currentTier.subtitle)
                     .font(.slang(.caption))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary.opacity(0.6))
             }
 
             Spacer()
@@ -270,16 +336,24 @@ private struct CompactAuraBannerView: View {
             }
         }
         .padding(SlangSpacing.md)
-        .glassCard()
+        .background {
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                .fill(Color(.systemBackground))
+        }
+        .background {
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                .fill(.black)
+                .offset(y: 4)
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(profile.currentTier.displayName), \(profile.totalPoints) points, \(profile.streak) day streak")
     }
 
     private var tierColor: Color {
         switch profile.currentTier {
-        case .unc:        return .secondary
+        case .unc:        return SlangColor.primary
         case .lurk:       return SlangColor.accent
-        case .auraFarmer: return SlangColor.secondary
+        case .auraFarmer: return SlangColor.primary
         case .rizzler:    return SlangColor.primary
         }
     }
@@ -303,7 +377,7 @@ private struct CompactAuraBannerView: View {
 
 // MARK: - GameModeCard
 
-/// A large, tappable game-mode entry card.
+/// A large, tappable game-mode entry card with onboarding-style drop shadow.
 private struct GameModeCard: View {
 
     let icon: String
@@ -313,12 +387,9 @@ private struct GameModeCard: View {
     let isLoading: Bool
     let action: () -> Void
 
-    @State private var isPressed = false
-
     var body: some View {
         Button(action: action) {
             HStack(spacing: SlangSpacing.lg) {
-                // Icon
                 ZStack {
                     RoundedRectangle(cornerRadius: SlangCornerRadius.card)
                         .fill(iconColor.opacity(0.15))
@@ -334,14 +405,13 @@ private struct GameModeCard: View {
                     }
                 }
 
-                // Text
                 VStack(alignment: .leading, spacing: SlangSpacing.xs) {
                     Text(title)
                         .font(.slang(.heading))
                         .foregroundStyle(.primary)
                     Text(subtitle)
                         .font(.slang(.caption))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.primary.opacity(0.6))
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -349,35 +419,23 @@ private struct GameModeCard: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.secondary.opacity(0.5))
+                    .foregroundStyle(Color.primary.opacity(0.35))
                     .accessibilityHidden(true)
             }
             .padding(SlangSpacing.lg)
             .frame(maxWidth: .infinity)
-            .background(
+            .background {
                 RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                    .fill(SlangColor.surface)
-                    .shadow(
-                        color: iconColor.opacity(isPressed ? 0.05 : 0.12),
-                        radius: isPressed ? 4 : 12,
-                        x: 0,
-                        y: isPressed ? 2 : 6
-                    )
-            )
-            .overlay(
+                    .fill(Color(.systemBackground))
+            }
+            .background {
                 RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                    .strokeBorder(iconColor.opacity(0.18), lineWidth: 1)
-            )
-            .scaleEffect(isPressed ? 0.97 : 1.0)
-            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)
+                    .fill(.black)
+                    .offset(y: 4)
+            }
         }
         .buttonStyle(.plain)
         .disabled(isLoading)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded   { _ in isPressed = false }
-        )
         .accessibilityLabel(title)
         .accessibilityHint(subtitle)
     }

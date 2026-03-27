@@ -56,7 +56,7 @@ struct CollectionPickerCard: View {
     private var pickerContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(String(localized: "collections.picker.title", defaultValue: "Collections"))
-                .font(.custom("NoticiaText-Bold", size: 24))
+                .font(.custom("Montserrat-Bold", size: 24))
                 .foregroundStyle(.primary)
                 .padding(.horizontal, SlangSpacing.md)
                 .padding(.top, SlangSpacing.xs)
@@ -88,7 +88,7 @@ struct CollectionPickerCard: View {
         } label: {
             HStack(spacing: SlangSpacing.md) {
                 Text(collection.name)
-                    .font(.system(size: 17))
+                    .font(.montserrat(size: 17))
                     .foregroundStyle(.primary)
 
                 Spacer()
@@ -124,12 +124,12 @@ private struct NewCollectionCard: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: SlangSpacing.sm) {
                 Text(String(localized: "collections.new.title", defaultValue: "New collection"))
-                    .font(.custom("NoticiaText-Bold", size: 24))
+                    .font(.custom("Montserrat-Bold", size: 24))
                     .foregroundStyle(.primary)
 
                 Text(String(localized: "collections.new.subtitle",
                             defaultValue: "Enter a name for your new collection. You can rename it later."))
-                    .font(.system(size: 14))
+                    .font(.montserrat(size: 14))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -157,7 +157,7 @@ private struct NewCollectionCard: View {
             // Save button — OnboardingCTAButton style
             Button { saveIfValid() } label: {
                 Text(String(localized: "collections.new.save", defaultValue: "Save"))
-                    .font(.custom("NoticiaText-Bold", size: 18))
+                    .font(.custom("Montserrat-Bold", size: 18))
                     .foregroundStyle(Color(.label))
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)

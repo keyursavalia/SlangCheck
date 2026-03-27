@@ -157,28 +157,41 @@ public struct AppEnvironment {
 
     /// Returns the three AI service implementations appropriate for the current runtime.
     ///
-    /// - On iOS 26+ with Apple Intelligence available: returns `FoundationModels*` types.
-    /// - On iOS 26+ without Apple Intelligence: returns no-op types (runtime check inside
-    ///   each `FoundationModels*` service still guards the actual model call).
-    /// - On iOS < 26: returns no-op types (compile-time `#if canImport` guard).
+    /// **Fallback chain** (quiz & crossword):
+    /// 1. Apple Intelligence (`FoundationModels*` on iOS 26+) — best quality, on-device.
+    /// 2. Gemini REST API (`Gemini*Service`) — remote, requires `Secrets.plist` key.
+    /// 3. Static content (no-op) — deterministic pool-based fallback.
+    ///
+    /// The `Fallback*Service` composites try step 1 first; if it returns `nil`
+    /// (AI unavailable or disabled), they automatically delegate to step 2.
+    /// If step 2 also returns `nil` (no API key / network error), callers
+    /// fall back to static content (step 3) as they already do today.
     private static func makeAIServices() -> (
         translation: any AITranslationService,
         quiz:        any AIQuizGenerationService,
         crossword:   any AICrosswordGenerationService
     ) {
+        let geminiQuiz      = GeminiQuizService()
+        let geminiCrossword = GeminiCrosswordService()
+
         #if canImport(FoundationModels)
         if #available(iOS 26, *) {
+            let appleQuiz      = FoundationModelsQuizService()
+            let appleCrossword = FoundationModelsCrosswordService()
             return (
                 FoundationModelsTranslationService(),
-                FoundationModelsQuizService(),
-                FoundationModelsCrosswordService()
+                FallbackQuizService(primary: appleQuiz, fallback: geminiQuiz),
+                FallbackCrosswordService(primary: appleCrossword, fallback: geminiCrossword)
             )
         }
         #endif
+
+        // iOS < 26: Gemini is the only AI option. Translation stays no-op
+        // (dictionary-based local translation is sufficient).
         return (
             NoOpAITranslationService(),
-            NoOpAIQuizService(),
-            NoOpAICrosswordService()
+            geminiQuiz,
+            geminiCrossword
         )
     }
 }

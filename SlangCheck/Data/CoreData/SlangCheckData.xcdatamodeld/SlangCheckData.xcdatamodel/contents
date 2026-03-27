@@ -3,6 +3,8 @@
     <entity name="CDSlangTerm" representedClassName="CDSlangTerm" syncable="YES" codeGenerationType="none">
         <attribute name="id" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="term" optional="NO" attributeType="String"/>
+        <attribute name="partOfSpeechShort" optional="YES" attributeType="String"/>
+        <attribute name="partOfSpeechFull" optional="YES" attributeType="String"/>
         <attribute name="definition" optional="NO" attributeType="String"/>
         <attribute name="standardEnglish" optional="YES" attributeType="String"/>
         <attribute name="exampleSentence" optional="YES" attributeType="String"/>
@@ -19,7 +21,7 @@
         <attribute name="savedDate" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
     <elements>
-        <element name="CDSlangTerm" positionX="0" positionY="0" width="128" height="209"/>
+        <element name="CDSlangTerm" positionX="0" positionY="0" width="128" height="240"/>
         <element name="CDLexiconEntry" positionX="200" positionY="0" width="128" height="75"/>
     </elements>
 </model>

@@ -11,40 +11,34 @@ import Foundation
 /// The thematic category of a slang term, sourced from DATABASE.md.
 /// Raw values are the exact strings used in the seed JSON and Firestore.
 public enum SlangCategory: String, Codable, CaseIterable, Identifiable, Sendable {
-    case foundationalDescriptor = "foundational_descriptor"
-    case brainrot               = "brainrot"
-    case socialArchetype        = "social_archetype"
-    case relationship           = "relationship"
-    case gamingInternet         = "gaming_internet"
-    case reaction               = "reaction"
-    case aesthetic              = "aesthetic"
-    case emerging2026           = "emerging_2026"
-    case emojiDescriptor        = "emoji_descriptor"
-    case emojiReaction          = "emoji_reaction"
-    case emojiTone              = "emoji_tone"
-    case regionalNorCal         = "regional_norcal"
-    case regionalSoCal          = "regional_socal"
-    case techSiliconValley      = "tech_silicon_valley"
+    case foundationalDescriptor     = "foundational_descriptor"
+    case brainrot                   = "brainrot"
+    case socialArchetype            = "social_archetype"
+    case relationship               = "relationship"
+    case gamingInternet             = "gaming_internet"
+    case reaction                   = "reaction"
+    case aesthetic                  = "aesthetic"
+    case emerging2026               = "emerging_2026"
+    case emoji                      = "emoji"
+    case regionalBayArea            = "regional_bay_area"
+    case regionalSouthernCalifornia = "regional_southern_california"
 
     public var id: String { rawValue }
 
     /// Human-readable display name for UI filter labels.
     public var displayName: String {
         switch self {
-        case .foundationalDescriptor: return String(localized: "category.foundationalDescriptor", defaultValue: "Descriptors")
-        case .brainrot:               return String(localized: "category.brainrot",               defaultValue: "Brainrot")
-        case .socialArchetype:        return String(localized: "category.socialArchetype",        defaultValue: "Archetypes")
-        case .relationship:           return String(localized: "category.relationship",           defaultValue: "Relationships")
-        case .gamingInternet:         return String(localized: "category.gamingInternet",         defaultValue: "Gaming")
-        case .reaction:               return String(localized: "category.reaction",               defaultValue: "Reactions")
-        case .aesthetic:              return String(localized: "category.aesthetic",              defaultValue: "Aesthetics")
-        case .emerging2026:           return String(localized: "category.emerging2026",           defaultValue: "Emerging")
-        case .emojiDescriptor:        return String(localized: "category.emojiDescriptor",        defaultValue: "Emoji")
-        case .emojiReaction:          return String(localized: "category.emojiReaction",          defaultValue: "Emoji Reactions")
-        case .emojiTone:              return String(localized: "category.emojiTone",              defaultValue: "Emoji Tone")
-        case .regionalNorCal:         return String(localized: "category.regionalNorCal",         defaultValue: "NorCal")
-        case .regionalSoCal:          return String(localized: "category.regionalSoCal",          defaultValue: "SoCal")
-        case .techSiliconValley:      return String(localized: "category.techSiliconValley",      defaultValue: "Tech / SV")
+        case .foundationalDescriptor:     return String(localized: "category.foundationalDescriptor",     defaultValue: "Descriptors")
+        case .brainrot:                   return String(localized: "category.brainrot",                   defaultValue: "Brainrot")
+        case .socialArchetype:            return String(localized: "category.socialArchetype",            defaultValue: "Archetypes")
+        case .relationship:               return String(localized: "category.relationship",               defaultValue: "Relationships")
+        case .gamingInternet:             return String(localized: "category.gamingInternet",             defaultValue: "Gaming")
+        case .reaction:                   return String(localized: "category.reaction",                   defaultValue: "Reactions")
+        case .aesthetic:                  return String(localized: "category.aesthetic",                  defaultValue: "Aesthetics")
+        case .emerging2026:               return String(localized: "category.emerging2026",               defaultValue: "Emerging")
+        case .emoji:                      return String(localized: "category.emoji",                      defaultValue: "Emoji")
+        case .regionalBayArea:            return String(localized: "category.regionalBayArea",            defaultValue: "Bay Area")
+        case .regionalSouthernCalifornia: return String(localized: "category.regionalSouthernCalifornia", defaultValue: "SoCal")
         }
     }
 }
@@ -97,6 +91,12 @@ public struct SlangTerm: Codable, Identifiable, Hashable, Sendable {
     /// The slang term itself (e.g., "No Cap").
     public let term: String
 
+    /// Abbreviated part of speech (e.g., "v.", "adj.", "n.").
+    public let partOfSpeechShort: String
+
+    /// Full part of speech (e.g., "verb", "adjective", "noun").
+    public let partOfSpeechFull: String
+
     /// Full definition suitable for display in the Glossary and Swiper detail.
     public let definition: String
 
@@ -132,6 +132,8 @@ public struct SlangTerm: Codable, Identifiable, Hashable, Sendable {
     public init(
         id: UUID,
         term: String,
+        partOfSpeechShort: String = "",
+        partOfSpeechFull: String = "",
         definition: String,
         standardEnglish: String,
         exampleSentence: String,
@@ -145,6 +147,8 @@ public struct SlangTerm: Codable, Identifiable, Hashable, Sendable {
     ) {
         self.id = id
         self.term = term
+        self.partOfSpeechShort = partOfSpeechShort
+        self.partOfSpeechFull = partOfSpeechFull
         self.definition = definition
         self.standardEnglish = standardEnglish
         self.exampleSentence = exampleSentence
@@ -160,7 +164,8 @@ public struct SlangTerm: Codable, Identifiable, Hashable, Sendable {
     // MARK: Codable Keys
 
     private enum CodingKeys: String, CodingKey {
-        case id, term, definition, standardEnglish, exampleSentence
+        case id, term, partOfSpeechShort, partOfSpeechFull
+        case definition, standardEnglish, exampleSentence
         case category, origin, usageFrequency, generationTags = "generationTag"
         case addedDate, isBrainrot, isEmojiTerm
     }
@@ -187,17 +192,19 @@ public struct SlangTerm: Codable, Identifiable, Hashable, Sendable {
 extension SlangTerm {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id             = try container.decode(UUID.self,             forKey: .id)
-        term           = try container.decode(String.self,           forKey: .term)
-        definition     = try container.decode(String.self,           forKey: .definition)
-        standardEnglish = try container.decode(String.self,          forKey: .standardEnglish)
-        exampleSentence = try container.decode(String.self,          forKey: .exampleSentence)
-        category       = try container.decode(SlangCategory.self,    forKey: .category)
-        origin         = try container.decode(String.self,           forKey: .origin)
-        usageFrequency = try container.decode(UsageFrequency.self,   forKey: .usageFrequency)
-        generationTags = try container.decode([GenerationTag].self,  forKey: .generationTags)
-        isBrainrot     = try container.decode(Bool.self,             forKey: .isBrainrot)
-        isEmojiTerm    = try container.decode(Bool.self,             forKey: .isEmojiTerm)
+        id                = try container.decode(UUID.self,             forKey: .id)
+        term              = try container.decode(String.self,           forKey: .term)
+        partOfSpeechShort = try container.decodeIfPresent(String.self,  forKey: .partOfSpeechShort) ?? ""
+        partOfSpeechFull  = try container.decodeIfPresent(String.self,  forKey: .partOfSpeechFull)  ?? ""
+        definition        = try container.decode(String.self,           forKey: .definition)
+        standardEnglish   = try container.decode(String.self,          forKey: .standardEnglish)
+        exampleSentence   = try container.decode(String.self,          forKey: .exampleSentence)
+        category          = try container.decode(SlangCategory.self,    forKey: .category)
+        origin            = try container.decode(String.self,           forKey: .origin)
+        usageFrequency    = try container.decode(UsageFrequency.self,   forKey: .usageFrequency)
+        generationTags    = try container.decode([GenerationTag].self,  forKey: .generationTags)
+        isBrainrot        = try container.decode(Bool.self,             forKey: .isBrainrot)
+        isEmojiTerm       = try container.decode(Bool.self,             forKey: .isEmojiTerm)
 
         let dateString = try container.decode(String.self, forKey: .addedDate)
         let formatter  = ISO8601DateFormatter()

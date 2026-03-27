@@ -113,25 +113,33 @@ public struct GenerateQuizUseCase: Sendable {
             .shuffled()
             .prefix(3)
 
-        // Attempt AI enhancement (fresh sentence + AI distractors for definitionPick).
+        // Attempt AI enhancement (short definitions, creative hints, fresh sentences).
         let enhancement = await aiService?.enhance(term: term, allTerms: pool, questionType: type)
 
         let exampleSentence = enhancement?.exampleSentence ?? term.exampleSentence
 
+        // Use AI short definition when available — prevents copy-paste of full glossary text.
+        let correctDef: String
         let distractors: [String]
+
         switch type {
         case .definitionPick:
-            // Prefer AI-generated wrong definitions; fall back to pool definitions.
-            distractors = enhancement?.definitionDistractors ?? distractorTerms.map(\.definition)
-        case .termPick, .fillInBlank:
-            // Always use real glossary term names — AI-invented fake terms are less useful.
+            correctDef  = enhancement?.shortDefinition ?? term.definition
+            distractors = enhancement?.shortDistractors ?? distractorTerms.map(\.definition)
+        case .termPick:
+            // For termPick, store the AI hint as the "definition" shown in the question stem.
+            // Fall back to the glossary definition if AI is unavailable.
+            correctDef  = enhancement?.questionHint ?? term.definition
+            distractors = distractorTerms.map(\.term)
+        case .fillInBlank:
+            correctDef  = enhancement?.shortDefinition ?? term.definition
             distractors = distractorTerms.map(\.term)
         }
 
         return QuizQuestion(
             termID:            term.id,
             term:              term.term,
-            correctDefinition: term.definition,
+            correctDefinition: correctDef,
             exampleSentence:   exampleSentence,
             distractors:       Array(distractors),
             type:              type,

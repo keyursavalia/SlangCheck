@@ -51,7 +51,7 @@ public actor AIGeneratedCrosswordRepository: CrosswordRepository {
     // MARK: - State
 
     private var cachedPuzzle: CrosswordPuzzle?
-    private let puzzleKey    = "crossword.aiPuzzle.v1"
+    private let puzzleKey    = "crossword.aiPuzzle.v2"
     private let userStateKey = "crossword.userState.v1"
     private let resultsKey   = "crossword.results.v1"
 
@@ -75,17 +75,26 @@ public actor AIGeneratedCrosswordRepository: CrosswordRepository {
         // Return in-memory cached puzzle if already generated this session.
         if let cached = cachedPuzzle { return cached }
 
-        // Try to load a cached puzzle from UserDefaults (avoids re-running AI within same day).
+        // Try to load a cached AI puzzle from UserDefaults (avoids re-running AI within same day).
         if let stored = loadCachedPuzzle() {
             cachedPuzzle = stored
             return stored
         }
 
-        // Generate a new AI puzzle.
-        let puzzle = await generateOrFallback()
-        cachedPuzzle = puzzle
-        storeCachedPuzzle(puzzle)
-        return puzzle
+        // Attempt AI generation. Only cache if AI succeeds — sample fallbacks are
+        // not cached so the next launch retries AI (user may enable Apple Intelligence
+        // or configure Gemini between sessions).
+        if let aiPuzzle = await generateAIPuzzle() {
+            cachedPuzzle = aiPuzzle
+            storeCachedPuzzle(aiPuzzle)
+            return aiPuzzle
+        }
+
+        // AI unavailable — serve the sample puzzle without caching it.
+        AIGeneratedCrosswordRepository.log.info("AI unavailable; serving sample puzzle (not cached).")
+        let sample = (try? await sampleFallback.fetchTodaysPuzzle()) ?? buildEmergencyPuzzle()
+        cachedPuzzle = sample
+        return sample
     }
 
     public func fetchUserState(for puzzleID: UUID) async throws(CrosswordRepositoryError) -> CrosswordUserState? {
@@ -124,23 +133,25 @@ public actor AIGeneratedCrosswordRepository: CrosswordRepository {
 
     // MARK: - Private: Generation
 
-    private func generateOrFallback() async -> CrosswordPuzzle {
+    /// Attempts to generate a crossword via AI (Apple Intelligence → Gemini fallback chain).
+    /// Returns `nil` when AI is entirely unavailable so the caller can serve a sample puzzle.
+    private func generateAIPuzzle() async -> CrosswordPuzzle? {
         // Fetch glossary.
         guard let allTerms = try? await slangRepository.fetchAllTerms(), !allTerms.isEmpty else {
-            AIGeneratedCrosswordRepository.log.warning("Glossary unavailable; using sample puzzle.")
-            return (try? await sampleFallback.fetchTodaysPuzzle()) ?? buildEmergencyPuzzle()
+            AIGeneratedCrosswordRepository.log.warning("Glossary unavailable; cannot generate AI puzzle.")
+            return nil
         }
 
         // Ask AI for layout.
         guard let aiLayout = await aiService.generateLayout(from: allTerms) else {
-            AIGeneratedCrosswordRepository.log.info("AI unavailable; falling back to sample puzzle.")
-            return (try? await sampleFallback.fetchTodaysPuzzle()) ?? buildEmergencyPuzzle()
+            AIGeneratedCrosswordRepository.log.info("AI layout generation returned nil.")
+            return nil
         }
 
         // Build grid deterministically.
         guard let layout = layoutBuilder.build(entries: aiLayout.entries) else {
-            AIGeneratedCrosswordRepository.log.warning("Layout builder failed; using sample puzzle.")
-            return (try? await sampleFallback.fetchTodaysPuzzle()) ?? buildEmergencyPuzzle()
+            AIGeneratedCrosswordRepository.log.warning("Layout builder failed for AI entries.")
+            return nil
         }
 
         // Encrypt answer map and return puzzle.

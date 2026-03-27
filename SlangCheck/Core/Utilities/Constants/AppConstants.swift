@@ -70,7 +70,7 @@ public enum AppConstants {
 
     /// Monotonically increasing integer. Bump this whenever `slang_seed.json` is updated
     /// so existing installs automatically re-seed with the new terms on next launch.
-    public static let seedVersion = 3
+    public static let seedVersion = 4
 
     /// UserDefaults key that stores the last-applied seed version on this device.
     public static let seedVersionKey = "slangSeedVersion"
@@ -80,4 +80,7 @@ public enum AppConstants {
 
     /// UserDefaults key for the user's named collections (JSON-encoded [SlangCollection]).
     public static let userCollectionsKey = "userCollections"
+
+    /// UserDefaults key for the user's selected interest categories (JSON-encoded [String]).
+    public static let userCategoriesKey = "userCategories"
 }

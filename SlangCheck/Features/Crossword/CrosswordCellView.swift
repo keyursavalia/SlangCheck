@@ -65,7 +65,7 @@ struct CrosswordCellView: View {
             // Clue number badge
             if let num = cell.clueNumber {
                 Text("\(num)")
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(.montserrat(size: 8, weight: .semibold))
                     .foregroundStyle(textColor)
                     .padding(.leading, 2)
                     .padding(.top, 1)
@@ -74,7 +74,7 @@ struct CrosswordCellView: View {
             // Entered letter (centred)
             if let letter = enteredLetter {
                 Text(letter)
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.montserrat(size: 20, weight: .bold))
                     .foregroundStyle(isRevealed ? SlangColor.secondary : textColor)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -103,7 +103,7 @@ struct CrosswordCellView: View {
             } else if isHighlighted {
                 SlangColor.primary.opacity(0.12)
             } else {
-                SlangColor.surface
+                Color(.systemBackground)
             }
         }
     }

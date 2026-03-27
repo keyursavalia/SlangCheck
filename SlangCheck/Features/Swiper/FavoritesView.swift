@@ -71,7 +71,7 @@ struct FavoritesView: View {
     private var showInFeedButton: some View {
         Button { feedStartTermID = nil; showingFeed = true } label: {
             Text(String(localized: "favorites.showInFeed", defaultValue: "Show all in feed"))
-                .font(.system(size: 18, weight: .bold))
+                .font(.montserrat(size: 18, weight: .bold))
                 .foregroundStyle(Color(.label))
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
@@ -97,18 +97,18 @@ struct FavoritesView: View {
             } label: {
                 VStack(alignment: .leading, spacing: SlangSpacing.xs) {
                     Text(term.term.lowercased())
-                        .font(.system(size: 18))
+                        .font(.montserrat(size: 18))
                         .foregroundStyle(.primary)
 
                     Text(term.definition)
-                        .font(.system(size: 14))
+                        .font(.montserrat(size: 14))
                         .foregroundStyle(.secondary)
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
 
                     if !term.exampleSentence.isEmpty {
                         Text("\u{201C}\(term.exampleSentence)\u{201D}")
-                            .font(.system(size: 13))
+                            .font(.montserrat(size: 13))
                             .foregroundStyle(Color(.tertiaryLabel))
                             .italic()
                             .lineLimit(2)

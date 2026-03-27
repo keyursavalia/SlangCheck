@@ -120,9 +120,9 @@ public enum SlangColor {
     // MARK: - Onboarding Token
 
     /// Onboarding teal — selected option rows and CTA buttons in the onboarding flow.
-    /// Light: #4D938C | Dark: #5CAF9F
+    /// #98C1BE (unified across light and dark mode)
     public static var onboardingTeal: Color {
-        Color(lightHex: "4D938C", darkHex: "5CAF9F")
+        Color(lightHex: "98C1BE", darkHex: "98C1BE")
     }
 
     // MARK: - Neumorphism Shadow Tokens

@@ -72,7 +72,7 @@ struct OnboardingView: View {
         case .gender:
             SingleSelectStep(
                 question: String(localized: "onboarding.gender.question",
-                                 defaultValue: "Which option represents\nyou best?"),
+                                 defaultValue: "Which option represents you best?"),
                 options: OnboardingGender.allCases.map(\.rawValue),
                 selected: Binding(
                     get: { viewModel.selectedGender?.rawValue },
@@ -84,7 +84,7 @@ struct OnboardingView: View {
         case .learningGoal:
             SingleSelectStep(
                 question: String(localized: "onboarding.goal.question",
-                                 defaultValue: "Do you have a specific goal\nin mind?"),
+                                 defaultValue: "Do you have a specific goal in mind?"),
                 options: OnboardingGoal.allCases.map(\.rawValue),
                 selected: Binding(
                     get: { viewModel.selectedGoal?.rawValue },
@@ -108,7 +108,7 @@ struct OnboardingView: View {
         case .wordFrequency:
             SingleSelectStep(
                 question: String(localized: "onboarding.frequency.question",
-                                 defaultValue: "Do you often encounter slang\nyou don't know?"),
+                                 defaultValue: "Do you often encounter slang you don't know?"),
                 options: OnboardingWordFrequency.allCases.map(\.rawValue),
                 selected: Binding(
                     get: { viewModel.selectedFrequency?.rawValue },
@@ -120,7 +120,7 @@ struct OnboardingView: View {
         case .vocabDescription:
             SingleSelectStep(
                 question: String(localized: "onboarding.vocabdesc.question",
-                                 defaultValue: "How would you describe your\nslang knowledge?"),
+                                 defaultValue: "How would you describe your slang knowledge?"),
                 options: OnboardingVocabDescription.allCases.map(\.rawValue),
                 selected: Binding(
                     get: { viewModel.selectedVocabDescription?.rawValue },
@@ -132,12 +132,18 @@ struct OnboardingView: View {
         case .weeklyGoal:
             SingleSelectStep(
                 question: String(localized: "onboarding.weekly.question",
-                                 defaultValue: "How many slang terms do you\nwant to learn per week?"),
+                                 defaultValue: "How many slang terms do you want to learn per week?"),
                 options: OnboardingWeeklyGoal.allCases.map(\.rawValue),
                 selected: Binding(
                     get: { viewModel.selectedWeeklyGoal?.rawValue },
                     set: { v in viewModel.selectedWeeklyGoal = v.flatMap(OnboardingWeeklyGoal.init(rawValue:)) }
                 ),
+                onContinue: viewModel.advance
+            )
+
+        case .categorySelection:
+            CategorySelectionStep(
+                selectedCategories: $viewModel.selectedCategories,
                 onContinue: viewModel.advance
             )
 
@@ -166,6 +172,12 @@ struct OnboardingView: View {
                 words: OnboardingWordBank.advanced,
                 knownWords: $viewModel.knownAdvancedTerms,
                 onContinue: viewModel.advance
+            )
+
+        case .notificationConsent:
+            NotificationConsentStep(
+                onAllow: viewModel.proceedToNotificationSchedule,
+                onSkip: viewModel.skipToWelcome
             )
 
         case .notificationSchedule:
@@ -208,7 +220,7 @@ struct OnboardingOptionRow: View {
         Button(action: action) {
             HStack {
                 Text(label)
-                    .font(.custom("NoticiaText-Regular", size: 17))
+                    .font(.custom("Montserrat-Regular", size: 17))
                     .foregroundStyle(isSelected ? Color.white : Color.primary)
                 Spacer()
                 // Radio / check indicator
@@ -230,10 +242,13 @@ struct OnboardingOptionRow: View {
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .background {
-                // Shadow scoped to shape only — no strokeBorder, matches the CTA button spec.
                 RoundedRectangle(cornerRadius: 28)
                     .fill(isSelected ? SlangColor.onboardingTeal : Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.65), radius: 0, x: 0, y: 4)
+            }
+            .background {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(.black)
+                    .offset(y: 4)
             }
         }
         .buttonStyle(.plain)
@@ -253,19 +268,25 @@ struct OnboardingCTAButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.custom("NoticiaText-Bold", size: 18))
-                .foregroundStyle(Color(.label))
+                .font(.custom("Montserrat-Bold", size: 18))
+                .foregroundStyle(isEnabled ? Color(.label) : Color(.label).opacity(0.4))
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
                 .background {
-                    // Shadow is scoped to the shape only — applying it to the full
-                    // view would also shadow the text, rendering it twice (radius: 0
-                    // produces a pixel-perfect opaque copy at the y offset).
                     RoundedRectangle(cornerRadius: 28)
                         .fill(isEnabled
                               ? SlangColor.onboardingTeal
                               : SlangColor.onboardingTeal.opacity(0.4))
-                        .shadow(color: .black.opacity(0.65), radius: 0, x: 0, y: 4)
+                    // Hard shadow is placed behind the fill. When disabled the fill is
+                    // semi-transparent so we hide the shadow entirely to avoid a
+                    // double-line artifact.
+                }
+                .background {
+                    if isEnabled {
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(.black)
+                            .offset(y: 4)
+                    }
                 }
         }
         .buttonStyle(.plain)

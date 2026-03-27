@@ -67,6 +67,17 @@ public final class NoOpUserProfileRepository: UserProfileRepository {
         store[uid]?.photoURL = url
     }
 
+    public func updatePreferences(_ prefs: UserPreferences, uid: String) async throws {
+        if var profile = store[uid] {
+            if let g = prefs.gender     { profile.gender     = g }
+            if let a = prefs.ageRange   { profile.ageRange   = a }
+            if let l = prefs.slangLevel { profile.slangLevel = l }
+            if let g = prefs.goal       { profile.goal       = g }
+            if let c = prefs.categories { profile.categories = c }
+            store[uid] = profile
+        }
+    }
+
     public func uploadProfilePhoto(data: Data, uid: String) async throws -> URL {
         // Return a placeholder URL — no actual upload in previews/tests.
         // SAFE: Only reachable in non-production environments.

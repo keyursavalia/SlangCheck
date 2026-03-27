@@ -93,6 +93,20 @@ final class ProfileSettingsViewModel {
         }
     }
 
+    // MARK: - Preferences Sync
+
+    /// Syncs a single preference field to Firestore (if authenticated).
+    func syncPreference(_ prefs: UserPreferences) {
+        guard authState.isAuthenticated else { return }
+        Task {
+            do {
+                try await authState.updatePreferences(prefs)
+            } catch {
+                Logger.app.error("syncPreference failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
     // MARK: - Sign Out
 
     func signOut() {

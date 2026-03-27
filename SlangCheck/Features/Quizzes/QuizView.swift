@@ -1,8 +1,8 @@
 // Features/Quizzes/QuizView.swift
 // SlangCheck
 //
-// Active quiz screen: question card, four answer choices, hint button,
-// progress indicator. Correct → green pulse. Wrong → red shake.
+// Active quiz screen: question card, four answer choices (onboarding-style pills),
+// hint button, progress indicator, exit button. Correct → green pulse. Wrong → red shake.
 
 import SwiftUI
 
@@ -14,6 +14,7 @@ struct QuizView: View {
 
     @Bindable var viewModel: QuizViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var showExitConfirmation = false
 
     var body: some View {
         Group {
@@ -26,19 +27,29 @@ struct QuizView: View {
                     auraProfile: viewModel.auraProfile,
                     onPlayAgain: { await viewModel.restartQuiz() },
                     onDone: {
-                        // Reset state then close the fullScreenCover.
-                        // Calling only dismissResult() leaves the cover open
-                        // showing the default-case spinner.
                         viewModel.dismissResult()
                         dismiss()
                     }
                 )
             default:
-                // Loading / idle — should not appear during an active quiz session.
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(SlangColor.background.ignoresSafeArea())
             }
+        }
+        .alert(
+            String(localized: "quiz.exit.title", defaultValue: "End Quiz?"),
+            isPresented: $showExitConfirmation
+        ) {
+            Button(String(localized: "quiz.exit.confirm", defaultValue: "End & See Results"),
+                   role: .destructive) {
+                viewModel.endQuizEarly()
+            }
+            Button(String(localized: "quiz.exit.cancel", defaultValue: "Keep Going"),
+                   role: .cancel) {}
+        } message: {
+            Text(String(localized: "quiz.exit.message",
+                        defaultValue: "You'll still earn points for your correct answers so far."))
         }
     }
 
@@ -55,7 +66,7 @@ struct QuizView: View {
             if let question = viewModel.currentQuestion {
                 QuizQuestionCard(question: question)
                     .padding(.horizontal, SlangSpacing.md)
-                    .id(viewModel.currentIndex)   // triggers slide-in transition
+                    .id(viewModel.currentIndex)
                     .transition(.asymmetric(
                         insertion:  .move(edge: .trailing).combined(with: .opacity),
                         removal:    .move(edge: .leading).combined(with: .opacity)
@@ -77,14 +88,26 @@ struct QuizView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.currentIndex)
     }
 
-    // MARK: - Header (Progress + Timer + Hint)
+    // MARK: - Header (Exit + Progress + Timer + Hint)
 
     private var quizHeader: some View {
         VStack(spacing: SlangSpacing.sm) {
             HStack {
+                // Exit button
+                Button { showExitConfirmation = true } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color(.label).opacity(0.55))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "quiz.exit.accessibility",
+                                          defaultValue: "End quiz"))
+
+                Spacer()
+
                 Text("Question \(viewModel.questionNumber) of \(viewModel.totalQuestions)")
-                .font(.slang(.caption))
-                .foregroundStyle(.secondary)
+                    .font(.slang(.caption))
+                    .foregroundStyle(.primary.opacity(0.6))
 
                 Spacer()
 
@@ -94,25 +117,6 @@ struct QuizView: View {
                     total: QuizViewModel.questionTimeLimit
                 )
                 .frame(width: 36, height: 36)
-
-                Spacer()
-
-                Button(action: { viewModel.useHint() }) {
-                    Label(
-                        viewModel.canUseHint
-                            ? String(localized: "quiz.hint", defaultValue: "Hint")
-                            : String(localized: "quiz.hint.used", defaultValue: "Hint Used"),
-                        systemImage: "lightbulb"
-                    )
-                    .font(.slang(.caption))
-                    .foregroundStyle(viewModel.canUseHint ? SlangColor.accent : .secondary)
-                }
-                .disabled(!viewModel.canUseHint)
-                .accessibilityLabel(
-                    viewModel.canUseHint
-                        ? String(localized: "quiz.hint.accessibility", defaultValue: "Use hint to eliminate one wrong answer")
-                        : String(localized: "quiz.hint.used.accessibility", defaultValue: "Hint already used")
-                )
             }
 
             // Progress bar
@@ -132,15 +136,12 @@ struct QuizView: View {
         }
     }
 
-    // MARK: - Answer Choices
+    // MARK: - Answer Choices (Onboarding-style pills)
 
     private var choicesGrid: some View {
-        let isLast = viewModel.currentIndex + 1 >= viewModel.totalQuestions
-        _ = isLast  // suppress unused warning; used in nextButton
-
-        return VStack(spacing: SlangSpacing.sm) {
+        VStack(spacing: SlangSpacing.sm) {
             ForEach(viewModel.shuffledChoices, id: \.self) { choice in
-                QuizChoiceButton(
+                QuizChoiceRow(
                     choice: choice,
                     correctAnswer: viewModel.currentQuestion?.correctAnswer ?? "",
                     selectedAnswer: viewModel.selectedAnswer,
@@ -151,6 +152,19 @@ struct QuizView: View {
                         viewModel.submitAnswer(choice)
                     }
                 }
+            }
+
+            // Hint button
+            if viewModel.canUseHint {
+                Button(action: { viewModel.useHint() }) {
+                    Label(
+                        String(localized: "quiz.hint", defaultValue: "Hint"),
+                        systemImage: "lightbulb"
+                    )
+                    .font(.montserrat(size: 14))
+                    .foregroundStyle(SlangColor.accent)
+                }
+                .padding(.top, SlangSpacing.xs)
             }
         }
     }
@@ -169,14 +183,23 @@ struct QuizView: View {
             }
         } label: {
             Text(label)
-                .font(.slang(.label))
-                .foregroundStyle(.white)
+                .font(.custom("Montserrat-Bold", size: 18))
+                .foregroundStyle(Color(.label))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, SlangSpacing.md)
-                .background(
-                    RoundedRectangle(cornerRadius: SlangCornerRadius.button)
-                        .fill(viewModel.isAnswerRevealed ? SlangColor.primary : SlangColor.separator)
-                )
+                .frame(height: 56)
+                .background {
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(viewModel.isAnswerRevealed
+                              ? SlangColor.onboardingTeal
+                              : SlangColor.onboardingTeal.opacity(0.4))
+                }
+                .background {
+                    if viewModel.isAnswerRevealed {
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(.black)
+                            .offset(y: 4)
+                    }
+                }
         }
         .disabled(!viewModel.isAnswerRevealed)
         .opacity(viewModel.isAnswerRevealed ? 1 : 0)
@@ -209,13 +232,21 @@ private struct QuizQuestionCard: View {
         }
         .padding(SlangSpacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassCard()
+        .background {
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                .fill(Color(.systemBackground))
+        }
+        .background {
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                .fill(.black)
+                .offset(y: 4)
+        }
     }
 
     private var questionTypeBadge: String {
         switch question.type {
-        case .definitionPick: return String(localized: "quiz.badge.definitionPick", defaultValue: "Definition")
-        case .termPick:       return String(localized: "quiz.badge.termPick",       defaultValue: "Term")
+        case .definitionPick: return String(localized: "quiz.badge.definitionPick", defaultValue: "What Does It Mean?")
+        case .termPick:       return String(localized: "quiz.badge.termPick",       defaultValue: "Name That Slang")
         case .fillInBlank:    return String(localized: "quiz.badge.fillInBlank",    defaultValue: "Fill in the Blank")
         }
     }
@@ -225,17 +256,18 @@ private struct QuizQuestionCard: View {
         case .definitionPick:
             return "What does \"\(question.term)\" mean?"
         case .termPick:
-            return "Which term means: \"\(question.correctDefinition)\"?"
+            return question.correctDefinition
         case .fillInBlank:
             return question.sentenceWithBlank
         }
     }
 }
 
-// MARK: - QuizChoiceButton
+// MARK: - QuizChoiceRow (Onboarding-Style Pill)
 
-/// A single answer-choice button. Renders neutral, correct, wrong, or eliminated states.
-private struct QuizChoiceButton: View {
+/// An answer-choice pill matching the onboarding `OnboardingOptionRow` style.
+/// Neutral → white pill with black drop shadow. Selected → teal (correct) or red (wrong).
+private struct QuizChoiceRow: View {
 
     let choice: String
     let correctAnswer: String
@@ -248,28 +280,34 @@ private struct QuizChoiceButton: View {
 
     private var choiceState: ChoiceState {
         guard isRevealed else { return isEliminated ? .eliminated : .neutral }
-        if choice == correctAnswer        { return .correct }
-        if choice == selectedAnswer       { return .wrong }
+        if choice == correctAnswer  { return .correct }
+        if choice == selectedAnswer { return .wrong }
         return .dimmed
     }
 
     var body: some View {
         Button(action: triggerAction) {
-            Text(choice)
-                .font(.slang(.body))
-                .foregroundStyle(foregroundColor)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(SlangSpacing.md)
-                .background(
-                    RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
-                        .fill(backgroundColor)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
-                        .strokeBorder(borderColor, lineWidth: choiceState == .correct ? 2 : 0)
-                )
+            HStack {
+                Text(choice)
+                    .font(.custom("Montserrat-Regular", size: 17))
+                    .foregroundStyle(foregroundColor)
+                    .multilineTextAlignment(.leading)
+                Spacer()
+                indicator
+            }
+            .padding(.horizontal, SlangSpacing.md)
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .background {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(backgroundColor)
+            }
+            .background {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(.black)
+                    .offset(y: 4)
+            }
         }
+        .buttonStyle(.plain)
         .disabled(isRevealed || isEliminated)
         .modifier(ShakeEffect(trigger: shakeTrigger))
         .opacity(choiceState == .dimmed || choiceState == .eliminated ? 0.40 : 1.0)
@@ -278,30 +316,36 @@ private struct QuizChoiceButton: View {
         .accessibilityAddTraits(choiceState == .correct ? .isSelected : [])
     }
 
-    // MARK: - State → Colors
+    // MARK: - Indicator
+
+    @ViewBuilder
+    private var indicator: some View {
+        switch choiceState {
+        case .correct:
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.white)
+        case .wrong:
+            Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(.white)
+        default:
+            EmptyView()
+        }
+    }
+
+    // MARK: - Colors
 
     private var backgroundColor: Color {
         switch choiceState {
-        case .neutral:    return SlangColor.surface
-        case .correct:    return SlangColor.secondary.opacity(0.20)
-        case .wrong:      return SlangColor.errorRed.opacity(0.20)
-        case .dimmed, .eliminated: return SlangColor.surface
+        case .correct:    return SlangColor.onboardingTeal
+        case .wrong:      return SlangColor.errorRed
+        default:          return Color(.systemBackground)
         }
     }
 
     private var foregroundColor: Color {
         switch choiceState {
-        case .correct:    return SlangColor.secondary
-        case .wrong:      return SlangColor.errorRed
-        default:          return .primary
-        }
-    }
-
-    private var borderColor: Color {
-        switch choiceState {
-        case .correct: return SlangColor.secondary
-        case .wrong:   return SlangColor.errorRed
-        default:       return .clear
+        case .correct, .wrong: return .white
+        default:               return .primary
         }
     }
 
@@ -318,13 +362,11 @@ private struct QuizChoiceButton: View {
 
 // MARK: - ChoiceState
 
-private enum ChoiceState { case neutral, correct, wrong, dimmed, eliminated }
-extension ChoiceState: Equatable {}
+private enum ChoiceState: Equatable { case neutral, correct, wrong, dimmed, eliminated }
 
 // MARK: - TimerRingView
 
-/// Circular countdown ring shown in the quiz header. Color shifts from green → amber → red
-/// as the timer approaches zero, giving the user an urgency signal.
+/// Circular countdown ring shown in the quiz header.
 private struct TimerRingView: View {
 
     let timeRemaining: Int
@@ -336,7 +378,7 @@ private struct TimerRingView: View {
     }
 
     private var ringColor: Color {
-        if timeRemaining > 10 { return SlangColor.secondary }
+        if timeRemaining > 10 { return SlangColor.onboardingTeal }
         if timeRemaining >  5 { return SlangColor.accent }
         return SlangColor.errorRed
     }
@@ -351,7 +393,6 @@ private struct TimerRingView: View {
                     ringColor,
                     style: StrokeStyle(lineWidth: 3, lineCap: .round)
                 )
-                // Start at the top (12 o'clock) and shrink clockwise.
                 .rotationEffect(.degrees(-90))
                 .animation(.linear(duration: 1), value: progress)
             Text("\(timeRemaining)")

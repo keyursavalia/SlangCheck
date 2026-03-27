@@ -30,8 +30,8 @@ struct SlangShareCard: View {
                         .tracking(2.5)
                         .foregroundStyle(SlangColor.primary)
                     Spacer()
-                    if let tag = posTag {
-                        Text("(\(tag))")
+                    if !term.partOfSpeechShort.isEmpty {
+                        Text("(\(term.partOfSpeechShort))")
                             .font(.system(size: 11, weight: .bold, design: .monospaced))
                             .foregroundStyle(SlangColor.primary.opacity(0.65))
                     }
@@ -46,7 +46,7 @@ struct SlangShareCard: View {
                     .padding(.bottom, 14)
 
                 // ── Definition ───────────────────────────────────
-                Text(cleanDefinition)
+                Text(term.definition)
                     .font(.slangDefinition(size: 18))
                     .foregroundStyle(.primary.opacity(0.82))
                     .fixedSize(horizontal: false, vertical: true)
@@ -73,20 +73,6 @@ struct SlangShareCard: View {
         .frame(width: 375, height: 480)
     }
 
-    // MARK: - Helpers
-
-    private var posTag: String? {
-        guard term.definition.hasPrefix("("),
-              let endIdx = term.definition.firstIndex(of: ")") else { return nil }
-        return String(term.definition[term.definition.index(after: term.definition.startIndex)..<endIdx])
-    }
-
-    private var cleanDefinition: String {
-        guard term.definition.hasPrefix("("),
-              let endIdx = term.definition.firstIndex(of: ")") else { return term.definition }
-        return String(term.definition[term.definition.index(after: endIdx)...])
-            .trimmingCharacters(in: .whitespaces)
-    }
 }
 
 // MARK: - Share Action
@@ -126,7 +112,9 @@ extension SlangShareCard {
     SlangShareCard(term: SlangTerm(
         id: UUID(),
         term: "rizz",
-        definition: "(n.) Natural charm or ability to attract others, especially romantically.",
+        partOfSpeechShort: "n.",
+        partOfSpeechFull: "noun",
+        definition: "Natural charm or ability to attract others, especially romantically.",
         standardEnglish: "charisma",
         exampleSentence: "Bro walked in and had instant rizz — everyone was locked in.",
         category: .foundationalDescriptor,

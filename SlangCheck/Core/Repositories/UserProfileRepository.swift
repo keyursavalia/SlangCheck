@@ -28,12 +28,51 @@ public protocol UserProfileRepository: Sendable {
     /// Patch only the `photoURL` field.
     func updatePhotoURL(_ url: URL, uid: String) async throws
 
+    /// Patch user preference fields (gender, ageRange, slangLevel, goal, categories).
+    func updatePreferences(_ prefs: UserPreferences, uid: String) async throws
+
     /// Compress and upload JPEG data to Firebase Storage; returns the public download URL.
     /// Callers should compress to ≤ 1 MB before passing data here.
     func uploadProfilePhoto(data: Data, uid: String) async throws -> URL
 
     /// Delete the Firestore document for the given UID. Called before `deleteAccount()`.
     func deleteProfile(uid: String) async throws
+}
+
+// MARK: - UserPreferences
+
+/// A value type grouping user preference fields for a single Firestore patch.
+public struct UserPreferences: Sendable {
+    public var gender: String?
+    public var ageRange: String?
+    public var slangLevel: String?
+    public var goal: String?
+    public var categories: [String]?
+
+    public init(
+        gender: String? = nil,
+        ageRange: String? = nil,
+        slangLevel: String? = nil,
+        goal: String? = nil,
+        categories: [String]? = nil
+    ) {
+        self.gender     = gender
+        self.ageRange   = ageRange
+        self.slangLevel = slangLevel
+        self.goal       = goal
+        self.categories = categories
+    }
+
+    /// Converts to a Firestore-compatible dictionary, only including non-nil fields.
+    public var firestoreData: [String: Any] {
+        var data: [String: Any] = [:]
+        if let gender     { data["gender"]     = gender }
+        if let ageRange   { data["ageRange"]   = ageRange }
+        if let slangLevel { data["slangLevel"] = slangLevel }
+        if let goal       { data["goal"]       = goal }
+        if let categories { data["categories"] = categories }
+        return data
+    }
 }
 
 // MARK: - UserProfileError

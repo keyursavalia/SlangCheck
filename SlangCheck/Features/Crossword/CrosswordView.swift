@@ -148,24 +148,29 @@ struct CrosswordView: View {
 
     private func actionRow(vm: CrosswordViewModel) -> some View {
         HStack(spacing: SlangSpacing.md) {
-            // Reveal cell button — remaining credits shown in the keyboard toolbar.
+            // Reveal cell button — onboarding-style outlined pill
             Button {
                 vm.revealCurrentCell()
             } label: {
                 Label(String(localized: "crossword.reveal", defaultValue: "Reveal"),
                       systemImage: "eye")
-                    .font(.slang(.label))
-                    .foregroundStyle(vm.canReveal ? SlangColor.accent : SlangColor.labelSecondary)
+                    .font(.custom("Montserrat-SemiBold", size: 16))
+                    .foregroundStyle(vm.canReveal ? Color(.label) : Color(.label).opacity(0.35))
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, SlangSpacing.md)
-                    .background(
-                        RoundedRectangle(cornerRadius: SlangCornerRadius.button)
-                            .strokeBorder(
-                                vm.canReveal ? SlangColor.accent : SlangColor.separator,
-                                lineWidth: 1
-                            )
-                    )
+                    .frame(height: 56)
+                    .background {
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(Color(.systemBackground))
+                    }
+                    .background {
+                        if vm.canReveal {
+                            RoundedRectangle(cornerRadius: 28)
+                                .fill(.black)
+                                .offset(y: 4)
+                        }
+                    }
             }
+            .buttonStyle(.plain)
             .disabled(!vm.canReveal)
             .accessibilityLabel(
                 String(localized: "crossword.reveal.accessibility",
@@ -173,21 +178,31 @@ struct CrosswordView: View {
             )
             .accessibilityValue("\(vm.revealCreditsRemaining) credits remaining")
 
-            // Submit button (primary action)
+            // Submit button — onboarding CTA style (teal + drop shadow)
             Button {
                 isKeyboardActive = false
                 vm.submitPuzzle()
             } label: {
                 Text(String(localized: "crossword.submit", defaultValue: "Submit"))
-                    .font(.slang(.label))
-                    .foregroundStyle(.white)
+                    .font(.custom("Montserrat-Bold", size: 18))
+                    .foregroundStyle(Color(.label))
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, SlangSpacing.md)
-                    .background(
-                        RoundedRectangle(cornerRadius: SlangCornerRadius.button)
-                            .fill(vm.canSubmit ? SlangColor.primary : SlangColor.separator)
-                    )
+                    .frame(height: 56)
+                    .background {
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(vm.canSubmit
+                                  ? SlangColor.onboardingTeal
+                                  : SlangColor.onboardingTeal.opacity(0.4))
+                    }
+                    .background {
+                        if vm.canSubmit {
+                            RoundedRectangle(cornerRadius: 28)
+                                .fill(.black)
+                                .offset(y: 4)
+                        }
+                    }
             }
+            .buttonStyle(.plain)
             .disabled(!vm.canSubmit)
             .accessibilityLabel(String(localized: "crossword.submit.accessibility",
                                         defaultValue: "Submit your answers"))

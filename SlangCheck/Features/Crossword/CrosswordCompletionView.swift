@@ -46,7 +46,7 @@ private struct CrosswordCompletionCardView: View {
             VStack(spacing: 20) {
                 // App wordmark
                 Text("SlangCheck")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.montserrat(size: 14, weight: .semibold))
                     .foregroundStyle(Color(red: 0.753, green: 0.518, blue: 0.988))
 
                 // Trophy
@@ -60,12 +60,12 @@ private struct CrosswordCompletionCardView: View {
 
                 // "Daily Crossword" label
                 Text("Daily Crossword")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.montserrat(size: 22, weight: .bold))
                     .foregroundStyle(.white)
 
                 // Date
                 Text(result.puzzleDate.formatted(date: .abbreviated, time: .omitted))
-                    .font(.system(size: 13, weight: .regular))
+                    .font(.montserrat(size: 13))
                     .foregroundStyle(Color.white.opacity(0.6))
 
                 // Stats row
@@ -80,7 +80,7 @@ private struct CrosswordCompletionCardView: View {
 
                 if result.isPerfect {
                     Text("Perfect Solve ⚡")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.montserrat(size: 13, weight: .semibold))
                         .foregroundStyle(Color(red: 0.984, green: 0.749, blue: 0.141))
                         .padding(.horizontal, 14)
                         .padding(.vertical, 4)
@@ -99,10 +99,10 @@ private struct CrosswordCompletionCardView: View {
     private func stat(label: String, value: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(.system(size: 20, weight: .bold))
+                .font(.montserrat(size: 20, weight: .bold))
                 .foregroundStyle(.white)
             Text(label)
-                .font(.system(size: 11, weight: .regular))
+                .font(.montserrat(size: 11))
                 .foregroundStyle(Color.white.opacity(0.6))
         }
     }
@@ -130,6 +130,7 @@ struct CrosswordCompletionView: View {
 
     // MARK: - State
 
+    @Environment(\.dismiss) private var dismiss
     @State private var cardImage: CrosswordCompletionCardImage?
 
     // MARK: - Body
@@ -144,6 +145,7 @@ struct CrosswordCompletionView: View {
                 if let cardImage {
                     shareButton(cardImage: cardImage)
                 }
+                doneButton
                 Spacer(minLength: SlangSpacing.xxl)
             }
             .padding(SlangSpacing.md)
@@ -165,11 +167,11 @@ struct CrosswordCompletionView: View {
                  ? String(localized: "crossword.result.perfectTitle", defaultValue: "Perfect Solve!")
                  : String(localized: "crossword.result.title", defaultValue: "Puzzle Complete"))
                 .font(.slang(.title))
-                .foregroundStyle(SlangColor.labelPrimary)
+                .foregroundStyle(.primary)
 
             Text(result.puzzleDate.formatted(date: .long, time: .omitted))
                 .font(.slang(.caption))
-                .foregroundStyle(SlangColor.labelSecondary)
+                .foregroundStyle(.primary.opacity(0.6))
         }
         .padding(.top, SlangSpacing.lg)
     }
@@ -192,17 +194,17 @@ struct CrosswordCompletionView: View {
             )
         }
         .padding(SlangSpacing.md)
-        .glassCard()
+        .profileCard()
     }
 
     private func statCell(value: String, label: String) -> some View {
         VStack(spacing: SlangSpacing.xs) {
             Text(value)
                 .font(.slang(.heading))
-                .foregroundStyle(SlangColor.labelPrimary)
+                .foregroundStyle(.primary)
             Text(label)
                 .font(.slang(.caption))
-                .foregroundStyle(SlangColor.labelSecondary)
+                .foregroundStyle(.primary.opacity(0.6))
         }
         .frame(maxWidth: .infinity)
     }
@@ -225,9 +227,33 @@ struct CrosswordCompletionView: View {
             if let profile = viewModel.auraProfile {
                 Text("\(profile.totalPoints) \(String(localized: "crossword.result.totalAura", defaultValue: "total Aura"))")
                     .font(.slang(.caption))
-                    .foregroundStyle(SlangColor.labelSecondary)
+                    .foregroundStyle(.primary.opacity(0.6))
             }
         }
+    }
+
+    // MARK: - Done Button
+
+    private var doneButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Text(String(localized: "crossword.result.done", defaultValue: "Done"))
+                .font(.custom("Montserrat-Bold", size: 18))
+                .foregroundStyle(Color(.label))
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background {
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(SlangColor.onboardingTeal)
+                }
+                .background {
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(.black)
+                        .offset(y: 4)
+                }
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Share Button

@@ -65,8 +65,8 @@ struct TermInfoSheet: View {
                 .font(.slangTerm(size: 46))
                 .foregroundStyle(.primary)
 
-            if let tag = posFullWord {
-                tagChip(tag)
+            if !term.partOfSpeechFull.isEmpty {
+                tagChip(term.partOfSpeechFull)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -76,7 +76,7 @@ struct TermInfoSheet: View {
 
     private var definitionSection: some View {
         infoSection(label: String(localized: "info.sheet.definition", defaultValue: "definition")) {
-            Text(cleanDefinition)
+            Text(term.definition)
                 .font(.slangDefinition(size: 20))
                 .foregroundStyle(.primary.opacity(0.85))
                 .fixedSize(horizontal: false, vertical: true)
@@ -160,38 +160,6 @@ struct TermInfoSheet: View {
         }
     }
 
-    // MARK: - POS Helpers
-
-    /// The full English word for the POS abbreviation, e.g. "n." → "noun".
-    private var posFullWord: String? {
-        guard term.definition.hasPrefix("("),
-              let endIdx = term.definition.firstIndex(of: ")") else { return nil }
-        let abbrev = String(term.definition[term.definition.index(after: term.definition.startIndex)..<endIdx])
-        return Self.expandPOS(abbrev)
-    }
-
-    private var cleanDefinition: String {
-        guard term.definition.hasPrefix("("),
-              let endIdx = term.definition.firstIndex(of: ")") else { return term.definition }
-        return String(term.definition[term.definition.index(after: endIdx)...])
-            .trimmingCharacters(in: .whitespaces)
-    }
-
-    /// Maps POS abbreviations to full English words.
-    private static func expandPOS(_ abbreviation: String) -> String {
-        switch abbreviation.lowercased().trimmingCharacters(in: .whitespaces) {
-        case "n.":      return "noun"
-        case "v.":      return "verb"
-        case "adj.":    return "adjective"
-        case "adv.":    return "adverb"
-        case "interj.": return "interjection"
-        case "phr.":    return "phrase"
-        case "exp.":    return "expression"
-        case "abbr.":   return "abbreviation"
-        case "excl.":   return "exclamation"
-        default:        return abbreviation
-        }
-    }
 
     // MARK: - Layout Helpers
 

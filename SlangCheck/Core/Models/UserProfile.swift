@@ -39,6 +39,23 @@ public struct UserProfile: Identifiable, Hashable, Sendable, Codable {
     /// UTC timestamp of account creation.
     public let createdAt: Date
 
+    // MARK: - Onboarding Preferences (synced to Firestore)
+
+    /// Gender identity selected during onboarding or in settings.
+    public var gender: String?
+
+    /// Age range selected during onboarding or in settings (e.g. "18–24").
+    public var ageRange: String?
+
+    /// UserSegment raw value representing slang level (e.g. "unc", "trendSeeker").
+    public var slangLevel: String?
+
+    /// Learning goal selected during onboarding (e.g. "Stay culturally current").
+    public var goal: String?
+
+    /// Interest categories selected during onboarding (display names).
+    public var categories: [String]?
+
     public init(
         id: String,
         username: String,
@@ -46,7 +63,12 @@ public struct UserProfile: Identifiable, Hashable, Sendable, Codable {
         email: String,
         photoURL: URL? = nil,
         auraPoints: Int = 0,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        gender: String? = nil,
+        ageRange: String? = nil,
+        slangLevel: String? = nil,
+        goal: String? = nil,
+        categories: [String]? = nil
     ) {
         self.id          = id
         self.username    = username
@@ -55,6 +77,11 @@ public struct UserProfile: Identifiable, Hashable, Sendable, Codable {
         self.photoURL    = photoURL
         self.auraPoints  = auraPoints
         self.createdAt   = createdAt
+        self.gender      = gender
+        self.ageRange    = ageRange
+        self.slangLevel  = slangLevel
+        self.goal        = goal
+        self.categories  = categories
     }
 
     // MARK: - Username Generation

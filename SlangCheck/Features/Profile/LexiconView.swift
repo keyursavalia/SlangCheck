@@ -13,53 +13,59 @@ struct LexiconView: View {
 
     @Environment(\.appEnvironment) private var env
 
-    @State private var collections: [SlangCollection] = []
+    @State private var collections: [SlangCollection] = SwiperViewModel.loadCollections()
     @State private var showingNewCollection = false
     @State private var newCollectionName = ""
+    /// Drives navigation to CollectionDetailView — same explicit item-binding pattern
+    /// used by ProfileView, avoiding type-based NavigationLink conflicts in the stack.
+    @State private var selectedCollection: SlangCollection? = nil
 
     var body: some View {
-        Group {
-            if collections.isEmpty {
-                emptyState
-            } else {
-                collectionList
-            }
-        }
-        .background(SlangColor.background.ignoresSafeArea())
-        .navigationTitle(String(localized: "lexicon.title", defaultValue: "Collections"))
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    newCollectionName = ""
-                    showingNewCollection = true
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(SlangColor.primary)
+        collectionContent
+            .background(SlangColor.background.ignoresSafeArea())
+            .navigationTitle(String(localized: "lexicon.title", defaultValue: "Collections"))
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        newCollectionName = ""
+                        showingNewCollection = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(SlangColor.primary)
+                    }
+                    .accessibilityLabel(String(localized: "lexicon.addNew", defaultValue: "Add new collection"))
                 }
-                .accessibilityLabel(String(localized: "lexicon.addNew", defaultValue: "Add new collection"))
             }
-        }
-        .alert(
-            String(localized: "lexicon.new.title", defaultValue: "New Collection"),
-            isPresented: $showingNewCollection
-        ) {
-            TextField(
-                String(localized: "collections.new.placeholder", defaultValue: "Collection name"),
-                text: $newCollectionName
-            )
-            .autocorrectionDisabled()
-            Button(String(localized: "collections.new.save", defaultValue: "Create")) {
-                createCollection()
+            .alert(
+                String(localized: "lexicon.new.title", defaultValue: "New Collection"),
+                isPresented: $showingNewCollection
+            ) {
+                TextField(
+                    String(localized: "collections.new.placeholder", defaultValue: "Collection name"),
+                    text: $newCollectionName
+                )
+                .autocorrectionDisabled()
+                Button(String(localized: "collections.new.save", defaultValue: "Create")) {
+                    createCollection()
+                }
+                .disabled(newCollectionName.trimmingCharacters(in: .whitespaces).isEmpty)
+                Button(String(localized: "lexicon.delete.cancel", defaultValue: "Cancel"), role: .cancel) {}
             }
-            .disabled(newCollectionName.trimmingCharacters(in: .whitespaces).isEmpty)
-            Button(String(localized: "lexicon.delete.cancel", defaultValue: "Cancel"), role: .cancel) {}
-        }
-        .onAppear { collections = SwiperViewModel.loadCollections() }
-        .navigationDestination(for: SlangCollection.self) { collection in
-            CollectionDetailView(collection: collection)
-                .environment(\.appEnvironment, env)
+            .onAppear { collections = SwiperViewModel.loadCollections() }
+            .navigationDestination(item: $selectedCollection) { collection in
+                CollectionDetailView(collection: collection)
+                    .environment(\.appEnvironment, env)
+            }
+    }
+
+    @ViewBuilder
+    private var collectionContent: some View {
+        if collections.isEmpty {
+            emptyState
+        } else {
+            collectionList
         }
     }
 
@@ -69,7 +75,7 @@ struct LexiconView: View {
         ScrollView {
             LazyVStack(spacing: SlangSpacing.sm) {
                 ForEach(collections) { collection in
-                    NavigationLink(value: collection) {
+                    Button { selectedCollection = collection } label: {
                         collectionRow(collection)
                     }
                     .buttonStyle(.plain)
@@ -87,7 +93,7 @@ struct LexiconView: View {
         HStack(spacing: SlangSpacing.md) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(collection.name)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.montserrat(size: 17, weight: .semibold))
                     .foregroundStyle(.primary)
 
                 Text(String(format: NSLocalizedString(
@@ -95,7 +101,7 @@ struct LexiconView: View {
                     value: "%d words",
                     comment: "Word count in a collection"
                 ), collection.termIDs.count))
-                .font(.system(size: 13))
+                .font(.montserrat(size: 13))
                 .foregroundStyle(.secondary)
             }
 
@@ -116,12 +122,25 @@ struct LexiconView: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        EmptyStateView(
-            symbolName: "bookmark",
-            title: String(localized: "lexicon.empty.title", defaultValue: "No Collections Yet"),
-            message: String(localized: "lexicon.empty.message",
-                            defaultValue: "Save a term from the swiper to start building your collection.")
-        )
+        VStack(spacing: SlangSpacing.lg) {
+            Image(systemName: "bookmark.slash")
+                .font(.system(size: 56, weight: .light))
+                .foregroundStyle(SlangColor.primary.opacity(0.4))
+
+            VStack(spacing: SlangSpacing.sm) {
+                Text(String(localized: "lexicon.empty.title", defaultValue: "No collections yet"))
+                    .font(.slang(.heading))
+                    .foregroundStyle(.primary)
+
+                Text(String(localized: "lexicon.empty.message",
+                            defaultValue: "Save a term from the swiper to create your first collection."))
+                    .font(.slang(.body))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, SlangSpacing.xl)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Actions
@@ -201,7 +220,7 @@ struct CollectionDetailView: View {
     private var showInFeedButton: some View {
         Button { feedStartTermID = nil; showingFeed = true } label: {
             Text(String(localized: "favorites.showInFeed", defaultValue: "Show all in feed"))
-                .font(.system(size: 18, weight: .medium))
+                .font(.montserrat(size: 18, weight: .medium))
                 .foregroundStyle(Color(.label))
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
@@ -227,18 +246,18 @@ struct CollectionDetailView: View {
             } label: {
                 VStack(alignment: .leading, spacing: SlangSpacing.xs) {
                     Text(term.term.lowercased())
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.montserrat(size: 18, weight: .bold))
                         .foregroundStyle(.primary)
 
                     Text(term.definition)
-                        .font(.system(size: 14))
+                        .font(.montserrat(size: 14))
                         .foregroundStyle(.secondary)
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
 
                     if !term.exampleSentence.isEmpty {
                         Text("\u{201C}\(term.exampleSentence)\u{201D}")
-                            .font(.system(size: 13))
+                            .font(.montserrat(size: 13))
                             .foregroundStyle(Color(.tertiaryLabel))
                             .italic()
                             .lineLimit(2)
