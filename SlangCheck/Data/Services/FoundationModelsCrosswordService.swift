@@ -53,19 +53,31 @@ public struct FoundationModelsCrosswordService: AICrosswordGenerationService {
     // MARK: - AICrosswordGenerationService
 
     public func generateLayout(from glossary: [SlangTerm]) async -> AICrosswordLayout? {
-        guard SystemLanguageModel.default.availability == .available else { return nil }
-        guard glossary.count >= 7 else { return nil }
+        guard SystemLanguageModel.default.availability == .available else {
+            Logger.crossword.info("Apple Intelligence not available for crossword generation.")
+            return nil
+        }
+        guard glossary.count >= 7 else {
+            Logger.crossword.warning("Glossary too small for crossword: \(glossary.count) terms.")
+            return nil
+        }
+
+        // Limit the glossary sent to the model to avoid exceeding context limits.
+        // Sample 30 terms (shuffled) — enough variety for 7 crossword entries.
+        let sampledGlossary = glossary.count > 30
+            ? Array(glossary.shuffled().prefix(30))
+            : glossary
 
         // Pass 1: Select terms.
-        guard let selectedTermNames = await selectTerms(from: glossary) else { return nil }
+        guard let selectedTermNames = await selectTerms(from: sampledGlossary) else { return nil }
 
-        // Resolve term names back to SlangTerm objects for Pass 2.
+        // Resolve term names back to SlangTerm objects for Pass 2 (search full glossary).
         let termLookup = Dictionary(uniqueKeysWithValues: glossary.map { ($0.term.lowercased(), $0) })
         let resolved: [SlangTerm] = selectedTermNames.compactMap { name in
             termLookup[name.lowercased()]
         }
         guard resolved.count >= 4 else {
-            Logger.crossword.warning("AI resolved only \(resolved.count) terms; need ≥4.")
+            Logger.crossword.warning("AI resolved only \(resolved.count)/\(selectedTermNames.count) terms; need ≥4. Names: \(selectedTermNames)")
             return nil
         }
 
@@ -98,10 +110,10 @@ public struct FoundationModelsCrosswordService: AICrosswordGenerationService {
         do {
             let response = try await session.respond(to: prompt, generating: SelectedTermsOutput.self)
             let terms    = response.content.terms.filter { !$0.isEmpty }
-            Logger.crossword.debug("AI selected \(terms.count) crossword terms.")
+            Logger.crossword.info("AI selected \(terms.count) crossword terms: \(terms.joined(separator: ", "))")
             return terms.isEmpty ? nil : terms
         } catch {
-            Logger.crossword.error("Term selection failed: \(error.localizedDescription)")
+            Logger.crossword.error("Crossword term selection failed: \(error)")
             return nil
         }
     }
