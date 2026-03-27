@@ -30,7 +30,7 @@ public struct AlphabetScrubberView: View {
             VStack(spacing: 1) {
                 ForEach(availableLetters, id: \.self) { letter in
                     Text(letter)
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .font(.montserrat(size: 11, weight: .semibold))
                         .foregroundStyle(
                             selectedLetter == letter
                                 ? SlangColor.primary

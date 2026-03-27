@@ -33,28 +33,26 @@ public enum SlangType {
     case label
 
     /// Resolves the token to a SwiftUI `Font` with Dynamic Type scaling.
-    /// All tokens use Noticia Text so the app has a consistent editorial voice.
     var font: Font {
         switch self {
         case .display:
-            return .custom("NoticiaText-Bold", size: 34, relativeTo: .largeTitle)
+            return .custom("Montserrat-Bold", size: 34, relativeTo: .largeTitle)
         case .title:
-            return .custom("NoticiaText-Bold", size: 28, relativeTo: .title)
+            return .custom("Montserrat-Bold", size: 28, relativeTo: .title)
         case .heading:
-            return .custom("NoticiaText-Bold", size: 22, relativeTo: .title2)
+            return .custom("Montserrat-Bold", size: 22, relativeTo: .title2)
         case .subheading:
-            return .custom("NoticiaText-Regular", size: 17, relativeTo: .headline)
+            return .custom("Montserrat-Medium", size: 17, relativeTo: .headline)
         case .body:
-            return .custom("NoticiaText-Regular", size: 15, relativeTo: .body)
+            return .custom("Montserrat-Regular", size: 15, relativeTo: .body)
         case .caption:
-            return .custom("NoticiaText-Regular", size: 12, relativeTo: .caption)
+            return .custom("Montserrat-Regular", size: 12, relativeTo: .caption)
         case .label:
-            return .custom("NoticiaText-Bold", size: 15, relativeTo: .callout)
+            return .custom("Montserrat-SemiBold", size: 15, relativeTo: .callout)
         }
     }
 
     /// The corresponding `UIFont.TextStyle` for Dynamic Type scaling.
-    /// Used when a `UIFont`-compatible scaled metric is needed.
     var textStyle: Font.TextStyle {
         switch self {
         case .display: return .largeTitle
@@ -72,24 +70,35 @@ public enum SlangType {
 
 public extension Font {
     /// Creates a SlangCheck design-token font.
-    /// Automatically scales with Dynamic Type.
-    ///
-    /// - Parameter style: A `SlangType` token from the design system.
     static func slang(_ style: SlangType) -> Font {
         style.font
     }
 
-    /// **Noticia Text Regular** — used for all slang term/word display.
-    /// Scales relative to the large-title Dynamic Type axis.
-    /// PostScript name: NoticiaText-Regular (bundled in app via FontsInfo.plist).
+    /// **Montserrat Bold** — used for all slang term/word display.
     static func slangTerm(size: CGFloat) -> Font {
         .custom("NoticiaText-Bold", size: size, relativeTo: .largeTitle)
     }
 
-    /// **System font** — used for slang definitions and body descriptions.
-    /// Scales relative to the body Dynamic Type axis.
+    /// **Montserrat Regular** — used for slang definitions and body descriptions.
     static func slangDefinition(size: CGFloat) -> Font {
-        .system(size: size, weight: .regular, design: .default)
+        .custom("Montserrat-Regular", size: size, relativeTo: .body)
+    }
+
+    /// Convenience initialiser matching the `.system(size:weight:)` call pattern.
+    /// Maps SwiftUI font weights to Montserrat PostScript names.
+    /// Falls back to Montserrat-Regular for unrecognised weights.
+    static func montserrat(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        let name: String
+        switch weight {
+        case .black:                    name = "Montserrat-Black"
+        case .heavy:                    name = "Montserrat-ExtraBold"
+        case .bold:                     name = "Montserrat-Bold"
+        case .semibold:                 name = "Montserrat-SemiBold"
+        case .medium:                   name = "Montserrat-Medium"
+        case .light:                    name = "Montserrat-Light"
+        default:                        name = "Montserrat-Regular"
+        }
+        return .custom(name, size: size)
     }
 }
 
@@ -97,8 +106,7 @@ public extension Font {
 
 public extension View {
     /// Applies `.body` line spacing (1.4× the font size = 21pt for 15pt body text).
-    /// Use this modifier on any body copy `Text` view.
     func slangBodySpacing() -> some View {
-        self.lineSpacing(6) // 15pt * 1.4 = 21pt line height → 6pt extra spacing
+        self.lineSpacing(6)
     }
 }
