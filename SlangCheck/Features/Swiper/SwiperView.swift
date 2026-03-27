@@ -18,6 +18,7 @@ struct SwiperView: View {
     @State private var viewModel: SwiperViewModel?
     @State private var showProfile = false
     @State private var showCollectionPicker = false
+    @State private var showBrowseByVibe = false
     @State private var keyboardHeight: CGFloat = 0
 
     /// When non-nil, filters the swiper to these term IDs.
@@ -34,7 +35,7 @@ struct SwiperView: View {
             SlangColor.background.ignoresSafeArea()
 
             if let vm = viewModel {
-                SwiperContentView(viewModel: vm, showsBrowseButton: filterTermIDs == nil)
+                SwiperContentView(viewModel: vm)
             } else {
                 ProgressView()
                     .tint(SlangColor.secondary)
@@ -77,6 +78,10 @@ struct SwiperView: View {
         .fullScreenCover(isPresented: $showProfile) {
             ProfileView()
         }
+        .sheet(isPresented: $showBrowseByVibe) {
+            BrowseByVibeView()
+                .environment(\.appEnvironment, env)
+        }
     }
 
     // MARK: - Top Chrome (normal mode only)
@@ -96,8 +101,15 @@ struct SwiperView: View {
                     Spacer()
                     sessionProgress
                     Spacer()
-                    // Placeholder for symmetry (crown removed)
-                    Color.clear.frame(width: 44, height: 44)
+                    Button { showBrowseByVibe = true } label: {
+                        Image(systemName: "square.grid.2x2")
+                            .font(.system(size: 22, weight: .light))
+                            .foregroundStyle(Color(.label).opacity(0.40))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "swiper.browse.accessibility",
+                                              defaultValue: "Browse by vibe"))
+                    .frame(width: 44, height: 44)
                 }
             }
 
@@ -121,7 +133,7 @@ struct SwiperView: View {
     private func toastPill(collectionName: String) -> some View {
         HStack(spacing: 12) {
             (Text("Saved to ") + Text(collectionName).bold())
-                .font(.system(size: 14))
+                .font(.montserrat(size: 14))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
 
@@ -134,7 +146,7 @@ struct SwiperView: View {
                 viewModel?.dismissSaveToast()
             } label: {
                 Text(String(localized: "swiper.toast.change", defaultValue: "Change"))
-                    .font(.system(size: 14))
+                    .font(.montserrat(size: 14))
                     .foregroundStyle(Color(.label))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
@@ -252,11 +264,10 @@ struct SwiperView: View {
 private struct SwiperContentView: View {
 
     @Bindable var viewModel: SwiperViewModel
-    let showsBrowseButton: Bool
     @State private var dragY: CGFloat = 0
     @AppStorage("swiperSwipeCount") private var swiperSwipeCount: Int = 0
     @State private var infoTerm: SlangTerm? = nil
-    @State private var showBrowseByVibe = false
+    @State private var chevronBounce: CGFloat = 0
 
     private var showSwipeHint: Bool { swiperSwipeCount < 3 }
 
@@ -272,12 +283,10 @@ private struct SwiperContentView: View {
                 termStack
             }
         }
+        .onAppear { startChevronBounce() }
         .onDisappear { viewModel.onDisappear() }
         .sheet(item: $infoTerm) { term in
             TermInfoSheet(term: term)
-        }
-        .sheet(isPresented: $showBrowseByVibe) {
-            BrowseByVibeView()
         }
     }
 
@@ -378,10 +387,10 @@ private struct SwiperContentView: View {
 
             Spacer()
 
-            actionButtons(term: term)
+            swipeHintView
                 .padding(.bottom, SlangSpacing.sm)
 
-            swipeHintView
+            actionButtons(term: term)
                 .padding(.bottom, SlangSpacing.lg)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -414,70 +423,79 @@ private struct SwiperContentView: View {
     // MARK: - Action Buttons
 
     private func actionButtons(term: SlangTerm) -> some View {
-        ZStack {
-            // Browse by Vibe — bottom-left corner (main feed only)
-            if showsBrowseButton {
-                HStack {
-                    Button { showBrowseByVibe = true } label: {
-                        Image(systemName: "square.grid.2x2")
-                            .font(.system(size: 22, weight: .light))
-                            .foregroundStyle(Color(.label).opacity(0.40))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(String(localized: "swiper.browse.accessibility",
-                                              defaultValue: "Browse by vibe"))
-                    Spacer()
-                }
-                .padding(.horizontal, SlangSpacing.xl)
+        HStack(spacing: SlangSpacing.xl) {
+            Button { infoTerm = term } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(Color(.label).opacity(0.40))
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel(String(localized: "swiper.info.accessibility", defaultValue: "Term info"))
 
-            // Core actions — centered
-            HStack(spacing: SlangSpacing.xl) {
-                Button { infoTerm = term } label: {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 22, weight: .light))
-                        .foregroundStyle(Color(.label).opacity(0.40))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(String(localized: "swiper.info.accessibility", defaultValue: "Term info"))
-
-                Button { viewModel.toggleFavoriteCurrentCard() } label: {
-                    Image(systemName: viewModel.isTopCardLiked ? "heart.fill" : "heart")
-                        .font(.system(size: 22, weight: .light))
-                        .foregroundStyle(
-                            viewModel.isTopCardLiked ? Color.red.opacity(0.75) : Color(.label).opacity(0.40)
-                        )
-                }
-                .buttonStyle(.plain)
-
-                Button { viewModel.toggleSaveCurrentCard() } label: {
-                    Image(systemName: viewModel.isTopCardSaved ? "bookmark.fill" : "bookmark")
-                        .font(.system(size: 22, weight: .light))
-                        .foregroundStyle(
-                            viewModel.isTopCardSaved ? SlangColor.primary : Color(.label).opacity(0.40)
-                        )
-                }
-                .buttonStyle(.plain)
-
-                Button { SlangShareCard.share(term: term) } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 22, weight: .light))
-                        .foregroundStyle(Color(.label).opacity(0.40))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(String(localized: "swiper.share.accessibility", defaultValue: "Share term"))
+            Button { viewModel.toggleFavoriteCurrentCard() } label: {
+                Image(systemName: viewModel.isTopCardLiked ? "heart.fill" : "heart")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(
+                        viewModel.isTopCardLiked ? Color.red.opacity(0.75) : Color(.label).opacity(0.40)
+                    )
             }
+            .buttonStyle(.plain)
+
+            Button { viewModel.toggleSaveCurrentCard() } label: {
+                Image(systemName: viewModel.isTopCardSaved ? "bookmark.fill" : "bookmark")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(
+                        viewModel.isTopCardSaved ? SlangColor.primary : Color(.label).opacity(0.40)
+                    )
+            }
+            .buttonStyle(.plain)
+
+            Button { SlangShareCard.share(term: term) } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(Color(.label).opacity(0.40))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(String(localized: "swiper.share.accessibility", defaultValue: "Share term"))
         }
     }
 
     // MARK: - Swipe Hint
 
     private var swipeHintView: some View {
-        Text(String(localized: "swiper.hint.swipe", defaultValue: "swipe up for next"))
-            .font(.system(size: 12, design: .monospaced))
-            .foregroundStyle(Color(.tertiaryLabel))
-            .opacity(showSwipeHint ? 1 : 0)
-            .animation(.easeOut(duration: 0.6), value: showSwipeHint)
+        VStack(spacing: 4) {
+            Image(systemName: "chevron.up")
+                .font(.system(size: 14, weight: .light))
+                .offset(y: chevronBounce)
+            Text(String(localized: "swiper.hint.swipe", defaultValue: "swipe up for next"))
+                .font(.system(size: 12, design: .monospaced))
+        }
+        .foregroundStyle(Color(.tertiaryLabel))
+        .opacity(showSwipeHint ? 1 : 0)
+        .animation(.easeOut(duration: 0.6), value: showSwipeHint)
+    }
+
+    /// Repeating bounce: chevron eases up 8 pt then springs back, looping forever.
+    private func startChevronBounce() {
+        let upDuration   = 0.45
+        let downDuration = 0.55
+        let pause        = 0.9
+
+        func cycle() {
+            withAnimation(.easeOut(duration: upDuration)) {
+                chevronBounce = -8
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + upDuration) {
+                withAnimation(.spring(response: downDuration, dampingFraction: 0.5)) {
+                    chevronBounce = 0
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + downDuration + pause) {
+                    cycle()
+                }
+            }
+        }
+
+        cycle()
     }
 
     // MARK: - Empty Queue State
