@@ -213,6 +213,16 @@ final class QuizViewModel {
         await startQuiz()
     }
 
+    /// Ends the quiz early, scoring whatever was answered correctly so far.
+    func endQuizEarly() {
+        timerTask?.cancel()
+        // Count remaining unanswered questions.
+        let answeredSoFar = isAnswerRevealed ? currentIndex + 1 : currentIndex
+        let remaining     = questions.count - answeredSoFar
+        unansweredCount  += remaining
+        finishSession()
+    }
+
     /// Resets to `.idle` without starting a new session.
     func dismissResult() {
         timerTask?.cancel()

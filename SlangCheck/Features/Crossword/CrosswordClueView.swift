@@ -47,12 +47,12 @@ struct CrosswordClueView: View {
                         .frame(minWidth: 60, alignment: .leading)
                     Text(clue.text)
                         .font(.slang(.body))
-                        .foregroundStyle(SlangColor.labelPrimary)
+                        .foregroundStyle(.primary)
                         .lineLimit(2)
                 } else {
                     Text(String(localized: "crossword.tapCell", defaultValue: "Tap a cell to see its clue"))
                         .font(.slang(.body))
-                        .foregroundStyle(SlangColor.labelSecondary)
+                        .foregroundStyle(.primary.opacity(0.5))
                 }
                 Spacer()
                 Image(systemName: showingClueList ? "chevron.down" : "chevron.up")
@@ -60,11 +60,15 @@ struct CrosswordClueView: View {
                     .foregroundStyle(SlangColor.labelSecondary)
             }
             .padding(SlangSpacing.md)
-            .background(
+            .background {
                 RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
-                    .fill(SlangColor.surface)
-                    .shadow(color: .black.opacity(0.06), radius: 4, y: -2)
-            )
+                    .fill(Color(.systemBackground))
+            }
+            .background {
+                RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
+                    .fill(.black)
+                    .offset(y: 3)
+            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(
@@ -86,11 +90,15 @@ struct CrosswordClueView: View {
                        clues: puzzle.downClues)
         }
         .padding(SlangSpacing.md)
-        .background(
+        .background {
             RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                .fill(SlangColor.surface)
-                .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
-        )
+                .fill(Color(.systemBackground))
+        }
+        .background {
+            RoundedRectangle(cornerRadius: SlangCornerRadius.card)
+                .fill(.black)
+                .offset(y: 4)
+        }
         .frame(maxHeight: 200)
     }
 
@@ -117,7 +125,7 @@ struct CrosswordClueView: View {
                                     .foregroundStyle(
                                         viewModel.activeClue?.id == clue.id
                                             ? SlangColor.primary
-                                            : SlangColor.labelPrimary
+                                            : .primary
                                     )
                                     .multilineTextAlignment(.leading)
                             }
