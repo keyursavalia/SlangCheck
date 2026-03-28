@@ -21,8 +21,8 @@ struct QuizResultView: View {
     @State private var auraCardImage: AuraCardImage? = nil
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: SlangSpacing.xl) {
+        VStack(spacing: 0) {
+            VStack(spacing: SlangSpacing.md) {
                 headerSection
                 auraSection
                 breakdownSection
@@ -32,11 +32,16 @@ struct QuizResultView: View {
                 if let cardImage = auraCardImage {
                     shareButton(cardImage: cardImage)
                 }
-                actionButtons
             }
-            .padding(SlangSpacing.md)
-            .padding(.top, SlangSpacing.xl)
+            .padding(.horizontal, SlangSpacing.md)
+
+            Spacer(minLength: SlangSpacing.sm)
+
+            actionButtons
+                .padding(.horizontal, SlangSpacing.md)
+                .padding(.bottom, SlangSpacing.md)
         }
+        .padding(.top, SlangSpacing.lg)
         .background(SlangColor.background.ignoresSafeArea())
         .onAppear {
             animatePointsCount()
@@ -47,18 +52,18 @@ struct QuizResultView: View {
     // MARK: - Header
 
     private var headerSection: some View {
-        VStack(spacing: SlangSpacing.sm) {
+        VStack(spacing: SlangSpacing.xs) {
             Image(systemName: result.isPerfect ? "star.fill" : "checkmark.seal.fill")
-                .font(.system(size: 52, weight: .semibold))
+                .font(.system(size: 36, weight: .semibold))
                 .foregroundStyle(result.isPerfect ? SlangColor.accent : SlangColor.secondary)
                 .accessibilityHidden(true)
 
             Text(String(localized: "quizResult.title", defaultValue: "Session Complete"))
-                .font(.slang(.title))
+                .font(.slang(.heading))
                 .foregroundStyle(.primary)
 
             Text("\(result.correctCount)/\(result.totalCount) Correct")
-                .font(.slang(.subheading))
+                .font(.slang(.caption))
                 .foregroundStyle(.primary.opacity(0.6))
         }
     }
@@ -68,16 +73,17 @@ struct QuizResultView: View {
     private var auraSection: some View {
         VStack(spacing: SlangSpacing.xs) {
             Text("+\(displayedPoints) Aura")
-            .font(.slang(.display))
-            .foregroundStyle(SlangColor.primary)
-            .contentTransition(.numericText(countsDown: false))
-            .animation(.spring(response: 0.5, dampingFraction: 0.7), value: displayedPoints)
+                .font(.slang(.title))
+                .foregroundStyle(SlangColor.primary)
+                .contentTransition(.numericText(countsDown: false))
+                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: displayedPoints)
 
             Text("\(Int(result.accuracy * 100))% Accuracy")
                 .font(.slang(.caption))
-            .foregroundStyle(.primary.opacity(0.6))
+                .foregroundStyle(.primary.opacity(0.6))
         }
-        .padding(SlangSpacing.xl)
+        .padding(.vertical, SlangSpacing.md)
+        .padding(.horizontal, SlangSpacing.md)
         .frame(maxWidth: .infinity)
         .profileCard()
     }
@@ -163,24 +169,24 @@ struct QuizResultView: View {
     // MARK: - Tier Progress
 
     private func tierSection(profile: AuraProfile) -> some View {
-        VStack(spacing: SlangSpacing.sm) {
+        VStack(spacing: SlangSpacing.xs) {
             Text(profile.currentTier.displayName)
-                .font(.slang(.subheading))
+                .font(.slang(.label))
                 .foregroundStyle(.primary)
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
                         .fill(SlangColor.separator)
-                        .frame(height: 8)
+                        .frame(height: 6)
                     RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
                         .fill(SlangColor.primary)
-                        .frame(width: geo.size.width * profile.tierProgress, height: 8)
+                        .frame(width: geo.size.width * profile.tierProgress, height: 6)
                         .animation(.spring(response: 0.6, dampingFraction: 0.75),
                                    value: profile.tierProgress)
                 }
             }
-            .frame(height: 8)
+            .frame(height: 6)
 
             if let pts = profile.pointsToNextTier {
                 Text("\(pts) pts to next tier")
@@ -188,7 +194,8 @@ struct QuizResultView: View {
                     .foregroundStyle(.primary.opacity(0.6))
             }
         }
-        .padding(SlangSpacing.md)
+        .padding(.vertical, SlangSpacing.sm)
+        .padding(.horizontal, SlangSpacing.md)
         .frame(maxWidth: .infinity)
         .profileCard()
     }
@@ -224,16 +231,16 @@ struct QuizResultView: View {
                 Task { await onPlayAgain() }
             } label: {
                 Text(String(localized: "quizResult.playAgain", defaultValue: "Play Again"))
-                    .font(.custom("Montserrat-Bold", size: 18))
+                    .font(.custom("Montserrat-Bold", size: 17))
                     .foregroundStyle(Color(.label))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    .frame(height: 50)
                     .background {
-                        RoundedRectangle(cornerRadius: 28)
+                        RoundedRectangle(cornerRadius: 25)
                             .fill(SlangColor.onboardingTeal)
                     }
                     .background {
-                        RoundedRectangle(cornerRadius: 28)
+                        RoundedRectangle(cornerRadius: 25)
                             .fill(.black)
                             .offset(y: 4)
                     }
@@ -244,16 +251,16 @@ struct QuizResultView: View {
                 onDone()
             } label: {
                 Text(String(localized: "quizResult.done", defaultValue: "Done"))
-                    .font(.custom("Montserrat-SemiBold", size: 16))
+                    .font(.custom("Montserrat-SemiBold", size: 15))
                     .foregroundStyle(Color(.label))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    .frame(height: 50)
                     .background {
-                        RoundedRectangle(cornerRadius: 28)
+                        RoundedRectangle(cornerRadius: 25)
                             .fill(Color(.systemBackground))
                     }
                     .background {
-                        RoundedRectangle(cornerRadius: 28)
+                        RoundedRectangle(cornerRadius: 25)
                             .fill(.black)
                             .offset(y: 4)
                     }
