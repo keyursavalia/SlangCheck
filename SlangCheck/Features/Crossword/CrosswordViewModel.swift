@@ -74,10 +74,10 @@ final class CrosswordViewModel {
         Set(activeClue?.cellIDs ?? [])
     }
 
-    /// `true` when the current puzzle is finished (all letter cells filled in).
+    /// `true` when the puzzle is active — partial submissions are allowed.
     var canSubmit: Bool {
-        guard let puzzle, let state = userState else { return false }
-        return state.filledCount >= puzzle.totalLetterCount
+        guard phase == .active, puzzle != nil, userState != nil else { return false }
+        return true
     }
 
     /// Number of reveal-hint credits remaining this session (0–5).
@@ -124,6 +124,14 @@ final class CrosswordViewModel {
 
     private var puzzleOpenDate: Date?
 
+    /// Formatter for the crossword attempt date key (yyyy-MM-dd).
+    private static let dateFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
     // MARK: - Initialization
 
     init(
@@ -144,7 +152,34 @@ final class CrosswordViewModel {
         self.hapticService       = hapticService
     }
 
+    // MARK: - Attempt Tracking
+
+    /// Whether the user has already attempted today's crossword.
+    static func hasAttemptedToday(defaults: UserDefaults = .standard) -> Bool {
+        guard let stored = defaults.string(forKey: AppConstants.crosswordLastAttemptDateKey) else { return false }
+        return stored == dateFmt.string(from: Date())
+    }
+
+    /// Records that the user has attempted (submitted or cancelled) today's crossword.
+    private func markAttemptedToday() {
+        let today = Self.dateFmt.string(from: Date())
+        UserDefaults.standard.set(today, forKey: AppConstants.crosswordLastAttemptDateKey)
+    }
+
     // MARK: - Public Actions
+
+    /// Cancels the puzzle without scoring. Marks today as attempted so the user cannot retry.
+    func cancelPuzzle() {
+        guard phase == .active else { return }
+        markAttemptedToday()
+        if let state = userState {
+            let completed = state.completing()
+            self.userState = completed
+            persistUserState()
+        }
+        phase = .error(String(localized: "crossword.cancelled",
+                              defaultValue: "Today's crossword was cancelled. Come back tomorrow!"))
+    }
 
     /// Loads today's puzzle and the user's saved progress. Call from `.task`.
     func loadPuzzle() async {
@@ -295,6 +330,7 @@ final class CrosswordViewModel {
                 let completed = state.completing()
                 userState = completed
                 persistUserState()
+                markAttemptedToday()
 
                 try? await crosswordRepository.saveResult(result)
                 await applyAuraPoints(result.auraPointsEarned)

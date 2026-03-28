@@ -52,7 +52,7 @@ struct ProfileView: View {
                     Button { dismiss() } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(SlangColor.primary)
                     }
                     .accessibilityLabel(String(localized: "profile.close", defaultValue: "Close"))
                 }
@@ -60,7 +60,7 @@ struct ProfileView: View {
                     NavigationLink(destination: SettingsView()) {
                         Image(systemName: "gearshape")
                             .font(.system(size: 17, weight: .regular))
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(SlangColor.primary)
                     }
                     .accessibilityLabel(String(localized: "profile.settings", defaultValue: "Settings"))
                 }
