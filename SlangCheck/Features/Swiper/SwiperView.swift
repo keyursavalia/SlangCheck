@@ -81,6 +81,7 @@ struct SwiperView: View {
         }
         .fullScreenCover(isPresented: $showProfile) {
             ProfileView()
+                .tint(SlangColor.primary)
         }
         .fullScreenCover(isPresented: $showGames) {
             QuizzesView()
