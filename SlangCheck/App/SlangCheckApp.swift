@@ -64,23 +64,34 @@ struct SlangCheckApp: App {
     private static func configureNavigationBarAppearance() {
         let bold17 = UIFont(name: "Montserrat-Bold", size: 17) ?? UIFont.boldSystemFont(ofSize: 17)
         let bold34 = UIFont(name: "Montserrat-Bold", size: 34) ?? UIFont.boldSystemFont(ofSize: 34)
+        let primaryColor = SlangColor.primaryUI
 
-        // Scrolled state — blurry material background, centered inline title
+        let buttonAppearance = UIBarButtonItemAppearance(style: .plain)
+        buttonAppearance.normal.titleTextAttributes = [.foregroundColor: primaryColor]
+        buttonAppearance.highlighted.titleTextAttributes = [.foregroundColor: primaryColor.withAlphaComponent(0.6)]
+
+        let backAppearance = UIBarButtonItemAppearance(style: .plain)
+        backAppearance.normal.titleTextAttributes = [.foregroundColor: primaryColor]
+        backAppearance.highlighted.titleTextAttributes = [.foregroundColor: primaryColor.withAlphaComponent(0.6)]
+
         let standard = UINavigationBarAppearance()
         standard.configureWithDefaultBackground()
         standard.titleTextAttributes     = [.font: bold17]
         standard.largeTitleTextAttributes = [.font: bold34]
+        standard.buttonAppearance        = buttonAppearance
+        standard.backButtonAppearance    = backAppearance
 
-        // Top-of-scroll state — transparent, large title visible
         let scrollEdge = UINavigationBarAppearance()
         scrollEdge.configureWithTransparentBackground()
         scrollEdge.largeTitleTextAttributes = [.font: bold34]
         scrollEdge.titleTextAttributes      = [.font: bold17]
+        scrollEdge.buttonAppearance         = buttonAppearance
+        scrollEdge.backButtonAppearance     = backAppearance
 
         UINavigationBar.appearance().standardAppearance   = standard
         UINavigationBar.appearance().compactAppearance    = standard
         UINavigationBar.appearance().scrollEdgeAppearance = scrollEdge
-        UINavigationBar.appearance().tintColor            = SlangColor.primaryUI
+        UINavigationBar.appearance().tintColor            = primaryColor
     }
 
     // MARK: - Font Registration
