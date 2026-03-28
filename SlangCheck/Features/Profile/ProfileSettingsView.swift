@@ -32,6 +32,16 @@ struct SettingsView: View {
         }
         .navigationTitle(String(localized: "settings.title", defaultValue: "Settings"))
         .navigationBarTitleDisplayMode(.large)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(SlangColor.primary)
+                }
+            }
+        }
         .task {
             guard viewModel == nil else { return }
             viewModel = ProfileSettingsViewModel(authState: authState)
