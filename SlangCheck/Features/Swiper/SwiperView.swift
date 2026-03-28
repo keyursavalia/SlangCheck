@@ -109,7 +109,7 @@ struct SwiperView: View {
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Color(.label).opacity(0.55))
+                                .foregroundStyle(SlangColor.primary)
                         }
                         .buttonStyle(.plain)
                     }
@@ -138,7 +138,7 @@ struct SwiperView: View {
                     Button { showGames = true } label: {
                         Image(systemName: "gamecontroller")
                             .font(.system(size: 22, weight: .light))
-                            .foregroundStyle(Color(.label).opacity(0.40))
+                            .foregroundStyle(SlangColor.primary.opacity(0.65))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(String(localized: "swiper.games.accessibility",
@@ -148,7 +148,7 @@ struct SwiperView: View {
                     Button { showBrowseByVibe = true } label: {
                         Image(systemName: "square.grid.2x2")
                             .font(.system(size: 22, weight: .light))
-                            .foregroundStyle(Color(.label).opacity(0.40))
+                            .foregroundStyle(SlangColor.primary.opacity(0.65))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(String(localized: "swiper.browse.accessibility",
