@@ -83,4 +83,8 @@ public enum AppConstants {
 
     /// UserDefaults key for the user's selected interest categories (JSON-encoded [String]).
     public static let userCategoriesKey = "userCategories"
+
+    /// UserDefaults key storing the date string (yyyy-MM-dd) of the last crossword attempt.
+    /// Once set to today's date, the user cannot re-attempt until the next calendar day.
+    public static let crosswordLastAttemptDateKey = "crosswordLastAttemptDate"
 }
