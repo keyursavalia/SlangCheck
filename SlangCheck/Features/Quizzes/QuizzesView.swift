@@ -21,6 +21,7 @@ struct QuizzesView: View {
     @State private var showingCrossword  = false
     @State private var showingAuthGate   = false
     @State private var showingAIPrompt   = false
+    @State private var showAlreadyAttemptedAlert = false
     @State private var pendingGame: PendingGame? = nil
     @State private var auraCardImage: AuraCardImage? = nil
     @AppStorage("hasSeenAIPrompt") private var hasSeenAIPrompt = false
@@ -47,7 +48,7 @@ struct QuizzesView: View {
                     Button { dismiss() } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color(.label).opacity(0.55))
+                            .foregroundStyle(SlangColor.primary)
                     }
                     .buttonStyle(.plain)
                 }
@@ -66,18 +67,8 @@ struct QuizzesView: View {
         }
         .fullScreenCover(isPresented: $showingCrossword) {
             NavigationStack {
-                CrosswordView()
+                CrosswordView(onSessionEnd: { showingCrossword = false })
                     .environment(\.appEnvironment, env)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button { showingCrossword = false } label: {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundStyle(Color(.label).opacity(0.55))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
             }
         }
         .sheet(isPresented: $showingAuthGate) {
@@ -92,8 +83,17 @@ struct QuizzesView: View {
             }
             .presentationDetents([.medium])
         }
+        .alert(
+            String(localized: "crossword.alreadyAttempted.title",
+                   defaultValue: "Already Attempted"),
+            isPresented: $showAlreadyAttemptedAlert
+        ) {
+            Button(String(localized: "general.ok", defaultValue: "OK"), role: .cancel) { }
+        } message: {
+            Text(String(localized: "crossword.alreadyAttempted.message",
+                        defaultValue: "You've already attempted today's crossword. Come back tomorrow for a new puzzle!"))
+        }
         .onAppear {
-            // Show the AI activation prompt once for iOS 26+ users.
             if !hasSeenAIPrompt, AIAvailabilityChecker.canPromptForAppleIntelligence() {
                 showingAIPrompt = true
             }
@@ -239,7 +239,11 @@ struct QuizzesView: View {
                 }
             }
         case .crossword:
-            showingCrossword = true
+            if CrosswordViewModel.hasAttemptedToday() {
+                showAlreadyAttemptedAlert = true
+            } else {
+                showingCrossword = true
+            }
         }
     }
 
