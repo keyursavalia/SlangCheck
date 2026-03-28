@@ -136,8 +136,8 @@ struct CrosswordCompletionView: View {
     // MARK: - Body
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: SlangSpacing.xl) {
+        VStack(spacing: 0) {
+            VStack(spacing: SlangSpacing.md) {
                 completionHeader
                 statsGrid
                 auraSection
@@ -145,20 +145,25 @@ struct CrosswordCompletionView: View {
                 if let cardImage {
                     shareButton(cardImage: cardImage)
                 }
-                doneButton
-                Spacer(minLength: SlangSpacing.xxl)
             }
-            .padding(SlangSpacing.md)
+            .padding(.horizontal, SlangSpacing.md)
+
+            Spacer(minLength: SlangSpacing.sm)
+
+            doneButton
+                .padding(.horizontal, SlangSpacing.md)
+                .padding(.bottom, SlangSpacing.md)
         }
+        .padding(.top, SlangSpacing.sm)
         .onAppear { renderCard() }
     }
 
     // MARK: - Header
 
     private var completionHeader: some View {
-        VStack(spacing: SlangSpacing.sm) {
+        VStack(spacing: SlangSpacing.xs) {
             Image(systemName: result.isPerfect ? "trophy.fill" : "checkmark.seal.fill")
-                .font(.system(size: 60))
+                .font(.system(size: 40))
                 .foregroundStyle(
                     result.isPerfect ? SlangColor.accent : SlangColor.secondary
                 )
@@ -166,20 +171,19 @@ struct CrosswordCompletionView: View {
             Text(result.isPerfect
                  ? String(localized: "crossword.result.perfectTitle", defaultValue: "Perfect Solve!")
                  : String(localized: "crossword.result.title", defaultValue: "Puzzle Complete"))
-                .font(.slang(.title))
+                .font(.slang(.heading))
                 .foregroundStyle(.primary)
 
             Text(result.puzzleDate.formatted(date: .long, time: .omitted))
                 .font(.slang(.caption))
                 .foregroundStyle(.primary.opacity(0.6))
         }
-        .padding(.top, SlangSpacing.lg)
     }
 
     // MARK: - Stats Grid
 
     private var statsGrid: some View {
-        HStack(spacing: SlangSpacing.md) {
+        HStack(spacing: SlangSpacing.sm) {
             statCell(
                 value: "\(Int(result.accuracy * 100))%",
                 label: String(localized: "crossword.result.accuracy", defaultValue: "Accuracy")
@@ -193,14 +197,15 @@ struct CrosswordCompletionView: View {
                 label: String(localized: "crossword.result.reveals", defaultValue: "Reveals")
             )
         }
-        .padding(SlangSpacing.md)
+        .padding(.vertical, SlangSpacing.sm)
+        .padding(.horizontal, SlangSpacing.md)
         .profileCard()
     }
 
     private func statCell(value: String, label: String) -> some View {
-        VStack(spacing: SlangSpacing.xs) {
+        VStack(spacing: 2) {
             Text(value)
-                .font(.slang(.heading))
+                .font(.slang(.label))
                 .foregroundStyle(.primary)
             Text(label)
                 .font(.slang(.caption))
@@ -212,9 +217,9 @@ struct CrosswordCompletionView: View {
     // MARK: - Aura Section
 
     private var auraSection: some View {
-        VStack(spacing: SlangSpacing.sm) {
+        VStack(spacing: SlangSpacing.xs) {
             Text("+\(result.auraPointsEarned) \(String(localized: "crossword.result.aura", defaultValue: "Aura"))")
-                .font(.slang(.heading))
+                .font(.slang(.label))
                 .foregroundStyle(SlangColor.primary)
 
             if result.isPerfect {
@@ -239,16 +244,16 @@ struct CrosswordCompletionView: View {
             onSessionEnd?()
         } label: {
             Text(String(localized: "crossword.result.done", defaultValue: "Done"))
-                .font(.custom("Montserrat-Bold", size: 18))
+                .font(.custom("Montserrat-Bold", size: 17))
                 .foregroundStyle(Color(.label))
                 .frame(maxWidth: .infinity)
-                .frame(height: 56)
+                .frame(height: 50)
                 .background {
-                    RoundedRectangle(cornerRadius: 28)
+                    RoundedRectangle(cornerRadius: 25)
                         .fill(SlangColor.onboardingTeal)
                 }
                 .background {
-                    RoundedRectangle(cornerRadius: 28)
+                    RoundedRectangle(cornerRadius: 25)
                         .fill(.black)
                         .offset(y: 4)
                 }
@@ -270,10 +275,10 @@ struct CrosswordCompletionView: View {
                 String(localized: "crossword.shareCard", defaultValue: "Share My Result"),
                 systemImage: "square.and.arrow.up"
             )
-            .font(.slang(.label))
+            .font(.slang(.caption))
             .foregroundStyle(SlangColor.primary)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, SlangSpacing.md)
+            .padding(.vertical, SlangSpacing.sm)
             .background(
                 RoundedRectangle(cornerRadius: SlangCornerRadius.button)
                     .strokeBorder(SlangColor.primary, lineWidth: 1)
