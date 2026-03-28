@@ -44,6 +44,7 @@ struct SlangCheckApp: App {
     var body: some Scene {
         WindowGroup {
             AppRootView()
+                .tint(SlangColor.primary)
                 .environment(\.appEnvironment, environment)
                 .environment(authState)
                 .task {
@@ -79,6 +80,7 @@ struct SlangCheckApp: App {
         UINavigationBar.appearance().standardAppearance   = standard
         UINavigationBar.appearance().compactAppearance    = standard
         UINavigationBar.appearance().scrollEdgeAppearance = scrollEdge
+        UINavigationBar.appearance().tintColor            = SlangColor.primaryUI
     }
 
     // MARK: - Font Registration
