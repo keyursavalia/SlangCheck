@@ -74,6 +74,7 @@ struct ProfileView: View {
                 }
             }
         }
+        .tint(SlangColor.primary)
         .fullScreenCover(isPresented: $showingGlossary) {
             NavigationStack {
                 GlossaryView(initialCategory: nil)

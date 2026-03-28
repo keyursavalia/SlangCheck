@@ -32,6 +32,16 @@ struct SettingsView: View {
         }
         .navigationTitle(String(localized: "settings.title", defaultValue: "Settings"))
         .navigationBarTitleDisplayMode(.large)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(SlangColor.primary)
+                }
+            }
+        }
         .task {
             guard viewModel == nil else { return }
             viewModel = ProfileSettingsViewModel(authState: authState)
@@ -228,71 +238,83 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                // Change Photo — redesigned as a teal pill
                 PhotosPicker(selection: $photoPicker, matching: .images) {
-                    HStack {
+                    HStack(spacing: SlangSpacing.sm) {
                         Spacer()
                         if vm.isLoading {
-                            ProgressView().tint(.white)
+                            ProgressView().tint(SlangColor.primary)
                         } else {
-                            Label(
-                                String(localized: "settings.changePhoto",
-                                       defaultValue: "Change Photo"),
-                                systemImage: "camera.fill"
-                            )
-                            .font(.montserrat(size: 16, weight: .semibold))
-                            .foregroundStyle(Color(.label))
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(SlangColor.primary)
+                            Text(String(localized: "settings.changePhoto",
+                                       defaultValue: "Change Photo"))
+                                .font(.montserrat(size: 15, weight: .semibold))
+                                .foregroundStyle(SlangColor.primary)
                         }
                         Spacer()
                     }
-                    .frame(height: 48)
+                    .frame(height: 44)
                 }
                 .listRowBackground(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(SlangColor.onboardingTeal)
+                    RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
+                        .fill(SlangColor.primary.opacity(0.10))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
+                                .strokeBorder(SlangColor.primary.opacity(0.25), lineWidth: 1)
+                        )
                 )
                 .disabled(vm.isLoading)
 
-                // Email (read-only)
                 HStack {
                     Text(String(localized: "settings.email", defaultValue: "Email"))
                         .font(.montserrat(size: 17)).foregroundStyle(.primary)
                     Spacer()
                     Text(authState.currentProfile?.email ?? "--")
-                        .font(.montserrat(size: 17)).foregroundStyle(.secondary).lineLimit(1)
+                        .font(.montserrat(size: 15)).foregroundStyle(.secondary).lineLimit(1)
                 }
+            }
+        }
 
-                // Sign Out — teal pill button
+        if authState.isAuthenticated {
+            Section {
                 Button { showingSignOut = true } label: {
                     HStack {
                         Spacer()
                         Text(String(localized: "settings.signOut", defaultValue: "Sign Out"))
-                            .font(.montserrat(size: 16, weight: .semibold))
-                            .foregroundStyle(Color(.label))
+                            .font(.montserrat(size: 15, weight: .semibold))
+                            .foregroundStyle(.primary)
                         Spacer()
                     }
-                    .frame(height: 48)
+                    .frame(height: 44)
                 }
                 .listRowBackground(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(SlangColor.onboardingTeal)
+                    RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
+                        .fill(Color(.secondarySystemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
+                                .strokeBorder(SlangColor.separator, lineWidth: 1)
+                        )
                 )
 
-                // Delete Account — red pill button
                 Button { showingDeleteConfirm = true } label: {
                     HStack {
                         Spacer()
                         Text(String(localized: "settings.deleteAccount",
                                     defaultValue: "Delete Account"))
-                            .font(.montserrat(size: 16, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .font(.montserrat(size: 14, weight: .medium))
+                            .foregroundStyle(SlangColor.errorRed)
                         Spacer()
                     }
-                    .frame(height: 48)
+                    .frame(height: 44)
                 }
                 .listRowBackground(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(SlangColor.errorRed)
+                    RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
+                        .fill(SlangColor.errorRed.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
+                                .strokeBorder(SlangColor.errorRed.opacity(0.25), lineWidth: 1)
+                        )
                 )
             }
         }
