@@ -127,10 +127,10 @@ struct CrosswordCompletionView: View {
 
     let result: CrosswordResult
     let viewModel: CrosswordViewModel
+    var onSessionEnd: (() -> Void)?
 
     // MARK: - State
 
-    @Environment(\.dismiss) private var dismiss
     @State private var cardImage: CrosswordCompletionCardImage?
 
     // MARK: - Body
@@ -236,7 +236,7 @@ struct CrosswordCompletionView: View {
 
     private var doneButton: some View {
         Button {
-            dismiss()
+            onSessionEnd?()
         } label: {
             Text(String(localized: "crossword.result.done", defaultValue: "Done"))
                 .font(.custom("Montserrat-Bold", size: 18))
