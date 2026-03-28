@@ -22,7 +22,12 @@ struct CrosswordView: View {
 
     @State private var viewModel: CrosswordViewModel?
     @State private var keyboardInput: String = ""
+    @State private var showCancelAlert = false
     @FocusState private var isKeyboardActive: Bool
+
+    /// Callback invoked when the crossword session ends (submit or cancel).
+    /// The parent uses this to dismiss the fullScreenCover.
+    var onSessionEnd: (() -> Void)?
 
     // MARK: - Body
 
@@ -40,7 +45,7 @@ struct CrosswordView: View {
                 case .active:
                     puzzleActiveView(vm: vm)
                 case .completed(let result):
-                    CrosswordCompletionView(result: result, viewModel: vm)
+                    CrosswordCompletionView(result: result, viewModel: vm, onSessionEnd: onSessionEnd)
                 }
             } else {
                 loadingView
@@ -48,6 +53,58 @@ struct CrosswordView: View {
         }
         .navigationTitle(String(localized: "crossword.title", defaultValue: "Daily Crossword"))
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .interactiveDismissDisabled(viewModel?.phase == .active)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                switch viewModel?.phase {
+                case .active:
+                    Button {
+                        showCancelAlert = true
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(SlangColor.primary)
+                    }
+                    .buttonStyle(.plain)
+                case .completed:
+                    Button {
+                        onSessionEnd?()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(SlangColor.primary)
+                    }
+                    .buttonStyle(.plain)
+                case .error:
+                    Button {
+                        onSessionEnd?()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(SlangColor.primary)
+                    }
+                    .buttonStyle(.plain)
+                default:
+                    EmptyView()
+                }
+            }
+        }
+        .alert(
+            String(localized: "crossword.cancel.title", defaultValue: "Cancel Crossword?"),
+            isPresented: $showCancelAlert
+        ) {
+            Button(String(localized: "crossword.cancel.confirm", defaultValue: "Cancel Crossword"),
+                   role: .destructive) {
+                viewModel?.cancelPuzzle()
+                onSessionEnd?()
+            }
+            Button(String(localized: "crossword.cancel.keep", defaultValue: "Keep Playing"),
+                   role: .cancel) { }
+        } message: {
+            Text(String(localized: "crossword.cancel.message",
+                        defaultValue: "You won't be able to attempt today's crossword again and will not earn any Aura points."))
+        }
         .background(SlangColor.background.ignoresSafeArea())
         .task {
             let vm = makeViewModel()
@@ -79,10 +136,6 @@ struct CrosswordView: View {
                     }
                 }
                 .padding(.vertical, SlangSpacing.md)
-                // Bottom padding so content isn't hidden under keyboard
-                .padding(.bottom, 320)
-                // Tapping empty/blocked space outside the grid dismisses the keyboard.
-                // Child views (grid cells, buttons) handle their own taps with higher priority.
                 .contentShape(Rectangle())
                 .onTapGesture {
                     vm.deselectCell()
@@ -92,55 +145,29 @@ struct CrosswordView: View {
             .scrollDismissesKeyboard(.interactively)
 
             // Hidden TextField that drives the system keyboard.
-            // Focused whenever a cell is selected.
+            // Focused whenever a cell is selected. Starts with a sentinel
+            // space so iOS can detect backspace key presses.
             TextField("", text: $keyboardInput)
                 .frame(width: 0, height: 0)
                 .opacity(0)
                 .focused($isKeyboardActive)
-                // Dismiss keyboard when no cell is selected.
                 .onChange(of: vm.selectedCellID) { _, newID in
                     isKeyboardActive = (newID != nil)
+                    if newID != nil { keyboardInput = " " }
                 }
-                // Route each typed character to the ViewModel.
-                .onChange(of: keyboardInput) { _, newValue in
-                    guard !newValue.isEmpty else { return }
-                    for ch in newValue where ch.isLetter {
+                .onChange(of: keyboardInput) { oldValue, newValue in
+                    if newValue.isEmpty {
+                        vm.deleteLetter()
+                        keyboardInput = " "
+                        return
+                    }
+                    let letters = newValue.filter { $0.isLetter }
+                    guard !letters.isEmpty else { return }
+                    for ch in letters {
                         vm.enterLetter(String(ch))
                     }
-                    keyboardInput = ""
+                    keyboardInput = " "
                 }
-        }
-        // Delete key via toolbar
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Button {
-                    vm.deleteLetter()
-                } label: {
-                    Image(systemName: "delete.backward")
-                }
-                .accessibilityLabel(String(localized: "crossword.key.delete", defaultValue: "Delete letter"))
-
-                Spacer()
-
-                // Reveal button in keyboard toolbar — disabled when no credits remain
-                // or the selected cell is already revealed.
-                Button {
-                    vm.revealCurrentCell()
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(String(localized: "crossword.key.reveal", defaultValue: "Reveal"))
-                            .font(.slang(.label))
-                        Text("(\(vm.revealCreditsRemaining))")
-                            .font(.slang(.caption))
-                    }
-                    .foregroundStyle(vm.canReveal ? SlangColor.accent : SlangColor.labelSecondary)
-                }
-                .disabled(!vm.canReveal)
-                .accessibilityLabel(
-                    String(localized: "crossword.key.reveal.accessibility",
-                           defaultValue: "Reveal the correct letter for the selected cell")
-                )
-            }
         }
     }
 
@@ -178,7 +205,6 @@ struct CrosswordView: View {
             )
             .accessibilityValue("\(vm.revealCreditsRemaining) credits remaining")
 
-            // Submit button — onboarding CTA style (teal + drop shadow)
             Button {
                 isKeyboardActive = false
                 vm.submitPuzzle()
@@ -190,20 +216,15 @@ struct CrosswordView: View {
                     .frame(height: 56)
                     .background {
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(vm.canSubmit
-                                  ? SlangColor.onboardingTeal
-                                  : SlangColor.onboardingTeal.opacity(0.4))
+                            .fill(SlangColor.onboardingTeal)
                     }
                     .background {
-                        if vm.canSubmit {
-                            RoundedRectangle(cornerRadius: 28)
-                                .fill(.black)
-                                .offset(y: 4)
-                        }
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(.black)
+                            .offset(y: 4)
                     }
             }
             .buttonStyle(.plain)
-            .disabled(!vm.canSubmit)
             .accessibilityLabel(String(localized: "crossword.submit.accessibility",
                                         defaultValue: "Submit your answers"))
         }
@@ -249,15 +270,29 @@ struct CrosswordView: View {
                 .foregroundStyle(SlangColor.labelSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, SlangSpacing.xl)
-            Button {
-                Task { await viewModel?.loadPuzzle() }
-            } label: {
-                Text(String(localized: "crossword.retry", defaultValue: "Try Again"))
-                    .font(.slang(.label))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, SlangSpacing.xl)
-                    .padding(.vertical, SlangSpacing.md)
-                    .background(RoundedRectangle(cornerRadius: SlangCornerRadius.button).fill(SlangColor.primary))
+
+            if !CrosswordViewModel.hasAttemptedToday() {
+                Button {
+                    Task { await viewModel?.loadPuzzle() }
+                } label: {
+                    Text(String(localized: "crossword.retry", defaultValue: "Try Again"))
+                        .font(.slang(.label))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, SlangSpacing.xl)
+                        .padding(.vertical, SlangSpacing.md)
+                        .background(RoundedRectangle(cornerRadius: SlangCornerRadius.button).fill(SlangColor.primary))
+                }
+            } else {
+                Button {
+                    onSessionEnd?()
+                } label: {
+                    Text(String(localized: "crossword.backToGames", defaultValue: "Back to Games"))
+                        .font(.slang(.label))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, SlangSpacing.xl)
+                        .padding(.vertical, SlangSpacing.md)
+                        .background(RoundedRectangle(cornerRadius: SlangCornerRadius.button).fill(SlangColor.primary))
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
