@@ -34,22 +34,19 @@ struct CrosswordCountdownView: View {
     // MARK: - Body
 
     var body: some View {
-        VStack(spacing: SlangSpacing.sm) {
+        VStack(spacing: SlangSpacing.xs) {
 
-            // Header
             Label(
                 String(localized: "crossword.countdown.title", defaultValue: "Next Puzzle"),
                 systemImage: "clock.fill"
             )
-            .font(.slang(.label))
+            .font(.slang(.caption))
             .foregroundStyle(SlangColor.primary)
 
-            // Live countdown — redraws every second via TimelineView
             TimelineView(.periodic(from: Date(), by: 1)) { _ in
                 countdownRow(remaining: max(nextPuzzleAt.timeIntervalSinceNow, 0))
             }
 
-            // Static sub-label
             Text(
                 String(localized: "crossword.countdown.subtitle",
                        defaultValue: "New puzzle drops at 7:00 AM")
@@ -57,7 +54,8 @@ struct CrosswordCountdownView: View {
             .font(.slang(.caption))
             .foregroundStyle(.primary.opacity(0.6))
         }
-        .padding(SlangSpacing.md)
+        .padding(.vertical, SlangSpacing.sm)
+        .padding(.horizontal, SlangSpacing.md)
         .profileCard()
     }
 
@@ -79,30 +77,29 @@ struct CrosswordCountdownView: View {
     }
 
     private func timeUnit(value: Int, label: String) -> some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 1) {
             Text(String(format: "%02d", value))
-                .font(.system(size: 30, weight: .bold, design: .monospaced))
+                .font(.system(size: 22, weight: .bold, design: .monospaced))
                 .foregroundStyle(.primary)
                 .contentTransition(.numericText())
             Text(label)
-                .font(.slang(.caption))
+                .font(.system(size: 9, weight: .medium))
                 .foregroundStyle(.primary.opacity(0.6))
         }
-        .frame(minWidth: 52)
-        .padding(.vertical, SlangSpacing.sm)
+        .frame(minWidth: 44)
+        .padding(.vertical, SlangSpacing.xs)
         .padding(.horizontal, SlangSpacing.xs)
         .background(
-            RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
+            RoundedRectangle(cornerRadius: SlangCornerRadius.chip)
                 .fill(Color(.secondarySystemBackground))
         )
     }
 
     private var colonSeparator: some View {
         Text(":")
-            .font(.system(size: 22, weight: .bold, design: .monospaced))
+            .font(.system(size: 18, weight: .bold, design: .monospaced))
             .foregroundStyle(SlangColor.primary)
-            // Nudge up so the colon aligns with the digits, not the labels below them.
-            .padding(.bottom, SlangSpacing.lg)
+            .padding(.bottom, SlangSpacing.md)
     }
 
     // MARK: - Static Helpers
