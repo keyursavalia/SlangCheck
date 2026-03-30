@@ -145,7 +145,7 @@ struct ShakeEffect: GeometryEffect {
 /// Spec:
 /// - Background: `Color(.systemBackground)` (adapts to light/dark)
 /// - Border: 1.5pt, `Color.primary` at 12% opacity
-/// - Shadow: y 4pt, radius 0, black at 45% opacity — scoped to background shape
+/// - Shadow: y 4pt, radius 0, `SlangColor.hardShadow` — adapts to light/dark mode
 /// - Corner: `SlangCornerRadius.card` (20pt)
 struct ProfileCardModifier: ViewModifier {
     func body(content: Content) -> some View {
@@ -156,7 +156,7 @@ struct ProfileCardModifier: ViewModifier {
             }
             .background {
                 RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                    .fill(.black)
+                    .fill(SlangColor.hardShadow)
                     .offset(y: 4)
             }
     }

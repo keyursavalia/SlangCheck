@@ -66,7 +66,7 @@ struct CrosswordClueView: View {
             }
             .background {
                 RoundedRectangle(cornerRadius: SlangCornerRadius.cell)
-                    .fill(.black)
+                    .fill(SlangColor.hardShadow)
                     .offset(y: 3)
             }
         }
@@ -96,7 +96,7 @@ struct CrosswordClueView: View {
         }
         .background {
             RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                .fill(.black)
+                .fill(SlangColor.hardShadow)
                 .offset(y: 4)
         }
         .frame(maxHeight: 200)
