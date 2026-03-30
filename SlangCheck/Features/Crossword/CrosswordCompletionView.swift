@@ -254,7 +254,7 @@ struct CrosswordCompletionView: View {
                 }
                 .background {
                     RoundedRectangle(cornerRadius: 25)
-                        .fill(.black)
+                        .fill(SlangColor.hardShadow)
                         .offset(y: 4)
                 }
         }
