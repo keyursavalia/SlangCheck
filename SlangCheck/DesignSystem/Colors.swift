@@ -138,6 +138,30 @@ public enum SlangColor {
     public static var neumorphicShadowDark: Color {
         Color(lightHex: "D4C9BF", darkHex: "131110")
     }
+
+    // MARK: - Hard Drop Shadow Token
+
+    /// Crisp hard-shadow layer placed behind cards and pill buttons (offset 3–4pt).
+    /// Light: near-black for strong contrast against cream surfaces.
+    /// Dark: warm sand cream so the lift reads as warmth rather than depth.
+    public static var hardShadow: Color {
+        Color(lightHex: "1C1C1E", darkHex: "FFFFFF")
+    }
+
+    // MARK: - Crossword Cell Tokens
+
+    /// Barrier (non-input) cell fill in the crossword grid.
+    /// Light: near-black (classic crossword convention) | Dark: warm deep charcoal
+    /// — clearly distinct from the cream input cells in both modes.
+    public static var crosswordBarrierCell: Color {
+        Color(lightHex: "1C1C1E", darkHex: "2E2A26")
+    }
+
+    /// Input (letter) cell fill in the crossword grid.
+    /// Light: white | Dark: warm cream — clearly signals "type here" in both modes.
+    public static var crosswordInputCell: Color {
+        Color(lightHex: "FFFFFF", darkHex: "EAE0D4")
+    }
 }
 
 // MARK: - SlangColor UIColor Variants (for UIKit interop)
