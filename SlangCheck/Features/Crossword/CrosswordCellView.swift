@@ -1,7 +1,7 @@
 // Features/Crossword/CrosswordCellView.swift
 // SlangCheck
 //
-// Renders a single crossword cell: black barrier, empty letter cell,
+// Renders a single crossword cell: barrier, empty letter cell,
 // filled letter cell, highlighted (in-clue), selected, correct, or incorrect.
 
 import SwiftUI
@@ -10,10 +10,11 @@ import SwiftUI
 
 /// Renders a single crossword grid cell.
 ///
-/// Black cells are filled with `SlangColor.labelPrimary`. Letter cells show
-/// the entered letter, a clue-number badge (if applicable), and a colour
-/// overlay indicating the cursor, in-clue highlight, or post-submission
-/// correctness state.
+/// Barrier cells use `SlangColor.crosswordBarrierCell` — a near-black in light mode
+/// and a warm deep-charcoal in dark mode — so they always read as "blocked" regardless
+/// of the system appearance. Input cells default to `SlangColor.crosswordInputCell`
+/// (white in light mode, warm cream in dark mode) so the "write here" affordance is
+/// immediately clear in both colour modes.
 struct CrosswordCellView: View {
 
     // MARK: - Input
@@ -48,11 +49,11 @@ struct CrosswordCellView: View {
         }
     }
 
-    // MARK: - Black Cell
+    // MARK: - Barrier Cell
 
     private var blackCell: some View {
         Rectangle()
-            .fill(SlangColor.labelPrimary)
+            .fill(SlangColor.crosswordBarrierCell)
     }
 
     // MARK: - Letter Cell
@@ -101,9 +102,11 @@ struct CrosswordCellView: View {
             } else if isSelected {
                 SlangColor.primary.opacity(0.35)
             } else if isHighlighted {
-                SlangColor.primary.opacity(0.12)
+                SlangColor.primary.opacity(0.15)
             } else {
-                Color(.systemBackground)
+                // Use the semantic crossword input token so the cell reads as
+                // "write here" in both light (white) and dark (warm cream) modes.
+                SlangColor.crosswordInputCell
             }
         }
     }
@@ -112,11 +115,16 @@ struct CrosswordCellView: View {
         if let correct = correctness {
             return correct ? SlangColor.secondary : SlangColor.errorRed
         }
-        return SlangColor.labelPrimary
+        // Mirror the barrier cell color for text so letters are always
+        // dark-on-light — legible against both the white (light mode) and
+        // warm-cream (dark mode) input cell backgrounds.
+        return SlangColor.crosswordBarrierCell
     }
 
     private var borderColor: Color {
         if isSelected { return SlangColor.primary }
+        // Slightly stronger separator so cell boundaries are visible against
+        // the cream input cell background in dark mode.
         return SlangColor.separator
     }
 
