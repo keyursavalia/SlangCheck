@@ -94,7 +94,7 @@ struct DisplayNameStep: View {
             }
             .background {
                 RoundedRectangle(cornerRadius: 28)
-                    .fill(.black)
+                    .fill(SlangColor.hardShadow)
                     .offset(y: 4)
             }
             .padding(.horizontal, SlangSpacing.md)
@@ -313,7 +313,7 @@ struct CategorySelectionStep: View {
             }
             .background {
                 Capsule()
-                    .fill(.black)
+                    .fill(SlangColor.hardShadow)
                     .offset(y: 3)
             }
         }
