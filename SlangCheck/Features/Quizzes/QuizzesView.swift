@@ -154,7 +154,7 @@ struct QuizzesView: View {
         }
         .background {
             RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                .fill(.black)
+                .fill(SlangColor.hardShadow)
                 .offset(y: 4)
         }
     }
@@ -346,7 +346,7 @@ private struct CompactAuraBannerView: View {
         }
         .background {
             RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                .fill(.black)
+                .fill(SlangColor.hardShadow)
                 .offset(y: 4)
         }
         .accessibilityElement(children: .combine)
@@ -434,7 +434,7 @@ private struct GameModeCard: View {
             }
             .background {
                 RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                    .fill(.black)
+                    .fill(SlangColor.hardShadow)
                     .offset(y: 4)
             }
         }
