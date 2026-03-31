@@ -241,8 +241,8 @@ struct QuizResultView: View {
                     }
                     .background {
                         RoundedRectangle(cornerRadius: 25)
-                            .fill(.black)
-                            .offset(y: 4)
+                    .fill(SlangColor.hardShadow)
+                    .offset(y: 4)
                     }
             }
             .buttonStyle(.plain)
@@ -261,8 +261,8 @@ struct QuizResultView: View {
                     }
                     .background {
                         RoundedRectangle(cornerRadius: 25)
-                            .fill(.black)
-                            .offset(y: 4)
+                    .fill(SlangColor.hardShadow)
+                    .offset(y: 4)
                     }
             }
             .buttonStyle(.plain)
