@@ -196,7 +196,7 @@ struct QuizView: View {
                 .background {
                     if viewModel.isAnswerRevealed {
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(.black)
+                            .fill(SlangColor.hardShadow)
                             .offset(y: 4)
                     }
                 }
@@ -238,7 +238,7 @@ private struct QuizQuestionCard: View {
         }
         .background {
             RoundedRectangle(cornerRadius: SlangCornerRadius.card)
-                .fill(.black)
+                .fill(SlangColor.hardShadow)
                 .offset(y: 4)
         }
     }
@@ -303,7 +303,7 @@ private struct QuizChoiceRow: View {
             }
             .background {
                 RoundedRectangle(cornerRadius: 28)
-                    .fill(.black)
+                    .fill(SlangColor.hardShadow)
                     .offset(y: 4)
             }
         }
