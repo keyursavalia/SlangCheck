@@ -192,7 +192,7 @@ struct CrosswordView: View {
                     .background {
                         if vm.canReveal {
                             RoundedRectangle(cornerRadius: 28)
-                                .fill(.black)
+                                .fill(SlangColor.hardShadow)
                                 .offset(y: 4)
                         }
                     }
@@ -220,7 +220,7 @@ struct CrosswordView: View {
                     }
                     .background {
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(.black)
+                            .fill(SlangColor.hardShadow)
                             .offset(y: 4)
                     }
             }

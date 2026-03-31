@@ -247,7 +247,7 @@ struct OnboardingOptionRow: View {
             }
             .background {
                 RoundedRectangle(cornerRadius: 28)
-                    .fill(.black)
+                    .fill(SlangColor.hardShadow)
                     .offset(y: 4)
             }
         }
@@ -284,7 +284,7 @@ struct OnboardingCTAButton: View {
                 .background {
                     if isEnabled {
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(.black)
+                            .fill(SlangColor.hardShadow)
                             .offset(y: 4)
                     }
                 }

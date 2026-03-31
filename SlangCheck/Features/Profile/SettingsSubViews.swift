@@ -41,7 +41,7 @@ struct NameSettingsView: View {
             }
             .background {
                 RoundedRectangle(cornerRadius: 28)
-                    .fill(.black)
+                    .fill(SlangColor.hardShadow)
                     .offset(y: 4)
             }
             .padding(.horizontal, SlangSpacing.md)
@@ -396,7 +396,7 @@ private func settingsSaveButton(action: @escaping () -> Void) -> some View {
             }
             .background {
                 RoundedRectangle(cornerRadius: 28)
-                    .fill(.black)
+                    .fill(SlangColor.hardShadow)
                     .offset(y: 4)
             }
     }
