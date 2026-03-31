@@ -62,7 +62,7 @@ struct AIActivationPromptView: View {
                         }
                         .background {
                             RoundedRectangle(cornerRadius: 28)
-                                .fill(.black)
+                                .fill(SlangColor.hardShadow)
                                 .offset(y: 4)
                         }
                 }
