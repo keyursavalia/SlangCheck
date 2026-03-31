@@ -5,9 +5,10 @@
 // via ImageRenderer and shared via ShareLink.
 //
 // Design contract:
-// - Always renders in dark ("Midnight Cyber") palette regardless of system theme.
-// - Uses explicit gradient colors (never .ultraThinMaterial) so ImageRenderer
-//   produces a correct snapshot.
+// - Always renders in the "Chill & Cozy" dark palette so the card looks
+//   identical on any device regardless of the system appearance setting.
+// - Uses explicit concrete colors (never .ultraThinMaterial / adaptive tokens)
+//   because ImageRenderer requires non-dynamic fill values to snapshot correctly.
 // - Q-004: display name is rendered prominently on the card.
 
 import SwiftUI
@@ -29,12 +30,26 @@ struct AuraCardView: View {
     static let cardWidth:  CGFloat = 360
     static let cardHeight: CGFloat = 480
 
+    // MARK: - Concrete palette constants
+    // These are explicit concrete values for ImageRenderer — do NOT replace
+    // with adaptive SlangColor tokens, which resolve to dynamic UIColors that
+    // ImageRenderer cannot snapshot reliably.
+
+    /// Deep warm charcoal — card background start (#1F1F1F)
+    private static let bgStart   = Color(red: 0.122, green: 0.122, blue: 0.122)
+    /// Warm near-black — card background end (#272420)
+    private static let bgEnd     = Color(red: 0.153, green: 0.141, blue: 0.125)
+    /// Warm cream text / off-white (#F0E8DC)
+    private static let creamText = Color(red: 0.941, green: 0.910, blue: 0.863)
+    /// Muted warm cream divider (#5A5248)
+    private static let divider   = Color(red: 0.353, green: 0.322, blue: 0.282)
+
     // MARK: - Body
 
     var body: some View {
         ZStack {
             backgroundLayer
-            decorativeGlow
+            decorativeLayer
             contentLayer
         }
         .frame(width: Self.cardWidth, height: Self.cardHeight)
@@ -45,47 +60,54 @@ struct AuraCardView: View {
 
     private var backgroundLayer: some View {
         LinearGradient(
-            colors: [
-                Color(red: 0.059, green: 0.090, blue: 0.165),   // #0F172A Deep Slate
-                Color(red: 0.102, green: 0.075, blue: 0.251)    // #1A1340 Deep Indigo
-            ],
+            colors: [Self.bgStart, Self.bgEnd],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
     }
 
-    private var decorativeGlow: some View {
+    // MARK: - Decorative Layer
+
+    private var decorativeLayer: some View {
         ZStack {
-            // Large soft circle behind the tier icon
+            // Warm radial glow behind the tier badge
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [tierColor.opacity(0.25), tierColor.opacity(0)],
+                        colors: [tierColor.opacity(0.18), tierColor.opacity(0)],
                         center: .center,
                         startRadius: 0,
-                        endRadius: 130
+                        endRadius: 140
                     )
                 )
-                .frame(width: 260, height: 260)
-                .offset(y: -60)
+                .frame(width: 280, height: 280)
+                .offset(y: -50)
 
-            // Subtle grid of dots in the background
+            // Subtle warm grain texture (dot grid)
             Canvas { context, size in
-                let spacing: CGFloat = 28
-                let dotRadius: CGFloat = 1.2
+                let spacing: CGFloat = 24
+                let dotRadius: CGFloat = 1.0
                 var x: CGFloat = spacing
                 while x < size.width {
                     var y: CGFloat = spacing
                     while y < size.height {
-                        let rect = CGRect(x: x - dotRadius, y: y - dotRadius,
-                                         width: dotRadius * 2, height: dotRadius * 2)
+                        let rect = CGRect(
+                            x: x - dotRadius, y: y - dotRadius,
+                            width: dotRadius * 2, height: dotRadius * 2
+                        )
                         context.fill(Path(ellipseIn: rect),
-                                     with: .color(.white.opacity(0.06)))
+                                     with: .color(Self.creamText.opacity(0.05)))
                         y += spacing
                     }
                     x += spacing
                 }
             }
+
+            // Warm top-left corner accent arc
+            Circle()
+                .strokeBorder(tierColor.opacity(0.12), lineWidth: 60)
+                .frame(width: 220, height: 220)
+                .offset(x: -140, y: -160)
         }
     }
 
@@ -93,32 +115,26 @@ struct AuraCardView: View {
 
     private var contentLayer: some View {
         VStack(spacing: 0) {
-            // ── Brand header ──────────────────────────────
             brandHeader
                 .padding(.top, SlangSpacing.lg)
                 .padding(.horizontal, SlangSpacing.lg)
 
             Spacer()
 
-            // ── Tier badge ────────────────────────────────
             tierBadge
 
             Spacer()
 
-            // ── Divider ───────────────────────────────────
-            Rectangle()
-                .fill(Color.white.opacity(0.12))
+            Self.divider
                 .frame(height: 0.5)
                 .padding(.horizontal, SlangSpacing.xl)
 
             Spacer()
 
-            // ── User info ─────────────────────────────────
             userInfo
 
             Spacer()
 
-            // ── Footer ────────────────────────────────────
             cardFooter
                 .padding(.bottom, SlangSpacing.lg)
                 .padding(.horizontal, SlangSpacing.lg)
@@ -129,21 +145,29 @@ struct AuraCardView: View {
 
     private var brandHeader: some View {
         HStack {
-            Text("slangcheck")
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .foregroundStyle(tierColor)
-                .tracking(1.5)
+            HStack(spacing: SlangSpacing.xs) {
+                // Warm square brand mark
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(tierColor)
+                    .frame(width: 16, height: 16)
+                Text("SlangCheck")
+                    .font(.montserrat(size: 13, weight: .semibold))
+                    .foregroundStyle(Self.creamText.opacity(0.70))
+                    .tracking(0.5)
+            }
 
             Spacer()
 
-            // Three decorative dots (brand accent)
-            HStack(spacing: 4) {
-                ForEach(0..<3, id: \.self) { i in
-                    Circle()
-                        .fill(tierColor.opacity(i == 2 ? 1.0 : 0.4))
-                        .frame(width: 5, height: 5)
-                }
-            }
+            // Tier label pill
+            Text(profile.currentTier.displayName.uppercased())
+                .font(.montserrat(size: 10, weight: .semibold))
+                .foregroundStyle(tierColor)
+                .tracking(1.2)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule().fill(tierColor.opacity(0.14))
+                )
         }
     }
 
@@ -152,29 +176,32 @@ struct AuraCardView: View {
     private var tierBadge: some View {
         VStack(spacing: SlangSpacing.sm) {
             ZStack {
+                // Outer ring
                 Circle()
-                    .fill(tierColor.opacity(0.15))
-                    .frame(width: 88, height: 88)
+                    .strokeBorder(tierColor.opacity(0.25), lineWidth: 1.5)
+                    .frame(width: 96, height: 96)
 
+                // Inner warm fill
                 Circle()
-                    .strokeBorder(tierColor.opacity(0.35), lineWidth: 1)
-                    .frame(width: 88, height: 88)
+                    .fill(tierColor.opacity(0.12))
+                    .frame(width: 96, height: 96)
 
+                // Tier icon
                 Image(systemName: tierSymbol)
-                    .font(.system(size: 36, weight: .semibold))
+                    .font(.system(size: 38, weight: .medium))
                     .foregroundStyle(tierColor)
                     .accessibilityHidden(true)
             }
 
-            Text(profile.currentTier.displayName.uppercased())
-                .font(.montserrat(size: 22, weight: .black))
-                .foregroundStyle(.white)
-                .tracking(3)
+            Text(profile.currentTier.displayName)
+                .font(.montserrat(size: 26, weight: .bold))
+                .foregroundStyle(Self.creamText)
+                .tracking(1.5)
 
             Text(profile.currentTier.subtitle)
-                .font(.montserrat(size: 12))
-                .foregroundStyle(Color.white.opacity(0.55))
-                .tracking(0.5)
+                .font(.montserrat(size: 12, weight: .regular))
+                .foregroundStyle(Self.creamText.opacity(0.45))
+                .tracking(0.3)
         }
     }
 
@@ -183,12 +210,18 @@ struct AuraCardView: View {
     private var userInfo: some View {
         VStack(spacing: SlangSpacing.xs) {
             Text(profile.displayName)
-                .font(.montserrat(size: 20, weight: .bold))
-                .foregroundStyle(.white)
+                .font(.montserrat(size: 22, weight: .bold))
+                .foregroundStyle(Self.creamText)
 
-            Text("\(profile.totalPoints) pts")
-                .font(.system(size: 15, weight: .semibold, design: .monospaced))
-                .foregroundStyle(tierColor)
+            HStack(spacing: SlangSpacing.xs) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(tierColor)
+                    .accessibilityHidden(true)
+                Text("\(profile.totalPoints) pts")
+                    .font(.montserrat(size: 15, weight: .semibold))
+                    .foregroundStyle(tierColor)
+            }
         }
     }
 
@@ -197,22 +230,21 @@ struct AuraCardView: View {
     private var cardFooter: some View {
         HStack {
             Text("slangcheck.app")
-                .font(.system(size: 11, weight: .regular, design: .monospaced))
-                .foregroundStyle(Color.white.opacity(0.30))
-                .tracking(0.5)
+                .font(.montserrat(size: 11, weight: .regular))
+                .foregroundStyle(Self.creamText.opacity(0.25))
+                .tracking(0.3)
 
             Spacer()
 
-            // Streak indicator
             if profile.streak > 0 {
-                HStack(spacing: 3) {
+                HStack(spacing: 4) {
                     Image(systemName: "flame.fill")
                         .font(.system(size: 10))
-                        .foregroundStyle(SlangColor.accent)
+                        .foregroundStyle(tierColor.opacity(0.80))
                         .accessibilityHidden(true)
                     Text("\(profile.streak)d streak")
                         .font(.montserrat(size: 11, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.55))
+                        .foregroundStyle(Self.creamText.opacity(0.45))
                 }
             }
         }
@@ -220,12 +252,21 @@ struct AuraCardView: View {
 
     // MARK: - Tier Helpers
 
+    /// Per-tier accent colours — warm, muted, cohesive with the Chill & Cozy palette.
     private var tierColor: Color {
         switch profile.currentTier {
-        case .unc:        return Color(red: 0.70, green: 0.75, blue: 0.85)  // soft silver
-        case .lurk:       return Color(red: 0.984, green: 0.749, blue: 0.141) // amber
-        case .auraFarmer: return Color(red: 0.290, green: 0.867, blue: 0.502) // cyber mint
-        case .rizzler:    return Color(red: 0.753, green: 0.518, blue: 0.988) // neon heliotrope
+        case .unc:
+            // Warm silver-taupe
+            return Color(red: 0.722, green: 0.667, blue: 0.608)
+        case .lurk:
+            // Warm amber
+            return Color(red: 0.816, green: 0.643, blue: 0.290)
+        case .auraFarmer:
+            // Dusty periwinkle — mirrors the secondary token in the dark palette
+            return Color(red: 0.729, green: 0.784, blue: 0.878)
+        case .rizzler:
+            // Warm sand — mirrors the primary token in the dark palette, premium feel
+            return Color(red: 0.816, green: 0.745, blue: 0.639)
         }
     }
 
